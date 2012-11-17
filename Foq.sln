@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foq", "Foq\Foq.fsproj", "{B01AD807-6BCB-46C7-B2E8-C5BF9E0F1786}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests", "Tests\Tests.fsproj", "{DD713C6A-BA21-4DF9-A847-A2BC8E90FDC6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B01AD807-6BCB-46C7-B2E8-C5BF9E0F1786}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B01AD807-6BCB-46C7-B2E8-C5BF9E0F1786}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B01AD807-6BCB-46C7-B2E8-C5BF9E0F1786}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B01AD807-6BCB-46C7-B2E8-C5BF9E0F1786}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD713C6A-BA21-4DF9-A847-A2BC8E90FDC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD713C6A-BA21-4DF9-A847-A2BC8E90FDC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD713C6A-BA21-4DF9-A847-A2BC8E90FDC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD713C6A-BA21-4DF9-A847-A2BC8E90FDC6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

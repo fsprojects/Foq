@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Foq</id>
+    <version>0.1</version>
+    <title>Foq</title>
+    <authors>Phillip Trelford</authors>
+    <owners>Phillip Treford</owners>
+    <licenseUrl>http://foq.codeplex.com/license</licenseUrl>
+    <projectUrl>http://foq.codeplex.com/</projectUrl>
+    <iconUrl>http://trelford.com/fock.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Foq is a lightweight mocking library for F#, similar to Moq.</description>
+    <releaseNotes>Use Foq's fluent API to generate stubs of abstract classes and interfaces.</releaseNotes>
+    <copyright>Copyright 2012</copyright>
+    <tags>F# testing unittest unittesting TDD stubs stubbing fakes faking mocks mocking moq</tags>
+    <dependencies>
+      <dependency id="FSPowerPack.Linq.Community" version="2.0.0.1" />
+    </dependencies>
+  </metadata>
+</package>
