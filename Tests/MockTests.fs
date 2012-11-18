@@ -243,7 +243,7 @@ let [<Test>] ``an implemented interface event can add handlers`` () =
     let event = Event<_,_>()
     let instance =
         Mock<System.ComponentModel.INotifyPropertyChanged>()
-            .Event(fun x -> <@ x.PropertyChanged @>).Publishes(event.Publish) 
+            .SetupEvent(fun x -> <@ x.PropertyChanged @>).Publishes(event.Publish) 
             .Create()
     let triggered = ref false
     instance.PropertyChanged.Add(fun x -> triggered := true)
@@ -254,7 +254,7 @@ let [<Test>] ``an implemented interface event can add/remove handlers`` () =
     let event = Event<_,_>()
     let instance =
         Mock<System.ComponentModel.INotifyPropertyChanged>()
-            .Event(fun x -> <@ x.PropertyChanged @>).Publishes(event.Publish) 
+            .SetupEvent(fun x -> <@ x.PropertyChanged @>).Publishes(event.Publish) 
             .Create()
     let triggered = ref false
     let setTriggered s e = triggered := true

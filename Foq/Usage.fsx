@@ -1,5 +1,5 @@
 ﻿#r "..\packages\FSPowerPack.Linq.Community.2.0.0.1\Lib\Net40\FSharp.PowerPack.Linq.dll"
-#load "Foq.fs"
+#load "foq.fs"
 
 open Foq
 
@@ -10,7 +10,7 @@ module ``Method Example`` =
         Mock<System.Collections.IList>()
             .Setup(fun x -> <@ x.Contains(any()) @>).Returns(true)
             .Create()
-    Assert(instance.Contains(null))
+    Assert(instance.Contains("Anything"))
 
 module ``Method Matching Example`` =
     let instance =
@@ -74,7 +74,7 @@ module ``Event Example`` =
     let event = Event<_,_>()
     let instance =
         Mock<System.ComponentModel.INotifyPropertyChanged>()
-            .Event(fun x -> <@ x.PropertyChanged @>).Publishes(event.Publish)
+            .SetupEvent(fun x -> <@ x.PropertyChanged @>).Publishes(event.Publish)
             .Create()
     let triggered = ref false
     instance.PropertyChanged.Add(fun x -> triggered := true)
