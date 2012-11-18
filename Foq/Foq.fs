@@ -4,10 +4,7 @@ open System
 open System.Reflection
 open System.Reflection.Emit
 open Microsoft.FSharp.Reflection
-#if MIN_DEPENDENCY
-#else
 open Microsoft.FSharp.Linq.QuotationEvaluation // F# PowerPack dependency
-#endif
 
 module internal CodeEmit =
     /// Boxed value
@@ -211,7 +208,7 @@ type WildcardAttribute() = inherit Attribute()
 [<AttributeUsage(AttributeTargets.Method)>]
 type PredicateAttribute() = inherit Attribute()
 
-/// Generic mock type over abstract type
+/// Generic mock type over abstract types and interfaces
 type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
     /// Abstract type
     let abstractType = typeof<'TAbstract>
@@ -223,23 +220,26 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
             | Value(v,t) | Coerce(Value(v,t),_) -> Arg(v)
             | PropertyGet(None, pi, []) -> pi.GetValue(null, [||]) |> Arg
             | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
-#if MIN_DEPENDENCY
-#else
-            | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(pred.CompileUntyped()())
-#endif
+            | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> 
+                Pred(pred.CompileUntyped()())
             | _ -> raise <| NotSupportedException(arg.ToString()) |]
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toCall = function
-        | Call(Some(x), mi, args) when x.Type = abstractType -> mi, toArgs args
-        | PropertyGet(Some(x), pi, args) when x.Type = abstractType -> pi.GetGetMethod(), toArgs args
-        | PropertySet(Some(x), pi, args, value) when x.Type = abstractType -> pi.GetSetMethod(), toArgs args
+        | Call(Some(x), mi, args) when x.Type = abstractType -> 
+            mi, toArgs args
+        | PropertyGet(Some(x), pi, args) when x.Type = abstractType -> 
+            pi.GetGetMethod(), toArgs args
+        | PropertySet(Some(x), pi, args, value) when x.Type = abstractType -> 
+            pi.GetSetMethod(), toArgs args
         | expr -> raise <| NotSupportedException(expr.ToString())
+    /// Converts expression to corresponding event Add and Remove handlers
     let toHandlers = function
         | Call(None, mi, [Lambda(_,Call(Some(x),addHandler,_));
-                          Lambda(_,Call(Some(_),removeHandler,_));_]) when x.Type = abstractType -> 
+                          Lambda(_,Call(Some(_),removeHandler,_));_]) 
+                          when x.Type = abstractType -> 
             addHandler, removeHandler
         | expr -> raise <| NotSupportedException(expr.ToString())
-    /// Default constructor
+    /// Constructs mock builder
     new () = Mock([])
     /// Specifies a method or property of the abstract type as a quotation
     member this.Setup(f:'TAbstract -> Expr<'TReturnValue>) =
@@ -253,18 +253,20 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
         EventBuilder<'TAbstract,'TEvent>(handlers,calls)
     /// Creates an instance of the abstract type
     member this.Create() = mock<'TAbstract>(calls)
-/// Generic builder for specifying method results
+/// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (call, calls) =
     let mi, args = call
-    /// Specifies the return value of a method
+    /// Specifies the return value of a method or property
     member this.Returns(value:'TReturnValue) =
-        let result = if typeof<'TReturnValue> = typeof<unit> then Unit else ReturnValue(value)
+        let result = 
+            if typeof<'TReturnValue> = typeof<unit> then Unit 
+            else ReturnValue(value)
         Mock<'TAbstract>((mi, (args, result))::calls)
-    /// Specifies a computed return value of a method
+    /// Specifies a computed return value of a method or property
     member this.Returns(f:unit -> 'TReturnVaue) =
         Mock<'TAbstract>((mi, (args, ReturnFunc(f)))::calls)
-    /// Calls the specified function to obtain the return value
+    /// Calls the specified function to compute the return value
     [<RequiresExplicitTypeArguments>]
     member this.Calls<'TArgs>(f:'TArgs -> 'TReturnValue) =
         Mock<'TAbstract>((mi, (args, Call(f)))::calls)
@@ -292,9 +294,7 @@ type It private () =
 
 [<AutoOpen;CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module It =
-    /// Marks argument as accepting any value
+    /// Marks argument as matching any value
     let [<Wildcard>] inline any () : 'TArg = It.IsAny()
-#if MIN_DEPENDENCY
-#else
+    /// Marks argument as matching specific values
     let [<Predicate>] inline is (f) : 'TArg = It.Is(f)
-#endif

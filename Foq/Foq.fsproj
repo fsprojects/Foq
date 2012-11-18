@@ -48,6 +48,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Foq.fs" />
     <None Include="Usage.fsx" />
     <None Include="packages.config" />
