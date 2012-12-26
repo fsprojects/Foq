@@ -6,6 +6,7 @@ open NUnit.Framework
 type IInterface =
     abstract MethodReturnsSomething : unit -> int
     abstract MethodReturnsNothing : unit -> unit
+    abstract MethodReturnsOption: unit -> int option
     abstract Arity1Method : int -> bool
     abstract Arity1MethodReturnsNothing : int -> unit
     abstract Arity2Method : int * string -> bool
@@ -33,6 +34,24 @@ let ``an implemented interface method should return the specified value`` () =
             .Create()
     let returnValue = stub.MethodReturnsSomething()
     Assert.AreEqual(returnValue,2)
+
+[<Test>]
+let ``an implemented interface method should return a specified option value of None`` () =
+    let stub = 
+        Mock<IInterface>()
+            .Setup(fun x -> <@ x.MethodReturnsOption() @>).Returns(None)
+            .Create()
+    let returnValue = stub.MethodReturnsOption()
+    Assert.IsTrue(returnValue.IsNone)
+
+[<Test>]
+let ``an implemented interface method should return a specified option value of Some`` () =
+    let stub = 
+        Mock<IInterface>()
+            .Setup(fun x -> <@ x.MethodReturnsOption() @>).Returns(Some 1)
+            .Create()
+    let returnValue = stub.MethodReturnsOption()
+    Assert.AreEqual(returnValue, Some 1)
 
 [<Test>]
 let ``an implemented interface property getter should return the specified value`` () =
