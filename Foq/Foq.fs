@@ -39,9 +39,7 @@ module internal CodeEmit =
         let args = abstractMethod.GetParameters() |> Array.map (fun arg -> arg.ParameterType)
         typeBuilder.DefineMethod(abstractMethod.Name, attr, abstractMethod.ReturnType, args)
     /// Builds a mock from the specified calls
-    let mock<'TAbstract when 'TAbstract : not struct> (calls:(MethodInfo * (Arg[] * Result)) list) =
-        /// Abstract type
-        let abstractType = typeof<'TAbstract>
+    let mock (abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list) =
         /// Stub name for abstract type
         let stubName = "Stub" + abstractType.Name
         /// Builder for assembly
@@ -54,7 +52,7 @@ module internal CodeEmit =
             let parent, interfaces = 
                 if abstractType.IsInterface 
                 then typeof<obj>, [|abstractType|]
-                else typeof<'TAbstract>, [||]
+                else abstractType, [||]
             let attributes = TypeAttributes.Public ||| TypeAttributes.Class
             moduleBuilder.DefineType(stubName, attributes, parent, interfaces)
         /// Field settings
@@ -194,7 +192,7 @@ module internal CodeEmit =
         let generatedObject = 
             Activator.CreateInstance(
                 stubType, [|box (returnValues.ToArray());box (argsLookup.ToArray())|])
-        generatedObject :?> 'TAbstract
+        generatedObject
 
 open CodeEmit
 open Microsoft.FSharp.Quotations
@@ -251,8 +249,10 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
         let default' = Unchecked.defaultof<'TAbstract>
         let handlers = toHandlers (f default')
         EventBuilder<'TAbstract,'TEvent>(handlers,calls)
-    /// Creates an instance of the abstract type
-    member this.Create() = mock<'TAbstract>(calls)
+    /// Creates a generic instance of the abstract type
+    member this.Create() = mock(typeof<'TAbstract>, calls) :?> 'TAbstract
+    /// Creates a boxed instance of the abstract type
+    static member Create(abstractType:Type) = mock(abstractType, [])
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (call, calls) =
