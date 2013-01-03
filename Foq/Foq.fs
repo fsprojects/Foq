@@ -23,6 +23,7 @@ module internal CodeEmit =
         | Handler of string * PublishedEvent
         | Call of Func
         | Raise of Type
+        | RaiseValue of exn
     /// Generates constructor
     let generateConstructor (typeBuilder:TypeBuilder) ps (genBody:ILGenerator -> unit) =
         let cons = typeBuilder.DefineConstructor(MethodAttributes.Public,CallingConventions.Standard,ps)
@@ -152,7 +153,7 @@ module internal CodeEmit =
                     // Emit result
                     match result with
                     | Unit -> il.Emit(OpCodes.Ret)
-                    | ReturnValue(value,returnType) ->
+                    | ReturnValue(value, returnType) ->
                         emitReturnValueLookup value
                         il.Emit(OpCodes.Unbox_Any, returnType)
                         il.Emit(OpCodes.Ret)
@@ -178,7 +179,10 @@ module internal CodeEmit =
                         il.Emit(OpCodes.Callvirt, invoke)
                         if mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> then il.Emit(OpCodes.Pop)
                         il.Emit(OpCodes.Ret)
-                    | Raise(excType) -> il.ThrowException(excType)
+                    | Raise(exnType) -> il.ThrowException(exnType)
+                    | RaiseValue(exnValue) ->
+                        emitReturnValueLookup exnValue
+                        il.Emit(OpCodes.Throw)                      
                     il.MarkLabel(unmatched)
                 )
                 il.ThrowException(typeof<MatchFailureException>)
@@ -275,6 +279,9 @@ and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
     member this.Raises<'TException when 'TException : (new : unit -> 'TException) 
                                    and  'TException :> exn>() =
         Mock<'TAbstract>((mi, (args, Raise(typeof<'TException>)))::calls)
+    /// Specifies the exception value a method raises
+    member this.Raises(exnValue:exn) =
+        Mock<'TAbstract>((mi, (args, RaiseValue(exnValue)))::calls)
 /// Generic builder for specifying event values
 and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct> 
     internal (handlers, calls) =
