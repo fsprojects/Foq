@@ -274,12 +274,12 @@ and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
     [<RequiresExplicitTypeArguments>]
     member this.Calls<'TArgs>(f:'TArgs -> 'TReturnValue) =
         Mock<'TAbstract>((mi, (args, Call(f)))::calls)
-    /// Specifies the exception a method raises
+    /// Specifies the exception a method or property raises
     [<RequiresExplicitTypeArguments>]
     member this.Raises<'TException when 'TException : (new : unit -> 'TException) 
                                    and  'TException :> exn>() =
         Mock<'TAbstract>((mi, (args, Raise(typeof<'TException>)))::calls)
-    /// Specifies the exception value a method raises
+    /// Specifies the exception value a method or property raises
     member this.Raises(exnValue:exn) =
         Mock<'TAbstract>((mi, (args, RaiseValue(exnValue)))::calls)
 /// Generic builder for specifying event values
