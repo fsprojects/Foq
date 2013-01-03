@@ -182,6 +182,25 @@ let ``an implemented interface method with arity/3 should match correct method p
             .Create()
     Assert.AreEqual(true, stub.Arity3Method(n,s,d))
 
+[<Test>]
+let ``an implemented interface can raise a specified exception type`` () =
+    let stub =
+        Mock<IInterface>()
+            .Setup(fun x -> <@ x.MethodReturnsNothing() @>).Raises<System.ApplicationException>()
+            .Create()
+    Assert.Throws<System.ApplicationException>( fun () -> 
+        stub.MethodReturnsNothing() |> ignore ) |> ignore
+
+[<Test>]
+let ``an implemented interface can raise a specified exception value`` () =
+    let message = "Message"
+    let stub =
+        Mock<IInterface>()
+            .Setup(fun x -> <@ x.MethodReturnsNothing() @>).Raises(System.ApplicationException(message))
+            .Create()
+    Assert.Throws<System.ApplicationException>((fun () -> 
+        stub.MethodReturnsNothing() |> ignore), message) |> ignore
+
 [<AbstractClass>]
 type Shape2D(x0 : float, y0 : float) =
     let mutable x, y = x0, y0
