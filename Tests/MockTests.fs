@@ -183,23 +183,43 @@ let ``an implemented interface method with arity/3 should match correct method p
     Assert.AreEqual(true, stub.Arity3Method(n,s,d))
 
 [<Test>]
-let ``an implemented interface can raise a specified exception type`` () =
+let ``an implemented interface method can raise a specified exception type`` () =
     let stub =
         Mock<IInterface>()
             .Setup(fun x -> <@ x.MethodReturnsNothing() @>).Raises<System.ApplicationException>()
             .Create()
     Assert.Throws<System.ApplicationException>( fun () -> 
-        stub.MethodReturnsNothing() |> ignore ) |> ignore
+        stub.MethodReturnsNothing()) |> ignore
 
 [<Test>]
-let ``an implemented interface can raise a specified exception value`` () =
+let ``an implemented interface method can raise a specified exception value`` () =
     let message = "Message"
     let stub =
         Mock<IInterface>()
             .Setup(fun x -> <@ x.MethodReturnsNothing() @>).Raises(System.ApplicationException(message))
             .Create()
     Assert.Throws<System.ApplicationException>((fun () -> 
-        stub.MethodReturnsNothing() |> ignore), message) |> ignore
+        stub.MethodReturnsNothing()), message) |> ignore
+
+[<Test>]
+let ``an implemented interface returning method can raise a specified exception value`` () =
+    let message = "Message"
+    let stub =
+        Mock<IInterface>()
+            .Setup(fun x -> <@ x.MethodReturnsSomething() @>).Raises(System.ApplicationException(message))
+            .Create()
+    Assert.Throws<System.ApplicationException>((fun () -> 
+        stub.MethodReturnsSomething() |> ignore), message) |> ignore
+
+[<Test>]
+let ``an implemented interface property can raise a specified exception value`` () =
+    let message = "Message"
+    let stub =
+        Mock<IInterface>()
+            .Setup(fun x -> <@ x.StringProperty @>).Raises(System.ApplicationException(message))
+            .Create()
+    Assert.Throws<System.ApplicationException>((fun () -> 
+        stub.StringProperty |> ignore), message) |> ignore
 
 [<AbstractClass>]
 type Shape2D(x0 : float, y0 : float) =
