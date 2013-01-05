@@ -9,11 +9,21 @@ using Foq.Linq;
 public class LinqTests
 {
     [Test]
-    public void TestFunc()
+    public void TestSetupFunc()
     {
         var mock =
             new Mock<IList<int>>()
                 .SetupFunc(x => x.Contains(It.IsAny<int>())).Returns(true)
+                .Create();
+        Assert.IsTrue(mock.Contains(1));
+    }
+
+    [Test]
+    public void TestSetupFuncWithReturnsLambda()
+    {
+        var mock =
+            new Mock<IList<int>>()
+                .SetupFunc(x => x.Contains(It.IsAny<int>())).Returns(() => true)
                 .Create();
         Assert.IsTrue(mock.Contains(1));
     }
@@ -25,8 +35,22 @@ public class LinqTests
             new Mock<IList<int>>()
                 .SetupAction(x => x.Clear()).Raises<System.ApplicationException>()
                 .Create();
-        Assert.Throws<ApplicationException>(() =>
-            mock.Clear()
+        Assert.Throws<ApplicationException>(
+            () => mock.Clear()
+        );
+    }
+
+    [Test]
+    public void TestActionWithRaisesExceptionValue()
+    {
+        var message = "Message";
+        var mock =
+            new Mock<IList<int>>()
+                .SetupAction(x => x.Clear()).Raises(new System.ApplicationException(message))
+                .Create();
+        Assert.Throws<ApplicationException>(
+            () => mock.Clear(),
+            message
         );
     }
 

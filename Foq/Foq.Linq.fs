@@ -72,6 +72,9 @@ and ActionBuilder<'TAbstract when 'TAbstract : not struct>
     member this.Raises<'TException when 'TException : (new : unit -> 'TException) 
                                    and  'TException :> exn>() =
         Mock<'TAbstract>((mi, (args, Raise(typeof<'TException>)))::calls)
+    /// Specifies the exception value a method or property raises
+    member this.Raises(exnValue:exn) =
+        Mock<'TAbstract>((mi, (args, RaiseValue(exnValue)))::calls)
 and FuncBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
     internal (call, calls) =
     inherit ActionBuilder<'TAbstract>(call, calls)
@@ -82,6 +85,9 @@ and FuncBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
             if typeof<'TReturnValue> = typeof<unit> then Unit 
             else ReturnValue(value,typeof<'TReturnValue>)
         Mock<'TAbstract>((mi, (args, result))::calls)
+    /// Specifies a computed return value of a method or property
+    member this.Returns(f:Func<'TReturnValue>) =
+        Mock<'TAbstract>((mi, (args, ReturnFunc(fun () -> f.Invoke())))::calls)
 /// Generic builder for specifying event values
 and EventBuilder<'TAbstract when 'TAbstract : not struct> 
     internal (handlers, calls) =
