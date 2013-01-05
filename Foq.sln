@@ -5,7 +5,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foq", "Foq\Foq.fsproj", "{B
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests", "Tests\Tests.fsproj", "{DD713C6A-BA21-4DF9-A847-A2BC8E90FDC6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.CSharp", "Foq.CSharp\Tests.CSharp.csproj", "{D1EA9F19-1C4A-4612-AA9C-935B3DDD7BF0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.CSharp", "Tests.CSharp\Tests.CSharp.csproj", "{D1EA9F19-1C4A-4612-AA9C-935B3DDD7BF0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
