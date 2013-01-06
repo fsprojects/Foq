@@ -220,7 +220,9 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
         [|for arg in args ->
             match arg with
             | Value(v,t) | Coerce(Value(v,t),_) -> Arg(v)
-            | PropertyGet(None, pi, []) -> pi.GetValue(null, [||]) |> Arg
+            | FieldGet(Some(Value(v,_)),fi) -> fi.GetValue(v) |> Arg
+            | PropertyGet(None, pi, []) -> pi.GetValue(null) |> Arg
+            | PropertyGet(Some(Value(v,_)),pi,[]) -> pi.GetValue(v) |> Arg
             | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
             | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> 
                 Pred(pred.CompileUntyped()())
