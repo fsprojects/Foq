@@ -10,15 +10,15 @@
     <projectUrl>http://foq.codeplex.com/</projectUrl>
     <iconUrl>http://trelford.com/fock.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Foq is a lightweight thread-safe mocking library for F# & C#, with a similar API to Moq.</description>
+    <description>Foq is a lightweight thread-safe mocking library for F# &amp; C#, with a similar API to Moq.</description>
     <releaseNotes>Use Foq's fluent API to mock abstract classes and interfaces.</releaseNotes>
     <copyright>Copyright 2012</copyright>
     <tags>F# C# testing unittest unittesting TDD stubs stubbing fakes faking mocks mocking moq</tags>
     <dependencies>
-      <group targetFramework="net40"
+      <group targetFramework="net40">
          <dependency id="FSPowerPack.Linq.Community" version="2.0.0.1" />
       </group>
-      <group targetFramework="net45"
+      <group targetFramework="net45">
          <dependency id="FSPowerPack.Linq.Community" version="3.0.0.0" />
       </group>
     </dependencies>

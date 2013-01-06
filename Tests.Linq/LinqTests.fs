@@ -33,6 +33,16 @@ let ``test property get`` () =
     Assert.AreEqual(1, mock.Count)
 
 [<Test>]
+let ``test property get with index parameters`` () =
+    let index = 1
+    let value = 9
+    let mock =
+        Mock<IList<int>>()
+            .SetupPropertyGet(fun x -> x.[index]).Returns(value)
+            .Create()
+    Assert.AreEqual(value, mock.[index])
+[<Test>]
+
 let ``test property set`` () =
     let mock =
         Mock<IList<int>>()
