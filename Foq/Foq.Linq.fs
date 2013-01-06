@@ -28,7 +28,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
                 let value =
                     match call.Member with
                     | :? FieldInfo as fi -> fi.GetValue(instance)
-                    | :? PropertyInfo as pi -> pi.GetValue(instance)
+                    | :? PropertyInfo as pi -> pi.GetValue(instance, [||])
                     | _ -> raise <| NotSupportedException()
                 Arg(value)
             | arg -> raise <| NotSupportedException(arg.GetType().ToString())
