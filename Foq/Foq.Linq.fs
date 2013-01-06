@@ -12,11 +12,13 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
     /// Converts argument expressions to Arg array
     let toArgs (args:Expression seq) =
         let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
-        let isWildcard mi = hasAttribute typeof<Foq.WildcardAttribute> mi
+        let isWildcard mi = hasAttribute typeof<Foq.WildcardAttribute> mi      
         /// Resolves Expression to Arg
         let rec resolve : Expression -> Arg = function
             | :? ConstantExpression as constant ->
                 Arg(constant.Value)
+            | :? UnaryExpression as unary ->
+                unary.Operand |> resolve
             | :? MethodCallExpression as call when isWildcard call.Method ->
                 Any
             | :? MemberExpression as call ->

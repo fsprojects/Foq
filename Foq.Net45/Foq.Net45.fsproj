@@ -44,12 +44,13 @@
     <Compile Include="..\Foq\Foq.fs">
       <Link>Foq.fs</Link>
     </Compile>
-    <Compile Include="..\Foq\Foq.Linq.fs">
-      <Link>Foq.Linq.fs</Link>
-    </Compile>
     <None Include="..\Foq\Usage.fsx">
       <Link>Usage.fsx</Link>
     </None>
+    <Compile Include="..\Foq\Foq.Linq.fs">
+      <Link>Foq.Linq.fs</Link>
+    </Compile>
+    <None Include="Usage.Linq.fsx" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">
