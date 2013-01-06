@@ -13,20 +13,25 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
     let toArgs (args:Expression seq) =
         let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
         let isWildcard mi = hasAttribute typeof<Foq.WildcardAttribute> mi
-        [| for arg in args do
-            match arg with
+        let rec resolve : Expression -> Arg = function
             | :? ConstantExpression as constant ->
-                yield Arg(constant.Value)
+                Arg(constant.Value)
             | :? MethodCallExpression as call when isWildcard call.Method ->
-                yield Any
-            | _ -> raise <| NotSupportedException()
-        |]
+                Any
+            | :? MemberExpression as call ->
+                let x = call.Expression :?> ConstantExpression
+                let instance = x.Value
+                let fi = call.Member :?> FieldInfo
+                let value = fi.GetValue(instance)
+                Arg(value)
+            | arg -> raise <| NotSupportedException(arg.GetType().ToString())
+        [| for arg in args -> resolve arg |]
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toMethodInfo (expr:Expression) =
         match expr with
         | :? MethodCallExpression as call ->
             call.Method, toArgs call.Arguments
-        | _ -> raise <| NotSupportedException()
+        | _ -> raise <| NotSupportedException(expr.GetType().ToString())
     let toPropertyInfo (expr:Expression) =
         match expr with
         | :? MemberExpression as call ->
@@ -37,7 +42,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
                 call.Method.DeclaringType.GetProperties() 
                 |> Seq.find (fun pi -> pi.GetGetMethod() = call.Method)
             pi, toArgs call.Arguments
-        | _ -> raise <| NotSupportedException()
+        | _ -> raise <| NotSupportedException(expr.GetType().ToString())
     /// Constructs mock builder
     new () = Mock([])
     /// Specifies a member function of the abstract type
