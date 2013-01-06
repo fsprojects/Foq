@@ -29,7 +29,7 @@ public class LinqTests
     }
 
     [Test]
-    public void TestAction()
+    public void TestSetupAction()
     {
         var mock =
             new Mock<IList<int>>()
@@ -41,7 +41,7 @@ public class LinqTests
     }
 
     [Test]
-    public void TestActionWithRaisesExceptionValue()
+    public void TestSetupActionWithRaisesExceptionValue()
     {
         var message = "Message";
         var mock =
@@ -55,7 +55,7 @@ public class LinqTests
     }
 
     [Test]
-    public void TestPropertyGet()
+    public void TestSetupPropertyGet()
     {
         var mock =
             new Mock<IList<int>>()
@@ -64,8 +64,20 @@ public class LinqTests
         Assert.AreEqual(1, mock.Count);
     }
 
+    [Test,Combinatorial]
+    public void TestSetupPropertyGetWithIndexParameters()
+    {
+        var value = 9;
+        var index = 1;
+        var mock =
+            new Mock<IList<int>>()
+                .SetupPropertyGet(x => x[index]).Returns(value)
+                .Create();
+        Assert.AreEqual(value, mock[index]);
+    }
+
     [Test]
-    public void TestPropertySet()
+    public void TestSetupPropertySet()
     {
         var mock =
             new Mock<IList<int>>()
@@ -77,7 +89,7 @@ public class LinqTests
     }
 
     [Test]
-    public void TestEvent()
+    public void TestSetupEvent()
     {
         var fe = new FSharpEvent<PropertyChangedEventHandler, PropertyChangedEventArgs>();
         var mock =
