@@ -20,10 +20,16 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
             | :? MethodCallExpression as call when isWildcard call.Method ->
                 Any
             | :? MemberExpression as call ->
-                let x = call.Expression :?> ConstantExpression
-                let instance = x.Value
-                let fi = call.Member :?> FieldInfo
-                let value = fi.GetValue(instance)
+                let instance = 
+                    match call.Expression with
+                    | :? ConstantExpression as ce -> ce.Value
+                    | null -> null
+                    | _ -> raise <| NotSupportedException() 
+                let value =
+                    match call.Member with
+                    | :? FieldInfo as fi -> fi.GetValue(instance)
+                    | :? PropertyInfo as pi -> pi.GetValue(instance)
+                    | _ -> raise <| NotSupportedException()
                 Arg(value)
             | arg -> raise <| NotSupportedException(arg.GetType().ToString())
         // Return resolved arguments
