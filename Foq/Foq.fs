@@ -221,8 +221,8 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
             match arg with
             | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
             | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> 
-                Pred(pred.CompileUntyped()())
-            | expr -> expr.CompileUntyped()() |> Arg |]
+                Pred(pred.EvalUntyped())
+            | expr -> expr.EvalUntyped() |> Arg |]
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toCall = function
         | Call(Some(x), mi, args) when x.Type = abstractType -> 
