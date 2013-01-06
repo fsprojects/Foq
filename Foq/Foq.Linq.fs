@@ -13,6 +13,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
     let toArgs (args:Expression seq) =
         let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
         let isWildcard mi = hasAttribute typeof<Foq.WildcardAttribute> mi
+        /// Resolves Expression to Arg
         let rec resolve : Expression -> Arg = function
             | :? ConstantExpression as constant ->
                 Arg(constant.Value)
@@ -25,6 +26,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
                 let value = fi.GetValue(instance)
                 Arg(value)
             | arg -> raise <| NotSupportedException(arg.GetType().ToString())
+        // Return resolved arguments
         [| for arg in args -> resolve arg |]
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toMethodInfo (expr:Expression) =
@@ -32,6 +34,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
         | :? MethodCallExpression as call ->
             call.Method, toArgs call.Arguments
         | _ -> raise <| NotSupportedException(expr.GetType().ToString())
+    /// Converts expression to a tuple of PropertyInfo and Arg array
     let toPropertyInfo (expr:Expression) =
         match expr with
         | :? MemberExpression as call ->
