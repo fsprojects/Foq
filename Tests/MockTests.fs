@@ -321,3 +321,22 @@ let [<Test>] ``an implemented interface event can add/remove handlers`` () =
     instance.PropertyChanged.RemoveHandler(handler)
     event.Trigger(instance, PropertyChangedEventArgs("X"))
     Assert.IsFalse(!triggered)
+
+[<TestFixture>]
+type ``test members`` () =
+    let n = 1
+    [<Test>]
+    member __.``test field argument`` () =
+        let mock =
+            Mock<IInterface>()
+                .Setup(fun x -> <@ x.Arity1Method(n) @>).Returns(true)
+                .Create()
+        Assert.IsTrue(mock.Arity1Method(n))
+    member __.N = n
+    [<Test>]
+    member this.``test property argument`` () =
+        let mock =
+            Mock<IInterface>()
+                .Setup(fun x -> <@ x.Arity1Method(this.N) @>).Returns(true)
+                .Create()
+        Assert.IsTrue(mock.Arity1Method(this.N))
