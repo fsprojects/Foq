@@ -1,4 +1,4 @@
-﻿#r "..\packages\FSPowerPack.Linq.Community.2.0.0.1\Lib\Net40\FSharp.PowerPack.Linq.dll"
+﻿#r "..\packages\FSPowerPack.Linq.Community.3.0.0.0\Lib\Net40\FSharp.PowerPack.Linq.dll"
 #load "..\Foq\Foq.fs"
 #load "..\Foq\Foq.Linq.fs"
 
