@@ -12,7 +12,8 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
     /// Converts argument expressions to Arg array
     let toArgs (args:Expression seq) =
         let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
-        let isWildcard mi = hasAttribute typeof<Foq.WildcardAttribute> mi      
+        let isWildcard mi = hasAttribute typeof<Foq.WildcardAttribute> mi
+        let isPredicate mi = hasAttribute typeof<Foq.PredicateAttribute> mi
         /// Resolves Expression to Arg
         let rec resolve : Expression -> Arg = function
             | :? ConstantExpression as constant ->
@@ -21,6 +22,11 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
                 unary.Operand |> resolve
             | :? MethodCallExpression as call when isWildcard call.Method ->
                 Any
+            | :? MethodCallExpression as call when isPredicate call.Method ->
+                let lambda = call.Arguments.[0] :?> LambdaExpression
+                let del = lambda.Compile()
+                let f = fun x -> del.DynamicInvoke([|x|]) :?> bool
+                PredUntyped(f)
             | :? MemberExpression as call ->
                 let instance = 
                     match call.Expression with
@@ -118,3 +124,5 @@ and EventBuilder<'TAbstract when 'TAbstract : not struct>
 type It private () =
     /// Marks argument as matching any value
     [<Foq.Wildcard>] static member IsAny<'TArg>() = Unchecked.defaultof<'TArg>
+    /// Marks argument as matching specific values
+    [<Foq.Predicate>] static member Is<'TArg>(f:Func<'TArg,bool>) = Unchecked.defaultof<'TArg>

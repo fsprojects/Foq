@@ -14,7 +14,7 @@ module internal CodeEmit =
     /// Boxed event
     type PublishedEvent = obj
     /// Method argument type
-    type Arg = Any | Arg of Value | Pred of Func
+    type Arg = Any | Arg of Value | Pred of Func | PredUntyped of Func
     /// Method result type
     type Result = 
         | Unit
@@ -46,7 +46,7 @@ module internal CodeEmit =
         /// Index of argument values for current method overload
         let argsLookupIndex = argsLookup.Count
         // Add arguments to lookup
-        args |> Array.map (function Any -> null | Arg(value) -> value | Pred(f) -> f) |> argsLookup.Add
+        args |> Array.map (function Any -> null | Arg(value) -> value | Pred(f) -> f | PredUntyped(f) -> f) |> argsLookup.Add
         // Emit argument matching
         args |> Seq.iteri (fun argIndex arg ->
             let emitArgBox () =
@@ -72,6 +72,14 @@ module internal CodeEmit =
                 il.Emit(OpCodes.Ldarg, argIndex+1)
                 let argType = mi.GetParameters().[argIndex].ParameterType
                 let invoke = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
+                il.Emit(OpCodes.Callvirt, invoke)
+                il.Emit(OpCodes.Brfalse_S, unmatched)
+            | PredUntyped(f) ->
+                emitArgLookup f
+                il.Emit(OpCodes.Ldarg, argIndex+1)
+                let argType = mi.GetParameters().[argIndex].ParameterType
+                il.Emit(OpCodes.Box, argType)
+                let invoke = FSharpType.MakeFunctionType(typeof<obj>,typeof<bool>).GetMethod("Invoke")
                 il.Emit(OpCodes.Callvirt, invoke)
                 il.Emit(OpCodes.Brfalse_S, unmatched)
         )
