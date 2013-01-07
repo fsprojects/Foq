@@ -13,6 +13,14 @@ let ``test func`` () =
             .SetupFunc(fun x -> x.Contains(It.IsAny<int>())).Returns(true)
             .Create()
     Assert.IsTrue(mock.Contains(1))
+
+[<Test>]
+let ``test func predicate`` () =
+    let mock =
+        Mock<IList<int>>()
+            .SetupFunc(fun x -> x.Contains(It.Is<int>(Func<int,bool>(fun key -> true)))).Returns(true)
+            .Create()
+    Assert.IsTrue(mock.Contains(1))
     
 [<Test>]
 let ``test action`` () =
