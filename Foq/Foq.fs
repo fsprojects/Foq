@@ -148,7 +148,7 @@ module internal CodeEmit =
         generateReturn il (returnValues,returnValuesField) (mi,result)
         il.MarkLabel(unmatched)
     /// Builds a mock from the specified calls
-    let mock (abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list) =
+    let mock (isStrict, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list) =
         /// Stub name for abstract type
         let stubName = "Stub" + abstractType.Name
         /// Builder for assembly
@@ -210,7 +210,16 @@ module internal CodeEmit =
             | None ->
                 if abstractMethod.ReturnType = typeof<System.Void> || abstractMethod.ReturnType = typeof<unit>
                 then il.Emit(OpCodes.Ret)
-                else il.ThrowException(typeof<NotImplementedException>)
+                else 
+                    if isStrict 
+                    then il.ThrowException(typeof<NotImplementedException>)
+                    else
+                        // Generate default value
+                        let x = il.DeclareLocal(abstractMethod.ReturnType)
+                        il.Emit(OpCodes.Ldloca_S, x.LocalIndex)
+                        il.Emit(OpCodes.Initobj, abstractMethod.ReturnType)
+                        il.Emit(OpCodes.Ldloc_0)
+                        il.Emit(OpCodes.Ret)
             if abstractType.IsInterface then
                 typeBuilder.DefineMethodOverride(methodBuilder, abstractMethod)
         /// Stub type
@@ -225,6 +234,9 @@ open CodeEmit
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 
+/// Mock mode
+type MockMode = Strict = 0 | Loose = 1
+
 /// Wildcard attribute
 [<AttributeUsage(AttributeTargets.Method)>]
 type WildcardAttribute() = inherit Attribute()
@@ -234,7 +246,7 @@ type WildcardAttribute() = inherit Attribute()
 type PredicateAttribute() = inherit Attribute()
 
 /// Generic mock type over abstract types and interfaces
-type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
+type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     /// Abstract type
     let abstractType = typeof<'TAbstract>
     /// Converts argument expressions to Arg array
@@ -263,53 +275,55 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
             addHandler, removeHandler
         | expr -> raise <| NotSupportedException(expr.ToString())
     /// Constructs mock builder
-    new () = Mock([])
+    new () = Mock(MockMode.Strict,[])
+    new (mode) = Mock(mode,[])
     /// Specifies a method or property of the abstract type as a quotation
     member this.Setup(f:'TAbstract -> Expr<'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let call = toCall (f default')
-        ResultBuilder<'TAbstract,'TReturnValue>(call,calls)
+        ResultBuilder<'TAbstract,'TReturnValue>(mode,call,calls)
     /// Specifies an event of the abstract type as a quotation
     member this.SetupEvent(f:'TAbstract -> Expr<'TEvent>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let handlers = toHandlers (f default')
-        EventBuilder<'TAbstract,'TEvent>(handlers,calls)
+        EventBuilder<'TAbstract,'TEvent>(mode,handlers,calls)
     /// Creates a generic instance of the abstract type
-    member this.Create() = mock(typeof<'TAbstract>, calls) :?> 'TAbstract
+    member this.Create() = mock(MockMode.Strict = mode, typeof<'TAbstract>, calls) :?> 'TAbstract
     /// Creates a boxed instance of the abstract type
-    static member Create(abstractType:Type) = mock(abstractType, [])
+    static member Create(abstractType:Type) = mock(true, abstractType, [])
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
-    internal (call, calls) =
+    internal (mode, call, calls) =
     let mi, args = call
     /// Specifies the return value of a method or property
     member this.Returns(value:'TReturnValue) =
         let result = 
             if typeof<'TReturnValue> = typeof<unit> then Unit 
             else ReturnValue(value,typeof<'TReturnValue>)
-        Mock<'TAbstract>((mi, (args, result))::calls)
+        Mock<'TAbstract>(mode,(mi, (args, result))::calls)
     /// Specifies a computed return value of a method or property
     member this.Returns(f:unit -> 'TReturnVaue) =
-        Mock<'TAbstract>((mi, (args, ReturnFunc(f)))::calls)
+        Mock<'TAbstract>(mode,(mi, (args, ReturnFunc(f)))::calls)
     /// Calls the specified function to compute the return value
     [<RequiresExplicitTypeArguments>]
     member this.Calls<'TArgs>(f:'TArgs -> 'TReturnValue) =
-        Mock<'TAbstract>((mi, (args, Call(f)))::calls)
+        Mock<'TAbstract>(mode,(mi, (args, Call(f)))::calls)
     /// Specifies the exception a method or property raises
     [<RequiresExplicitTypeArguments>]
     member this.Raises<'TException when 'TException : (new : unit -> 'TException) 
                                    and  'TException :> exn>() =
-        Mock<'TAbstract>((mi, (args, Raise(typeof<'TException>)))::calls)
+        Mock<'TAbstract>(mode,(mi, (args, Raise(typeof<'TException>)))::calls)
     /// Specifies the exception value a method or property raises
     member this.Raises(exnValue:exn) =
-        Mock<'TAbstract>((mi, (args, RaiseValue(exnValue)))::calls)
+        Mock<'TAbstract>(mode,(mi, (args, RaiseValue(exnValue)))::calls)
 /// Generic builder for specifying event values
 and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct> 
-    internal (handlers, calls) =
+    internal (mode, handlers, calls) =
     let add, remove = handlers
     /// Specifies the published event value
     member this.Publishes(value:'TEvent) =
-        Mock<'TAbstract>((add, ([|Any|], Handler("AddHandler",value)))::
+        Mock<'TAbstract>(mode, 
+                         (add, ([|Any|], Handler("AddHandler",value)))::
                          (remove, ([|Any|], Handler("RemoveHandler",value)))::
                          calls)
 
