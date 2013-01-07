@@ -85,7 +85,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (calls) =
         EventBuilder<'TAbstract>(handlers,calls)
     /// Creates a generic instance of the abstract type
     member this.Create() = 
-        mock(abstractType,calls) :?> 'TAbstract
+        mock(true,abstractType,calls) :?> 'TAbstract
 and ActionBuilder<'TAbstract when 'TAbstract : not struct>
     internal (call, calls) =
     let mi, args = call
