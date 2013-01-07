@@ -39,6 +39,97 @@ module internal CodeEmit =
         let attr = MethodAttributes.Public ||| MethodAttributes.HideBySig ||| MethodAttributes.Virtual
         let args = abstractMethod.GetParameters() |> Array.map (fun arg -> arg.ParameterType)
         typeBuilder.DefineMethod(abstractMethod.Name, attr, abstractMethod.ReturnType, args)
+    /// Generates method overload
+    let generateOverload 
+        (il:ILGenerator)
+        (argsLookup:ResizeArray<Value[]>,argsField:FieldBuilder)
+        (returnValues:ResizeArray<Value>,returnValuesField:FieldBuilder) 
+        (mi:MethodInfo,(args, result)) =
+        /// Label to goto if argument fails
+        let unmatched = il.DefineLabel()
+        /// Index of argument values for current method overload
+        let argsLookupIndex = argsLookup.Count
+        // Add arguments to lookup
+        args |> Array.map (function Any -> null | Arg(value) -> value | Pred(f) -> f) |> argsLookup.Add
+        // Emit argument matching
+        args |> Seq.iteri (fun argIndex arg ->
+            let emitArgBox () =
+                il.Emit(OpCodes.Ldarg, argIndex+1)
+                il.Emit(OpCodes.Box, mi.GetParameters().[argIndex].ParameterType)
+            let emitArgLookup value =
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Ldfld, argsField)
+                il.Emit(OpCodes.Ldc_I4, argsLookupIndex)
+                il.Emit(OpCodes.Ldelem_Ref)
+                il.Emit(OpCodes.Ldc_I4, argIndex)
+                il.Emit(OpCodes.Ldelem_Ref)
+            match arg with
+            | Any -> ()
+            | Arg(value) ->
+                emitArgBox ()
+                emitArgLookup value
+                // Emit Object.Equals(box args.[argIndex+1], _args.[argsLookupIndex].[argIndex])
+                il.EmitCall(OpCodes.Call, typeof<obj>.GetMethod("Equals",[|typeof<obj>;typeof<obj>|]), null) 
+                il.Emit(OpCodes.Brfalse_S, unmatched)
+            | Pred(f) ->
+                emitArgLookup f
+                il.Emit(OpCodes.Ldarg, argIndex+1)
+                let argType = mi.GetParameters().[argIndex].ParameterType
+                let invoke = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
+                il.Emit(OpCodes.Callvirt, invoke)
+                il.Emit(OpCodes.Brfalse_S, unmatched)
+        )
+        /// Emits _returnValues.[returnValuesIndex]
+        let emitReturnValueLookup value =
+            let returnValuesIndex = returnValues.Count
+            returnValues.Add(value)
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldfld, returnValuesField)
+            il.Emit(OpCodes.Ldc_I4, returnValuesIndex)
+            il.Emit(OpCodes.Ldelem_Ref)
+        /// Emits AddHandler/RemoveHandler
+        let emitEventHandler handlerName e =
+            emitReturnValueLookup e
+            let handlerType = e.GetType().GetGenericArguments().[0]
+            il.Emit(OpCodes.Ldarg_1)
+            let t = typedefof<IDelegateEvent<_>>.MakeGenericType(handlerType)
+            let invoke = t.GetMethod(handlerName)
+            il.Emit(OpCodes.Callvirt, invoke)
+            il.Emit(OpCodes.Ret)
+        // Emit result
+        match result with
+        | Unit -> il.Emit(OpCodes.Ret)
+        | ReturnValue(value, returnType) ->
+            emitReturnValueLookup value
+            il.Emit(OpCodes.Unbox_Any, returnType)
+            il.Emit(OpCodes.Ret)
+        | ReturnFunc(f) ->
+            emitReturnValueLookup f
+            // Emit Invoke
+            il.Emit(OpCodes.Ldnull)
+            let invoke = typeof<FSharpFunc<unit,obj>>.GetMethod("Invoke")
+            il.Emit(OpCodes.Callvirt, invoke)
+            if mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> then 
+                il.Emit(OpCodes.Pop)
+            il.Emit(OpCodes.Ret)
+        | Handler(handlerName, e) -> emitEventHandler handlerName e
+        | Call(f) ->
+            emitReturnValueLookup f
+            // Emit Invoke
+            let args = mi.GetParameters() |> Array.map (fun arg -> arg.ParameterType)
+            if args.Length = 1 then il.Emit(OpCodes.Ldarg_1)
+            else
+                for i = 1 to args.Length do il.Emit(OpCodes.Ldarg, i)
+                il.Emit(OpCodes.Newobj, FSharpType.MakeTupleType(args).GetConstructor(args))
+            let invoke = typeof<FSharpFunc<obj,obj>>.GetMethod("Invoke")
+            il.Emit(OpCodes.Callvirt, invoke)
+            if mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> then il.Emit(OpCodes.Pop)
+            il.Emit(OpCodes.Ret)
+        | Raise(exnType) -> il.ThrowException(exnType)
+        | RaiseValue(exnValue) ->
+            emitReturnValueLookup exnValue
+            il.Emit(OpCodes.Throw)
+        il.MarkLabel(unmatched)
     /// Builds a mock from the specified calls
     let mock (abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list) =
         /// Stub name for abstract type
@@ -96,93 +187,8 @@ module internal CodeEmit =
             let overloads = groupedMethods |> Seq.tryFind (fst >> (=) abstractMethod)
             match overloads with
             | Some (_, overloads) ->
-                overloads |> Seq.toList |> List.rev |> Seq.iter (fun (mi,(args, result)) ->
-                    /// Label to goto if argument fails
-                    let unmatched = il.DefineLabel()
-                    /// Index of argument values for current method overload
-                    let argsLookupIndex = argsLookup.Count
-                    // Add arguments to lookup
-                    args |> Array.map (function Any -> null | Arg(value) -> value | Pred(f) -> f) |> argsLookup.Add
-                    // Emit argument matching
-                    args |> Seq.iteri (fun argIndex arg ->
-                        let emitArgBox () =
-                            il.Emit(OpCodes.Ldarg, argIndex+1)
-                            il.Emit(OpCodes.Box, abstractMethod.GetParameters().[argIndex].ParameterType)
-                        let emitArgLookup value =
-                            il.Emit(OpCodes.Ldarg_0)
-                            il.Emit(OpCodes.Ldfld, argsField)
-                            il.Emit(OpCodes.Ldc_I4, argsLookupIndex)
-                            il.Emit(OpCodes.Ldelem_Ref)
-                            il.Emit(OpCodes.Ldc_I4, argIndex)
-                            il.Emit(OpCodes.Ldelem_Ref)
-                        match arg with
-                        | Any -> ()
-                        | Arg(value) ->
-                            emitArgBox ()
-                            emitArgLookup value
-                            // Emit Object.Equals(box args.[argIndex+1], _args.[argsLookupIndex].[argIndex])
-                            il.EmitCall(OpCodes.Call, typeof<obj>.GetMethod("Equals",[|typeof<obj>;typeof<obj>|]), null) 
-                            il.Emit(OpCodes.Brfalse_S, unmatched)
-                        | Pred(f) ->
-                            emitArgLookup f
-                            il.Emit(OpCodes.Ldarg, argIndex+1)
-                            let argType = abstractMethod.GetParameters().[argIndex].ParameterType
-                            let invoke = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
-                            il.Emit(OpCodes.Callvirt, invoke)
-                            il.Emit(OpCodes.Brfalse_S, unmatched)
-                    )
-                    /// Emits _returnValues.[returnValuesIndex]
-                    let emitReturnValueLookup value =
-                        let returnValuesIndex = returnValues.Count
-                        returnValues.Add(value)
-                        il.Emit(OpCodes.Ldarg_0)
-                        il.Emit(OpCodes.Ldfld, returnValuesField)
-                        il.Emit(OpCodes.Ldc_I4, returnValuesIndex)
-                        il.Emit(OpCodes.Ldelem_Ref)
-                    /// Emits AddHandler/RemoveHandler
-                    let emitEventHandler handlerName e =
-                        emitReturnValueLookup e
-                        let handlerType = e.GetType().GetGenericArguments().[0]
-                        il.Emit(OpCodes.Ldarg_1)
-                        let t = typedefof<IDelegateEvent<_>>.MakeGenericType(handlerType)
-                        let invoke = t.GetMethod(handlerName)
-                        il.Emit(OpCodes.Callvirt, invoke)
-                        il.Emit(OpCodes.Ret)
-                    // Emit result
-                    match result with
-                    | Unit -> il.Emit(OpCodes.Ret)
-                    | ReturnValue(value, returnType) ->
-                        emitReturnValueLookup value
-                        il.Emit(OpCodes.Unbox_Any, returnType)
-                        il.Emit(OpCodes.Ret)
-                    | ReturnFunc(f) ->
-                        emitReturnValueLookup f
-                        // Emit Invoke
-                        il.Emit(OpCodes.Ldnull)
-                        let invoke = typeof<FSharpFunc<unit,obj>>.GetMethod("Invoke")
-                        il.Emit(OpCodes.Callvirt, invoke)
-                        if mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> then 
-                            il.Emit(OpCodes.Pop)
-                        il.Emit(OpCodes.Ret)
-                    | Handler(handlerName, e) -> emitEventHandler handlerName e
-                    | Call(f) ->
-                        emitReturnValueLookup f
-                        // Emit Invoke
-                        let args = mi.GetParameters() |> Array.map (fun arg -> arg.ParameterType)
-                        if args.Length = 1 then il.Emit(OpCodes.Ldarg_1)
-                        else
-                            for i = 1 to args.Length do il.Emit(OpCodes.Ldarg, i)
-                            il.Emit(OpCodes.Newobj, FSharpType.MakeTupleType(args).GetConstructor(args))
-                        let invoke = typeof<FSharpFunc<obj,obj>>.GetMethod("Invoke")
-                        il.Emit(OpCodes.Callvirt, invoke)
-                        if mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> then il.Emit(OpCodes.Pop)
-                        il.Emit(OpCodes.Ret)
-                    | Raise(exnType) -> il.ThrowException(exnType)
-                    | RaiseValue(exnValue) ->
-                        emitReturnValueLookup exnValue
-                        il.Emit(OpCodes.Throw)                      
-                    il.MarkLabel(unmatched)
-                )
+                let toOverload = generateOverload il (argsLookup,argsField) (returnValues,returnValuesField)
+                overloads |> Seq.toList |> List.rev |> Seq.iter toOverload
                 il.ThrowException(typeof<MatchFailureException>)
             | None ->
                 if abstractMethod.ReturnType = typeof<System.Void> || abstractMethod.ReturnType = typeof<unit>
