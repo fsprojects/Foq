@@ -1,13 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foq", "Foq\Foq.fsproj", "{B01AD807-6BCB-46C7-B2E8-C5BF9E0F1786}"
+# Visual Studio 2010
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foq.VS2010", "Foq\Foq.VS2010.fsproj", "{B01AD807-6BCB-46C7-B2E8-C5BF9E0F1786}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests", "Tests\Tests.fsproj", "{DD713C6A-BA21-4DF9-A847-A2BC8E90FDC6}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests.VS2010", "Tests\Tests.VS2010.fsproj", "{DD713C6A-BA21-4DF9-A847-A2BC8E90FDC6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.CSharp", "Tests.CSharp\Tests.CSharp.csproj", "{D1EA9F19-1C4A-4612-AA9C-935B3DDD7BF0}"
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests.Linq", "Tests.Linq\Tests.Linq.fsproj", "{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.CSharp.VS2010", "Tests.CSharp\Tests.CSharp.VS2010.csproj", "{D1EA9F19-1C4A-4612-AA9C-935B3DDD7BF0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,16 +47,6 @@ Global
 		{D1EA9F19-1C4A-4612-AA9C-935B3DDD7BF0}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{D1EA9F19-1C4A-4612-AA9C-935B3DDD7BF0}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{D1EA9F19-1C4A-4612-AA9C-935B3DDD7BF0}.Release|x86.ActiveCfg = Release|Any CPU
-		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
