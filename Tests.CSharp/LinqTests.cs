@@ -33,7 +33,7 @@ public class LinqTests
     {
         var mock =
             new Mock<IList<int>>()
-                .SetupAction(x => x.Clear()).Raises<System.ApplicationException>()
+                .SetupAction(x => x.Clear()).Raises<ApplicationException>()
                 .Create();
         Assert.Throws<ApplicationException>(
             () => mock.Clear()
@@ -46,7 +46,7 @@ public class LinqTests
         var message = "Message";
         var mock =
             new Mock<IList<int>>()
-                .SetupAction(x => x.Clear()).Raises(new System.ApplicationException(message))
+                .SetupAction(x => x.Clear()).Raises(new ApplicationException(message))
                 .Create();
         Assert.Throws<ApplicationException>(
             () => mock.Clear(),
@@ -81,7 +81,7 @@ public class LinqTests
     {
         var mock =
             new Mock<IList<int>>()
-                .SetupPropertySet(x => x[1]).Raises<System.ApplicationException>()
+                .SetupPropertySet(x => x[1]).Raises<ApplicationException>()
                 .Create();
         Assert.Throws<ApplicationException>(() =>
             mock[1] = 1
