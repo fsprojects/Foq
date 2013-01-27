@@ -340,3 +340,16 @@ type ``test members`` () =
                 .Setup(fun x -> <@ x.Arity1Method(this.N) @>).Returns(true)
                 .Create()
         Assert.IsTrue(mock.Arity1Method(this.N))
+
+open System.Collections.Generic
+
+[<Test>]
+let ``test strict mode`` () =
+    let mock = Mock<IList<int>>(MockMode.Strict).Create()
+    Assert.Throws<System.NotImplementedException>(fun() -> ignore mock.Count)
+    |> ignore
+
+[<Test>]
+let ``test loose mode`` () =
+    let mock = Mock<IList<int>>(MockMode.Loose).Create()
+    Assert.AreEqual(Unchecked.defaultof<int>, mock.Count)

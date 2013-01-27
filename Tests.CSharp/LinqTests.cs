@@ -102,4 +102,18 @@ public class LinqTests
         fe.Trigger(this, new PropertyChangedEventArgs(name));
         Assert.IsTrue(triggered);
     }
+
+    [Test]
+    public void TestStrictMode()
+    {
+        var mock = new Mock<IList<int>>(MockMode.Strict).Create();
+        Assert.Throws<NotImplementedException>(() => { var _ = mock.Count; });
+    }
+
+    [Test]
+    public void TestLooseMode()
+    {
+        var mock = new Mock<IList<int>>(MockMode.Loose).Create();
+        Assert.AreEqual(default(int), mock.Count);
+    }
 }

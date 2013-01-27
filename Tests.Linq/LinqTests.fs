@@ -72,3 +72,14 @@ let ``test event`` () =
     mock.PropertyChanged.Add(fun e -> triggered := (e.PropertyName = name))
     event.Trigger(mock, PropertyChangedEventArgs(name))
     Assert.IsTrue(triggered.Value)
+
+[<Test>]
+let ``test strict mode`` () =
+    let mock = Mock<IList<int>>(MockMode.Strict).Create()
+    Assert.Throws<NotImplementedException>(fun() -> ignore mock.Count)
+    |> ignore
+
+[<Test>]
+let ``test loose mode`` () =
+    let mock = Mock<IList<int>>(MockMode.Loose).Create()
+    Assert.AreEqual(Unchecked.defaultof<int>, mock.Count)
