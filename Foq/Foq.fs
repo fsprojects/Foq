@@ -250,7 +250,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     /// Abstract type
     let abstractType = typeof<'TAbstract>
     /// Converts argument expressions to Arg array
-    let toArgs args =
+    static let toArgs args =
         let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
         [|for arg in args ->
             match arg with
@@ -259,6 +259,16 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
                 Pred(pred.EvalUntyped())
             | expr -> expr.EvalUntyped() |> Arg |]
     /// Converts expression to a tuple of MethodInfo and Arg array
+    static let toCall' abstractType = function        
+        | Call(Some(x), mi, args) when x.Type = abstractType -> 
+            mi, toArgs args
+        | PropertyGet(Some(x), pi, args) when x.Type = abstractType -> 
+            pi.GetGetMethod(), toArgs args
+        | PropertySet(Some(x), pi, args, value) when x.Type = abstractType -> 
+            pi.GetSetMethod(), toArgs args
+        | expr -> 
+            raise <| NotSupportedException(expr.ToString())
+    /// Typed
     let toCall = function
         | Call(Some(x), mi, args) when x.Type = abstractType -> 
             mi, toArgs args
@@ -266,7 +276,16 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
             pi.GetGetMethod(), toArgs args
         | PropertySet(Some(x), pi, args, value) when x.Type = abstractType -> 
             pi.GetSetMethod(), toArgs args
-        | expr -> raise <| NotSupportedException(expr.ToString())
+        | expr -> 
+            raise <| NotSupportedException(expr.ToString())
+    static let rec toCallValue abstractType = function
+        | Sequential(x,y) ->
+            toCallValue abstractType x @ toCallValue abstractType y
+        | Call(None, mi, [lhs;rhs]) -> 
+            let mi, args = toCall' abstractType lhs
+            let returns = ReturnValue(rhs.EvalUntyped(), mi.ReturnType)
+            [mi,(args,returns)]
+        | expr -> invalidOp(expr.ToString())   
     /// Converts expression to corresponding event Add and Remove handlers
     let toHandlers = function
         | Call(None, mi, [Lambda(_,Call(Some(x),addHandler,_));
@@ -291,6 +310,11 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     member this.Create() = mock(MockMode.Strict = mode, typeof<'TAbstract>, calls) :?> 'TAbstract
     /// Creates a boxed instance of the abstract type
     static member Create(abstractType:Type) = mock(true, abstractType, [])
+    /// Creates a generic instance of the abstract type
+    static member With(f:'TAbstract -> Expr<_>) =
+        let default' = Unchecked.defaultof<'TAbstract>
+        let calls = toCallValue (typeof<'TAbstract>) (f default')
+        Mock<'TAbstract>(MockMode.Strict, calls).Create()
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (mode, call, calls) =
@@ -340,3 +364,7 @@ module It =
     let [<Wildcard>] inline any () : 'TArg = It.IsAny()
     /// Marks argument as matching specific values
     let [<Predicate>] inline is (f) : 'TArg = It.Is(f)
+
+[<AutoOpen>]
+module Operators =
+    let inline (-->) (source:'T) (value:'T) = ()
