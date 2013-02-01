@@ -82,11 +82,20 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
         let pi, args = toPropertyInfo expr.Body
         let call = pi.GetSetMethod(), args
         ActionBuilder<'TAbstract>(mode,call,calls)
-    /// Specifies an event of the abstract type as a quotation
+    /// Specifies an event of the abstract type
     member this.SetupEvent(name:string) =
         let e = abstractType.GetEvent(name)
         let handlers = e.GetAddMethod(), e.GetRemoveMethod()
         EventBuilder<'TAbstract>(mode,handlers,calls)
+    /// Specifies properties of the abstract type
+    member this.SetupProperties(anonymousObject:obj) =
+        let ps = anonymousObject.GetType().GetProperties()
+        let properties =
+            [for p in ps do                   
+                let mi = abstractType.GetProperty(p.Name).GetGetMethod()
+                let value = p.GetValue(anonymousObject, [||])
+                yield mi, ([||],ReturnValue(value,p.PropertyType))]
+        Mock<'TAbstract>(mode, properties @ calls)               
     /// Creates a generic instance of the abstract type
     member this.Create() = 
         mock(mode = MockMode.Strict,abstractType,calls) :?> 'TAbstract
