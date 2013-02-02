@@ -24,6 +24,7 @@ module internal CodeEmit =
         | Call of Func
         | Raise of Type
         | RaiseValue of exn
+
     /// Generates constructor
     let generateConstructor (typeBuilder:TypeBuilder) ps (genBody:ILGenerator -> unit) =
         let cons = typeBuilder.DefineConstructor(MethodAttributes.Public,CallingConventions.Standard,ps)
@@ -34,11 +35,13 @@ module internal CodeEmit =
         // Generate body
         genBody il
         il.Emit(OpCodes.Ret)
+
     /// Defines method
     let defineMethod (typeBuilder:TypeBuilder) (abstractMethod:MethodInfo) =
         let attr = MethodAttributes.Public ||| MethodAttributes.HideBySig ||| MethodAttributes.Virtual
         let args = abstractMethod.GetParameters() |> Array.map (fun arg -> arg.ParameterType)
         typeBuilder.DefineMethod(abstractMethod.Name, attr, abstractMethod.ReturnType, args)
+
     /// Generates method overload args match
     let generateArgs 
         (il:ILGenerator) (argsLookup:ResizeArray<Value[]>,argsField:FieldBuilder) 
@@ -83,6 +86,7 @@ module internal CodeEmit =
                 il.Emit(OpCodes.Callvirt, invoke)
                 il.Emit(OpCodes.Brfalse_S, unmatched)
         )
+
     /// Generates method return
     let generateReturn
         (il:ILGenerator) (returnValues:ResizeArray<Value>,returnValuesField:FieldBuilder) (mi:MethodInfo,result) =
@@ -136,6 +140,7 @@ module internal CodeEmit =
         | RaiseValue(exnValue) ->
             emitReturnValueLookup exnValue
             il.Emit(OpCodes.Throw)
+
     /// Generates method overload
     let generateOverload 
         (il:ILGenerator)
@@ -147,6 +152,7 @@ module internal CodeEmit =
         generateArgs il (argsLookup,argsField) (mi,args) unmatched
         generateReturn il (returnValues,returnValuesField) (mi,result)
         il.MarkLabel(unmatched)
+
     /// Builds a mock from the specified calls
     let mock (isStrict, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list) =
         /// Stub name for abstract type
@@ -254,7 +260,7 @@ module internal Reflection =
     /// Returns true if method has specified attribute
     let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
     /// Converts expression to a tuple of MethodInfo and Arg array
-    let toArgs args =        
+    let toArgs args =
         [|for arg in args ->
             match arg with
             | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
@@ -262,7 +268,7 @@ module internal Reflection =
                 Pred(pred.EvalUntyped())
             | expr -> expr.EvalUntyped() |> Arg |]
     /// Converts expression to a tuple of MethodInfo and Arg array
-    let toCall abstractType = function        
+    let toCall abstractType = function
         | Call(Some(x), mi, args) when x.Type = abstractType -> 
             mi, toArgs args
         | PropertyGet(Some(x), pi, args) when x.Type = abstractType -> 
@@ -272,9 +278,9 @@ module internal Reflection =
         | expr -> 
             raise <| NotSupportedException(expr.ToString())
     /// Converts expression to a tuple of MethodInfo, Arg array and Result
-    let rec toCallValue abstractType = function
+    let rec toCallResult abstractType = function
         | Sequential(x,y) ->
-            toCallValue abstractType x @ toCallValue abstractType y
+            toCallResult abstractType x @ toCallResult abstractType y
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<ArrowAttribute> mi -> 
             let mi, args = toCall abstractType lhs
             let returns = ReturnValue(rhs.EvalUntyped(), mi.ReturnType)
@@ -291,7 +297,7 @@ module internal Reflection =
 /// Generic mock type over abstract types and interfaces
 type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     /// Abstract type
-    let abstractType = typeof<'TAbstract>   
+    let abstractType = typeof<'TAbstract>
     /// Constructs mock builder
     new () = Mock(MockMode.Strict,[])
     new (mode) = Mock(mode,[])
@@ -312,7 +318,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     /// Creates a generic instance of the abstract type
     static member With(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
-        let calls = toCallValue (typeof<'TAbstract>) (f default')
+        let calls = toCallResult (typeof<'TAbstract>) (f default')
         Mock<'TAbstract>(MockMode.Strict, calls).Create()
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
@@ -366,5 +372,4 @@ module It =
 
 [<AutoOpen>]
 module Operators =
-    [<Arrow>]
-    let (-->) (source:'T) (value:'T) = ()
+    let [<Arrow>] (-->) (source:'T) (value:'T) = ()
