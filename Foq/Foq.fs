@@ -6,6 +6,10 @@ open System.Reflection.Emit
 open Microsoft.FSharp.Reflection
 open Microsoft.FSharp.Linq.QuotationEvaluation // F# PowerPack dependency
 
+/// Recorder interface for verification
+type IRecorder =
+    abstract Invocations : System.Collections.Generic.List<obj[]>
+
 module internal CodeEmit =
     /// Boxed value
     type Value = obj
@@ -141,6 +145,35 @@ module internal CodeEmit =
             emitReturnValueLookup exnValue
             il.Emit(OpCodes.Throw)
 
+    /// Generates recording of invocations
+    let generateRecordInvocation
+        (il:ILGenerator) (invocationsField:FieldBuilder) (abstractMethod:MethodInfo) =
+        let ps = abstractMethod.GetParameters()
+        // Create local array to store arguments
+        let local0 = il.DeclareLocal(typeof<obj[]>).LocalIndex
+        il.Emit(OpCodes.Ldc_I4, ps.Length + 1)
+        il.Emit(OpCodes.Newarr, typeof<obj>)
+        il.Emit(OpCodes.Stloc,local0)
+        // Store method
+        il.Emit(OpCodes.Ldloc,local0)
+        il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Call, typeof<MethodBase>.GetMethod("GetCurrentMethod"))
+        il.Emit(OpCodes.Stelem_Ref)
+        // Store arguments
+        for argIndex = 0 to ps.Length - 1 do
+            il.Emit(OpCodes.Ldloc, local0)
+            il.Emit(OpCodes.Ldc_I4, argIndex + 1)
+            il.Emit(OpCodes.Ldarg, argIndex + 1)
+            let argType = ps.[argIndex].ParameterType
+            il.Emit(OpCodes.Box, argType)
+            il.Emit(OpCodes.Stelem_Ref)
+        // Add invocation to invocations list
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldfld, invocationsField)
+        il.Emit(OpCodes.Ldloc, local0)
+        let invoke = typeof<System.Collections.Generic.List<obj[]>>.GetMethod("Add")
+        il.Emit(OpCodes.Callvirt, invoke)
+
     /// Generates method overload
     let generateOverload 
         (il:ILGenerator)
@@ -165,10 +198,11 @@ module internal CodeEmit =
         /// Builder for abstract type
         let typeBuilder = 
             let parent, interfaces = 
-                if abstractType.IsInterface 
+                if abstractType.IsInterface
                 then typeof<obj>, [|abstractType|]
                 else abstractType, [||]
             let attributes = TypeAttributes.Public ||| TypeAttributes.Class
+            let interfaces = [|yield typeof<IRecorder>; yield! interfaces|]
             moduleBuilder.DefineType(stubName, attributes, parent, interfaces)
         /// Field settings
         let fields = FieldAttributes.Private ||| FieldAttributes.InitOnly 
@@ -176,8 +210,10 @@ module internal CodeEmit =
         let returnValuesField = typeBuilder.DefineField("_returnValues", typeof<obj[]>, fields)
         /// Field for method arguments 
         let argsField = typeBuilder.DefineField("_args", typeof<obj[][]>, fields)
+        /// Field for invocation tracking
+        let invocationsField = typeBuilder.DefineField("_invocations", typeof<System.Collections.Generic.List<obj[]>>, fields)
         // Generate default constructor
-        generateConstructor typeBuilder [||] (fun _ -> ())
+        generateConstructor typeBuilder [||] (fun il -> ())
         // Set fields from constructor arguments
         let setFields (il:ILGenerator) =
             il.Emit(OpCodes.Ldarg_0)
@@ -186,8 +222,21 @@ module internal CodeEmit =
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Ldarg_2)
             il.Emit(OpCodes.Stfld, argsField)
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Newobj, typeof<System.Collections.Generic.List<obj[]>>.GetConstructor([||]))
+            il.Emit(OpCodes.Stfld, invocationsField)
         // Generate constructor overload
         generateConstructor typeBuilder [|typeof<obj[]>;typeof<obj[][]>|] setFields
+        /// Generates Recorder.Invocations property getter
+        let generateRecorderInvocationsPropertyGetter () =
+            let mi = (typeof<IRecorder>.GetProperty("Invocations").GetGetMethod())
+            let getter = defineMethod typeBuilder mi
+            let il = getter.GetILGenerator()
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldfld, invocationsField)
+            il.Emit(OpCodes.Ret)
+        // Generate Recorder.Invocations property getter
+        generateRecorderInvocationsPropertyGetter ()
         /// Method overloads grouped by type
         let groupedMethods = calls |> Seq.groupBy fst
         /// Method argument lookup
@@ -206,6 +255,8 @@ module internal CodeEmit =
             let methodBuilder = defineMethod typeBuilder abstractMethod
             /// IL generator
             let il = methodBuilder.GetILGenerator()
+            // Record invocation
+            generateRecordInvocation il invocationsField abstractMethod
             /// Method overloads defined for current method
             let overloads = groupedMethods |> Seq.tryFind (fst >> (=) abstractMethod)
             match overloads with
@@ -224,7 +275,7 @@ module internal CodeEmit =
                         let x = il.DeclareLocal(abstractMethod.ReturnType)
                         il.Emit(OpCodes.Ldloca_S, x.LocalIndex)
                         il.Emit(OpCodes.Initobj, abstractMethod.ReturnType)
-                        il.Emit(OpCodes.Ldloc_0)
+                        il.Emit(OpCodes.Ldloc, x.LocalIndex)
                         il.Emit(OpCodes.Ret)
             if abstractType.IsInterface then
                 typeBuilder.DefineMethodOverride(methodBuilder, abstractMethod)
