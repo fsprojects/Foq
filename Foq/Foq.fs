@@ -245,12 +245,10 @@ type WildcardAttribute() = inherit Attribute()
 [<AttributeUsage(AttributeTargets.Method)>]
 type PredicateAttribute() = inherit Attribute()
 
-/// Generic mock type over abstract types and interfaces
-type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
-    /// Abstract type
-    let abstractType = typeof<'TAbstract>
-    /// Converts argument expressions to Arg array
-    static let toArgs args =
+[<AutoOpen>]
+module internal Reflection =
+    /// Converts expression to a tuple of MethodInfo and Arg array
+    let toArgs args =
         let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
         [|for arg in args ->
             match arg with
@@ -259,7 +257,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
                 Pred(pred.EvalUntyped())
             | expr -> expr.EvalUntyped() |> Arg |]
     /// Converts expression to a tuple of MethodInfo and Arg array
-    static let toCall' abstractType = function        
+    let toCall abstractType = function        
         | Call(Some(x), mi, args) when x.Type = abstractType -> 
             mi, toArgs args
         | PropertyGet(Some(x), pi, args) when x.Type = abstractType -> 
@@ -268,43 +266,39 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
             pi.GetSetMethod(), toArgs args
         | expr -> 
             raise <| NotSupportedException(expr.ToString())
-    /// Typed
-    let toCall = function
-        | Call(Some(x), mi, args) when x.Type = abstractType -> 
-            mi, toArgs args
-        | PropertyGet(Some(x), pi, args) when x.Type = abstractType -> 
-            pi.GetGetMethod(), toArgs args
-        | PropertySet(Some(x), pi, args, value) when x.Type = abstractType -> 
-            pi.GetSetMethod(), toArgs args
-        | expr -> 
-            raise <| NotSupportedException(expr.ToString())
-    static let rec toCallValue abstractType = function
+    /// Converts expression to a tuple of MethodInfo, Arg array and Result
+    let rec toCallValue abstractType = function
         | Sequential(x,y) ->
             toCallValue abstractType x @ toCallValue abstractType y
         | Call(None, mi, [lhs;rhs]) -> 
-            let mi, args = toCall' abstractType lhs
+            let mi, args = toCall abstractType lhs
             let returns = ReturnValue(rhs.EvalUntyped(), mi.ReturnType)
             [mi,(args,returns)]
-        | expr -> invalidOp(expr.ToString())   
+        | expr -> invalidOp(expr.ToString())
     /// Converts expression to corresponding event Add and Remove handlers
-    let toHandlers = function
+    let toHandlers abstractType = function
         | Call(None, mi, [Lambda(_,Call(Some(x),addHandler,_));
                           Lambda(_,Call(Some(_),removeHandler,_));_]) 
                           when x.Type = abstractType -> 
             addHandler, removeHandler
-        | expr -> raise <| NotSupportedException(expr.ToString())
+        | expr -> raise <| NotSupportedException(expr.ToString())  
+
+/// Generic mock type over abstract types and interfaces
+type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
+    /// Abstract type
+    let abstractType = typeof<'TAbstract>   
     /// Constructs mock builder
     new () = Mock(MockMode.Strict,[])
     new (mode) = Mock(mode,[])
     /// Specifies a method or property of the abstract type as a quotation
     member this.Setup(f:'TAbstract -> Expr<'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
-        let call = toCall (f default')
+        let call = toCall abstractType (f default')
         ResultBuilder<'TAbstract,'TReturnValue>(mode,call,calls)
     /// Specifies an event of the abstract type as a quotation
     member this.SetupEvent(f:'TAbstract -> Expr<'TEvent>) =
         let default' = Unchecked.defaultof<'TAbstract>
-        let handlers = toHandlers (f default')
+        let handlers = toHandlers abstractType (f default')
         EventBuilder<'TAbstract,'TEvent>(mode,handlers,calls)
     /// Creates a generic instance of the abstract type
     member this.Create() = mock(MockMode.Strict = mode, typeof<'TAbstract>, calls) :?> 'TAbstract
