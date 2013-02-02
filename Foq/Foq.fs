@@ -245,11 +245,16 @@ type WildcardAttribute() = inherit Attribute()
 [<AttributeUsage(AttributeTargets.Method)>]
 type PredicateAttribute() = inherit Attribute()
 
+/// Arrow attribute
+[<AttributeUsage(AttributeTargets.Method)>]
+type ArrowAttribute() = inherit Attribute()
+
 [<AutoOpen>]
 module internal Reflection =
+    /// Returns true if method has specified attribute
+    let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
     /// Converts expression to a tuple of MethodInfo and Arg array
-    let toArgs args =
-        let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
+    let toArgs args =        
         [|for arg in args ->
             match arg with
             | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
@@ -270,7 +275,7 @@ module internal Reflection =
     let rec toCallValue abstractType = function
         | Sequential(x,y) ->
             toCallValue abstractType x @ toCallValue abstractType y
-        | Call(None, mi, [lhs;rhs]) -> 
+        | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<ArrowAttribute> mi -> 
             let mi, args = toCall abstractType lhs
             let returns = ReturnValue(rhs.EvalUntyped(), mi.ReturnType)
             [mi,(args,returns)]
@@ -361,4 +366,5 @@ module It =
 
 [<AutoOpen>]
 module Operators =
-    let inline (-->) (source:'T) (value:'T) = ()
+    [<Arrow>]
+    let (-->) (source:'T) (value:'T) = ()
