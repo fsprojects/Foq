@@ -371,6 +371,22 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResult (typeof<'TAbstract>) (f default')
         Mock<'TAbstract>(MockMode.Strict, calls).Create()
+    /// Verifies expected invocation count against specified mock instance member
+    static member Verify<'TAbstract, 'TReturnValue when 'TAbstract : not struct>
+            (mock:'TAbstract,f:'TAbstract->Expr<'TReturnValue>,expectedCount:int) =
+        let recorder = box mock :?> IRecorder
+        let default' = Unchecked.defaultof<'TAbstract>
+        let (mi,args) = toCall typeof<'TAbstract> (f default')
+        let actualCount = 
+            recorder.Invocations 
+            |> Seq.filter (fun xs -> 
+                let invoked = xs.[0] :?> MethodBase
+                invoked.Name = mi.Name &&
+                Array.zip (invoked.GetParameters()) (mi.GetParameters())
+                |> Array.forall (fun (a,b) -> a.ParameterType = b.ParameterType)
+            )
+            |> Seq.length
+        expectedCount = actualCount
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (mode, call, calls) =
