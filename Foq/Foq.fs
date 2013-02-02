@@ -371,22 +371,33 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResult (typeof<'TAbstract>) (f default')
         Mock<'TAbstract>(MockMode.Strict, calls).Create()
-    /// Verifies expected invocation count against specified mock instance member
+    /// Verifies expected count against instance member invocations on specified mock
     static member Verify<'TAbstract, 'TReturnValue when 'TAbstract : not struct>
-            (mock:'TAbstract,f:'TAbstract->Expr<'TReturnValue>,expectedCount:int) =
+            (mock:'TAbstract,f:'TAbstract->Expr<'TReturnValue>, expectedCalls:int) =
         let recorder = box mock :?> IRecorder
         let default' = Unchecked.defaultof<'TAbstract>
         let (mi,args) = toCall typeof<'TAbstract> (f default')
-        let actualCount = 
+        let matches arg actual =
+            match arg with
+            | Any -> true
+            | Arg(expected) -> obj.Equals(expected,actual)
+            | Pred(p) -> raise <| NotSupportedException()
+            | PredUntyped(p) -> (p :?> Func<obj,bool>).Invoke(actual)
+        let actualCalls = 
             recorder.Invocations 
             |> Seq.filter (fun xs -> 
                 let invoked = xs.[0] :?> MethodBase
                 invoked.Name = mi.Name &&
                 Array.zip (invoked.GetParameters()) (mi.GetParameters())
-                |> Array.forall (fun (a,b) -> a.ParameterType = b.ParameterType)
+                |> Array.mapi (fun i x -> i,x)
+                |> Array.forall (fun (i,(a,b)) -> 
+                    a.ParameterType = b.ParameterType &&
+                    matches (args.[i]) (xs.[i+1])
+                )
             )
             |> Seq.length
-        expectedCount = actualCount
+        if expectedCalls <> actualCalls then 
+            failwith "Expected invocations on the mock not met"
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (mode, call, calls) =
