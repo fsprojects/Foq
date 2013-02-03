@@ -319,15 +319,15 @@ module internal Reflection =
                 Pred(pred.EvalUntyped())
             | expr -> expr.EvalUntyped() |> Arg |]
     /// Converts expression to a tuple of MethodInfo and Arg array
-    let toCall abstractType = function
-        | Call(Some(x), mi, args) when x.Type = abstractType -> 
-            mi, toArgs args
-        | PropertyGet(Some(x), pi, args) when x.Type = abstractType -> 
-            pi.GetGetMethod(), toArgs args
-        | PropertySet(Some(x), pi, args, value) when x.Type = abstractType -> 
-            pi.GetSetMethod(), toArgs args
-        | expr -> 
-            raise <| NotSupportedException(expr.ToString())
+    let toCallUntyped = function
+        | Call(Some(x), mi, args) -> Some(x, mi, toArgs args)
+        | PropertyGet(Some(x), pi, args) -> Some(x, pi.GetGetMethod(), toArgs args)
+        | PropertySet(Some(x), pi, args, value) -> Some(x, pi.GetSetMethod(), toArgs args)
+        | expr -> None
+    let toCall abstractType expr =
+        match toCallUntyped expr with
+        | Some(x, mi, args) when x.Type = abstractType -> mi, args
+        | _ -> raise <| NotSupportedException(expr.ToString())
     /// Converts expression to a tuple of MethodInfo, Arg array and Result
     let rec toCallResult abstractType = function
         | Sequential(x,y) ->
@@ -371,35 +371,6 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResult (typeof<'TAbstract>) (f default')
         Mock<'TAbstract>(MockMode.Strict, calls).Create()
-    /// Verifies expected count against instance member invocations on specified mock
-    static member Verify<'TAbstract, 'TReturnValue when 'TAbstract : not struct>
-            (mock:'TAbstract,f:'TAbstract->Expr<'TReturnValue>, expectedCalls:int) =
-        let recorded = box mock :?> IRecorder
-        let default' = Unchecked.defaultof<'TAbstract>
-        let (mi,args) = toCall typeof<'TAbstract> (f default')
-        let matches argType arg actual =
-            match arg with
-            | Any -> true
-            | Arg(expected) -> obj.Equals(expected,actual)
-            | Pred(p) ->
-                let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
-                f.Invoke(p,[|actual|]) :?> bool
-            | PredUntyped(p) -> (p :?> Func<obj,bool>).Invoke(actual)
-        let actualCalls = 
-            recorded.Invocations 
-            |> Seq.filter (fun xs -> 
-                let invoked = xs.[0] :?> MethodBase
-                invoked.Name = mi.Name &&
-                Array.zip (invoked.GetParameters()) (mi.GetParameters())
-                |> Array.mapi (fun i x -> i,x)
-                |> Array.forall (fun (i,(a,b)) -> 
-                    a.ParameterType = b.ParameterType &&
-                    matches a.ParameterType (args.[i]) (xs.[i+1])
-                )
-            )
-            |> Seq.length
-        if expectedCalls <> actualCalls then 
-            failwith "Expected invocations on the mock not met"
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (mode, call, calls) =
@@ -435,6 +406,39 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
                          (add, ([|Any|], Handler("AddHandler",value)))::
                          (remove, ([|Any|], Handler("RemoveHandler",value)))::
                          calls)
+
+type Mock =
+    /// Verifies expected count against instance member invocations on specified mock
+    static member Verify(expr:Expr, expectedCalls:int) =
+        let (x,mi,args) = toCallUntyped expr |> function Some(x) -> x | None -> failwith "Bang"
+        let mock = x.EvalUntyped()
+        let recorded =
+            match mock with
+            | :? IRecorder as recorder -> recorder
+            | _ -> failwith "Object instance is not a mock"
+        let matches argType arg actual =
+            match arg with
+            | Any -> true
+            | Arg(expected) -> obj.Equals(expected,actual)
+            | Pred(p) ->
+                let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
+                f.Invoke(p,[|actual|]) :?> bool
+            | PredUntyped(p) -> (p :?> Func<obj,bool>).Invoke(actual)
+        let actualCalls = 
+            recorded.Invocations 
+            |> Seq.filter (fun xs -> 
+                let invoked = xs.[0] :?> MethodBase
+                invoked.Name = mi.Name &&
+                Array.zip (invoked.GetParameters()) (mi.GetParameters())
+                |> Array.mapi (fun i x -> i,x)
+                |> Array.forall (fun (i,(a,b)) -> 
+                    a.ParameterType = b.ParameterType &&
+                    matches a.ParameterType (args.[i]) (xs.[i+1])
+                )
+            )
+            |> Seq.length
+        if expectedCalls <> actualCalls then 
+            failwith "Expected invocations on the mock not met"
 
 [<Sealed>]
 type It private () =
