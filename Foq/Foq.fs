@@ -374,17 +374,19 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     /// Verifies expected count against instance member invocations on specified mock
     static member Verify<'TAbstract, 'TReturnValue when 'TAbstract : not struct>
             (mock:'TAbstract,f:'TAbstract->Expr<'TReturnValue>, expectedCalls:int) =
-        let recorder = box mock :?> IRecorder
+        let recorded = box mock :?> IRecorder
         let default' = Unchecked.defaultof<'TAbstract>
         let (mi,args) = toCall typeof<'TAbstract> (f default')
-        let matches arg actual =
+        let matches argType arg actual =
             match arg with
             | Any -> true
             | Arg(expected) -> obj.Equals(expected,actual)
-            | Pred(p) -> raise <| NotSupportedException()
+            | Pred(p) ->
+                let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
+                f.Invoke(p,[|actual|]) :?> bool
             | PredUntyped(p) -> (p :?> Func<obj,bool>).Invoke(actual)
         let actualCalls = 
-            recorder.Invocations 
+            recorded.Invocations 
             |> Seq.filter (fun xs -> 
                 let invoked = xs.[0] :?> MethodBase
                 invoked.Name = mi.Name &&
@@ -392,7 +394,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
                 |> Array.mapi (fun i x -> i,x)
                 |> Array.forall (fun (i,(a,b)) -> 
                     a.ParameterType = b.ParameterType &&
-                    matches (args.[i]) (xs.[i+1])
+                    matches a.ParameterType (args.[i]) (xs.[i+1])
                 )
             )
             |> Seq.length
