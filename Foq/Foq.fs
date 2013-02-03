@@ -407,9 +407,10 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
                          (remove, ([|Any|], Handler("RemoveHandler",value)))::
                          calls)
 
-type Mock =
-    /// Verifies expected count against instance member invocations on specified mock
-    static member Verify(expr:Expr, expectedCalls:int) =
+[<AutoOpen>]
+module internal Verification =
+    /// Returns invocation count of specificed expression
+    let invocations expr =
         let (x,mi,args) = toCallUntyped expr
         let mock =
             match x.EvalUntyped() with
@@ -437,8 +438,14 @@ type Mock =
                 )
             )
             |> Seq.length
+        actualCalls
+
+type Mock =
+    /// Verifies expected call count against instance member invocations on specified mock
+    static member Verify(expr:Expr, expectedCalls:int) =
+        let actualCalls = invocations expr
         if expectedCalls <> actualCalls then 
-            failwith "Expected invocations on the mock not met"
+            failwith "Expected invocations on the mock not met" 
 
 [<Sealed>]
 type It private () =
