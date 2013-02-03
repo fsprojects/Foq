@@ -8,9 +8,12 @@ open Microsoft.FSharp.Linq.QuotationEvaluation // F# PowerPack dependency
 
 /// Mock object interface for verification
 type IMockObject =
-    abstract Invocations : System.Collections.Generic.List<obj[]>
+    abstract Invocations : Invocations
+/// Member invocation record
 and Invocation = { Method : MethodBase; Args : obj[] }
-    
+/// List of invocations
+and Invocations = System.Collections.Generic.List<Invocation>
+
 module internal CodeEmit =
     /// Boxed value
     type Value = obj
@@ -152,18 +155,13 @@ module internal CodeEmit =
         let ps = abstractMethod.GetParameters()
         // Create local array to store arguments
         let local0 = il.DeclareLocal(typeof<obj[]>).LocalIndex
-        il.Emit(OpCodes.Ldc_I4, ps.Length + 1)
+        il.Emit(OpCodes.Ldc_I4, ps.Length)
         il.Emit(OpCodes.Newarr, typeof<obj>)
         il.Emit(OpCodes.Stloc,local0)
-        // Store method
-        il.Emit(OpCodes.Ldloc,local0)
-        il.Emit(OpCodes.Ldc_I4_0)
-        il.Emit(OpCodes.Call, typeof<MethodBase>.GetMethod("GetCurrentMethod"))
-        il.Emit(OpCodes.Stelem_Ref)
         // Store arguments
         for argIndex = 0 to ps.Length - 1 do
             il.Emit(OpCodes.Ldloc, local0)
-            il.Emit(OpCodes.Ldc_I4, argIndex + 1)
+            il.Emit(OpCodes.Ldc_I4, argIndex)
             il.Emit(OpCodes.Ldarg, argIndex + 1)
             let argType = ps.[argIndex].ParameterType
             il.Emit(OpCodes.Box, argType)
@@ -171,7 +169,9 @@ module internal CodeEmit =
         // Add invocation to invocations list
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Ldfld, invocationsField)
+        il.Emit(OpCodes.Call, typeof<MethodBase>.GetMethod("GetCurrentMethod"))
         il.Emit(OpCodes.Ldloc, local0)
+        il.Emit(OpCodes.Newobj, typeof<Invocation>.GetConstructor([|typeof<MethodBase>;typeof<obj[]>|]))
         let invoke = typeof<System.Collections.Generic.List<obj[]>>.GetMethod("Add")
         il.Emit(OpCodes.Callvirt, invoke)
 
@@ -190,12 +190,12 @@ module internal CodeEmit =
     /// Builds a mock from the specified calls
     let mock (isStrict, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list) =
         /// Stub name for abstract type
-        let stubName = "Stub" + abstractType.Name
+        let mockName = "Mock" + abstractType.Name
         /// Builder for assembly
         let assemblyBuilder =
-            AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(stubName),AssemblyBuilderAccess.Run)
+            AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(mockName),AssemblyBuilderAccess.Run)
         /// Builder for module
-        let moduleBuilder = assemblyBuilder.DefineDynamicModule(stubName+".dll")
+        let moduleBuilder = assemblyBuilder.DefineDynamicModule(mockName+".dll")
         /// Builder for abstract type
         let typeBuilder = 
             let parent, interfaces = 
@@ -204,7 +204,7 @@ module internal CodeEmit =
                 else abstractType, [||]
             let attributes = TypeAttributes.Public ||| TypeAttributes.Class
             let interfaces = [|yield typeof<IMockObject>; yield! interfaces|]
-            moduleBuilder.DefineType(stubName, attributes, parent, interfaces)
+            moduleBuilder.DefineType(mockName, attributes, parent, interfaces)
         /// Field settings
         let fields = FieldAttributes.Private ||| FieldAttributes.InitOnly 
         /// Field for method return values
@@ -212,7 +212,7 @@ module internal CodeEmit =
         /// Field for method arguments 
         let argsField = typeBuilder.DefineField("_args", typeof<obj[][]>, fields)
         /// Field for invocation tracking
-        let invocationsField = typeBuilder.DefineField("_invocations", typeof<System.Collections.Generic.List<obj[]>>, fields)
+        let invocationsField = typeBuilder.DefineField("_invocations", typeof<Invocations>, fields)
         // Generate default constructor
         generateConstructor typeBuilder [||] (fun il -> ())
         // Set fields from constructor arguments
@@ -224,7 +224,7 @@ module internal CodeEmit =
             il.Emit(OpCodes.Ldarg_2)
             il.Emit(OpCodes.Stfld, argsField)
             il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Newobj, typeof<System.Collections.Generic.List<obj[]>>.GetConstructor([||]))
+            il.Emit(OpCodes.Newobj, typeof<Invocations>.GetConstructor([||]))
             il.Emit(OpCodes.Stfld, invocationsField)
         // Generate constructor overload
         generateConstructor typeBuilder [|typeof<obj[]>;typeof<obj[][]>|] setFields
@@ -427,20 +427,20 @@ module internal Verification =
             | PredUntyped(p) -> (p :?> Func<obj,bool>).Invoke(actual)
         let actualCalls = 
             mock.Invocations 
-            |> Seq.filter (fun xs -> 
-                let invoked = xs.[0] :?> MethodBase
-                invoked.Name = mi.Name &&
-                invoked.GetParameters().Length = mi.GetParameters().Length &&
-                Array.zip (invoked.GetParameters()) (mi.GetParameters())
+            |> Seq.filter (fun invoked ->
+                invoked.Method.Name = mi.Name &&
+                invoked.Method.GetParameters().Length = mi.GetParameters().Length &&
+                Array.zip (invoked.Method.GetParameters()) (mi.GetParameters())
                 |> Array.mapi (fun i x -> i,x)
                 |> Array.forall (fun (i,(a,b)) -> 
                     a.ParameterType = b.ParameterType &&
-                    matches a.ParameterType (args.[i]) (xs.[i+1])
+                    matches a.ParameterType (args.[i]) (invoked.Args.[i])
                 )
             )
             |> Seq.length
         actualCalls
 
+/// Specifies valid invocation count
 type Times private (predicate:int -> bool) =
     member __.Match(n) = predicate(n)       
     static member Exactly(n:int) = Times((=) n)
