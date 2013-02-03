@@ -6,8 +6,8 @@ open System.Reflection.Emit
 open Microsoft.FSharp.Reflection
 open Microsoft.FSharp.Linq.QuotationEvaluation // F# PowerPack dependency
 
-/// Recorder interface for verification
-type IRecorder =
+/// Mock object interface for verification
+type IMockObject =
     abstract Invocations : System.Collections.Generic.List<obj[]>
 
 module internal CodeEmit =
@@ -202,7 +202,7 @@ module internal CodeEmit =
                 then typeof<obj>, [|abstractType|]
                 else abstractType, [||]
             let attributes = TypeAttributes.Public ||| TypeAttributes.Class
-            let interfaces = [|yield typeof<IRecorder>; yield! interfaces|]
+            let interfaces = [|yield typeof<IMockObject>; yield! interfaces|]
             moduleBuilder.DefineType(stubName, attributes, parent, interfaces)
         /// Field settings
         let fields = FieldAttributes.Private ||| FieldAttributes.InitOnly 
@@ -229,7 +229,7 @@ module internal CodeEmit =
         generateConstructor typeBuilder [|typeof<obj[]>;typeof<obj[][]>|] setFields
         /// Generates Recorder.Invocations property getter
         let generateRecorderInvocationsPropertyGetter () =
-            let mi = (typeof<IRecorder>.GetProperty("Invocations").GetGetMethod())
+            let mi = (typeof<IMockObject>.GetProperty("Invocations").GetGetMethod())
             let getter = defineMethod typeBuilder mi
             let il = getter.GetILGenerator()
             il.Emit(OpCodes.Ldarg_0)
@@ -320,13 +320,13 @@ module internal Reflection =
             | expr -> expr.EvalUntyped() |> Arg |]
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toCallUntyped = function
-        | Call(Some(x), mi, args) -> Some(x, mi, toArgs args)
-        | PropertyGet(Some(x), pi, args) -> Some(x, pi.GetGetMethod(), toArgs args)
-        | PropertySet(Some(x), pi, args, value) -> Some(x, pi.GetSetMethod(), toArgs args)
-        | expr -> None
+        | Call(Some(x), mi, args) -> x, mi, toArgs args
+        | PropertyGet(Some(x), pi, args) -> x, pi.GetGetMethod(), toArgs args
+        | PropertySet(Some(x), pi, args, value) -> x, pi.GetSetMethod(), toArgs args
+        | expr -> raise <| NotSupportedException(expr.ToString())
     let toCall abstractType expr =
         match toCallUntyped expr with
-        | Some(x, mi, args) when x.Type = abstractType -> mi, args
+        | x, mi, args when x.Type = abstractType -> mi, args
         | _ -> raise <| NotSupportedException(expr.ToString())
     /// Converts expression to a tuple of MethodInfo, Arg array and Result
     let rec toCallResult abstractType = function
@@ -410,11 +410,10 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
 type Mock =
     /// Verifies expected count against instance member invocations on specified mock
     static member Verify(expr:Expr, expectedCalls:int) =
-        let (x,mi,args) = toCallUntyped expr |> function Some(x) -> x | None -> failwith "Bang"
-        let mock = x.EvalUntyped()
-        let recorded =
-            match mock with
-            | :? IRecorder as recorder -> recorder
+        let (x,mi,args) = toCallUntyped expr
+        let mock =
+            match x.EvalUntyped() with
+            | :? IMockObject as mock -> mock
             | _ -> failwith "Object instance is not a mock"
         let matches argType arg actual =
             match arg with
@@ -425,10 +424,11 @@ type Mock =
                 f.Invoke(p,[|actual|]) :?> bool
             | PredUntyped(p) -> (p :?> Func<obj,bool>).Invoke(actual)
         let actualCalls = 
-            recorded.Invocations 
+            mock.Invocations 
             |> Seq.filter (fun xs -> 
                 let invoked = xs.[0] :?> MethodBase
                 invoked.Name = mi.Name &&
+                invoked.GetParameters().Length = mi.GetParameters().Length &&
                 Array.zip (invoked.GetParameters()) (mi.GetParameters())
                 |> Array.mapi (fun i x -> i,x)
                 |> Array.forall (fun (i,(a,b)) -> 
