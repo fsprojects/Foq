@@ -9,7 +9,8 @@ open Microsoft.FSharp.Linq.QuotationEvaluation // F# PowerPack dependency
 /// Mock object interface for verification
 type IMockObject =
     abstract Invocations : System.Collections.Generic.List<obj[]>
-
+and Invocation = { Method : MethodBase; Args : obj[] }
+    
 module internal CodeEmit =
     /// Boxed value
     type Value = obj
@@ -440,11 +441,27 @@ module internal Verification =
             |> Seq.length
         actualCalls
 
+type Times private (predicate:int -> bool) =
+    member __.Match(n) = predicate(n)       
+    static member Exactly(n:int) = Times((=) n)
+    static member AtLeast(n:int) = Times((>=) n)
+    static member AtMost(n:int) = Times((<=) n)
+    static member Never() = Times((=) 0)
+    static member Once() = Times((=) 1)
+
+[<AutoOpen;CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Times =
+    let exactly = Times.Exactly
+    let atleast = Times.AtLeast
+    let atmost = Times.AtMost
+    let never = Times.Never()
+    let once = Times.Once()
+
 type Mock =
     /// Verifies expected call count against instance member invocations on specified mock
-    static member Verify(expr:Expr, expectedCalls:int) =
+    static member Verify(expr:Expr, times:Times) =
         let actualCalls = invocations expr
-        if expectedCalls <> actualCalls then 
+        if not <| times.Match(actualCalls) then 
             failwith "Expected invocations on the mock not met" 
 
 [<Sealed>]
