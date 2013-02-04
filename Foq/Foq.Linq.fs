@@ -43,9 +43,8 @@ module internal Reflection =
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toMethodInfo (expr:Expression) =
         match expr with
-        | :? MethodCallExpression as call ->
-            call.Method, toArgs call.Arguments
-        | _ -> raise <| NotSupportedException(expr.GetType().ToString())
+        | :? MethodCallExpression as call -> call.Method, toArgs call.Arguments
+        | _ -> raise <| NotSupportedException(expr.GetType().ToString())    
     /// Converts expression to a tuple of PropertyInfo and Arg array
     let toPropertyInfo (expr:Expression) =
         match expr with
@@ -141,11 +140,20 @@ open Foq.Verification
 
 type Mock =
     /// Verifies specified function is called at least once on specified mock
-    static member VerifyFunc<'TAbstract, 'TReturnValue when 'TAbstract : not struct>
-        (mock:'TAbstract,expr:Expression<Func<'TAbstract,'TReturnValue>>) =
-        let mi,args = toMethodInfo expr.Body
+    static member VerifyFunc<'TReturnValue>
+        (expr:Expression<Func<'TReturnValue>>) =
+        let instance, mi, args =
+            match expr.Body with
+            | :? MethodCallExpression as call -> 
+                match call.Object with
+                | :? MemberExpression as me ->
+                    let ge = Expression<Func<obj>>.Lambda<Func<obj>>(me)
+                    let caller = ge.Compile()                    
+                    caller.Invoke(), call.Method, toArgs call.Arguments
+                | _ -> raise <| NotSupportedException()
+            | _ -> raise <| NotSupportedException()
         let mock =
-            match box mock with
+            match instance with
             | :? Foq.IMockObject as mock -> mock
             | _ -> invalidArg "mock" "Object instance is not a mock"
         let actualCalls = countInvocations mock mi args
