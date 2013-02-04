@@ -319,14 +319,15 @@ module internal Reflection =
             | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> 
                 Pred(pred.EvalUntyped())
             | expr -> expr.EvalUntyped() |> Arg |]
-    /// Converts expression to a tuple of MethodInfo and Arg array
-    let toCallUntyped = function
+    /// Converts expression to a tuple of Expression, MethodInfo and Arg array
+    let toCall = function
         | Call(Some(x), mi, args) -> x, mi, toArgs args
         | PropertyGet(Some(x), pi, args) -> x, pi.GetGetMethod(), toArgs args
         | PropertySet(Some(x), pi, args, value) -> x, pi.GetSetMethod(), toArgs args
         | expr -> raise <| NotSupportedException(expr.ToString())
-    let toCall abstractType expr =
-        match toCallUntyped expr with
+    /// Converts expression to a tuple of MethodInfo and Arg array
+    let toCallOfType abstractType expr =
+        match toCall expr with
         | x, mi, args when x.Type = abstractType -> mi, args
         | _ -> raise <| NotSupportedException(expr.ToString())
     /// Converts expression to a tuple of MethodInfo, Arg array and Result
@@ -334,7 +335,7 @@ module internal Reflection =
         | Sequential(x,y) ->
             toCallResult abstractType x @ toCallResult abstractType y
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<ArrowAttribute> mi -> 
-            let mi, args = toCall abstractType lhs
+            let mi, args = toCallOfType abstractType lhs
             let returns = ReturnValue(rhs.EvalUntyped(), mi.ReturnType)
             [mi,(args,returns)]
         | expr -> invalidOp(expr.ToString())
@@ -356,7 +357,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     /// Specifies a method or property of the abstract type as a quotation
     member this.Setup(f:'TAbstract -> Expr<'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
-        let call = toCall abstractType (f default')
+        let call = toCallOfType abstractType (f default')
         ResultBuilder<'TAbstract,'TReturnValue>(mode,call,calls)
     /// Specifies an event of the abstract type as a quotation
     member this.SetupEvent(f:'TAbstract -> Expr<'TEvent>) =
@@ -410,35 +411,37 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
 
 [<AutoOpen>]
 module internal Verification =
+    /// Return true if methods match
+    let methodsMatch (a:MethodBase) (b:MethodBase) =
+        a.Name = b.Name &&
+        a.GetParameters().Length = b.GetParameters().Length &&
+        Array.zip (a.GetParameters()) (b.GetParameters())       
+        |> Array.forall (fun (a,b) -> a.ParameterType = b.ParameterType)
+    /// Returns true if arguments match
+    let argsMatch argType expectedArg actualValue =
+        match expectedArg with
+        | Any -> true
+        | Arg(expected) -> obj.Equals(expected,actualValue)
+        | Pred(p) ->
+            let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
+            f.Invoke(p,[|actualValue|]) :?> bool
+        | PredUntyped(p) -> raise <| NotSupportedException()
     /// Returns invocation count of specificed expression
     let invocations expr =
-        let (x,mi,args) = toCallUntyped expr
+        let (x,expectedMethod,expectedArgs) = toCall expr
         let mock =
             match x.EvalUntyped() with
             | :? IMockObject as mock -> mock
             | _ -> failwith "Object instance is not a mock"
-        let matches argType arg actual =
-            match arg with
-            | Any -> true
-            | Arg(expected) -> obj.Equals(expected,actual)
-            | Pred(p) ->
-                let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
-                f.Invoke(p,[|actual|]) :?> bool
-            | PredUntyped(p) -> (p :?> Func<obj,bool>).Invoke(actual)
-        let actualCalls = 
-            mock.Invocations 
-            |> Seq.filter (fun invoked ->
-                invoked.Method.Name = mi.Name &&
-                invoked.Method.GetParameters().Length = mi.GetParameters().Length &&
-                Array.zip (invoked.Method.GetParameters()) (mi.GetParameters())
-                |> Array.mapi (fun i x -> i,x)
-                |> Array.forall (fun (i,(a,b)) -> 
-                    a.ParameterType = b.ParameterType &&
-                    matches a.ParameterType (args.[i]) (invoked.Args.[i])
-                )
-            )
-            |> Seq.length
-        actualCalls
+        mock.Invocations 
+        |> Seq.filter (fun invoked ->
+            let ps = expectedMethod.GetParameters()
+            methodsMatch expectedMethod invoked.Method &&
+            Array.zip expectedArgs invoked.Args
+            |> Array.mapi (fun i (e,a) -> ps.[i].ParameterType,e,a)
+            |> Array.forall (fun (t,e,a) -> argsMatch t e a)
+        )
+        |> Seq.length
 
 /// Specifies valid invocation count
 type Times private (predicate:int -> bool) =
