@@ -116,4 +116,12 @@ public class LinqTests
         var mock = new Mock<IList<int>>(MockMode.Loose).Create();
         Assert.AreEqual(default(int), mock.Count);
     }
+
+    [Test]
+    public void TestVerifyFunc()
+    {
+        var list = new Mock<IList<int>>().SetupFunc(mock => mock.Contains(1)).Returns(true).Create();
+        var t = list.Contains(1);     
+        Mock.VerifyFunc<IList<int>, bool>(list, mock => mock.Contains(1));
+    }
 }

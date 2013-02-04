@@ -5,13 +5,8 @@ open System.Linq.Expressions
 open System.Reflection
 open Foq.CodeEmit
 
-/// Mock mode
-type MockMode = Strict = 0 | Loose = 1
-
-/// Generic stub type over abstract types and interfaces
-type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
-    /// Abstract type
-    let abstractType = typeof<'TAbstract>
+[<AutoOpen>]
+module internal Reflection =
     /// Converts argument expressions to Arg array
     let toArgs (args:Expression seq) =
         let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
@@ -63,6 +58,14 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
                 |> Seq.find (fun pi -> pi.GetGetMethod() = call.Method)
             pi, toArgs call.Arguments
         | _ -> raise <| NotSupportedException(expr.GetType().ToString())
+
+/// Mock mode
+type MockMode = Strict = 0 | Loose = 1
+
+/// Generic stub type over abstract types and interfaces
+type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
+    /// Abstract type
+    let abstractType = typeof<'TAbstract>
     /// Constructs mock builder
     new () = Mock(MockMode.Strict,[])
     new (mode) = Mock(mode,[])
@@ -133,6 +136,21 @@ and EventBuilder<'TAbstract when 'TAbstract : not struct>
                          (add, ([|Any|], Handler("AddHandler",value)))::
                          (remove, ([|Any|], Handler("RemoveHandler",value)))::
                          calls)
+
+open Foq.Verification
+
+type Mock =
+    /// Verifies specified function is called at least once on specified mock
+    static member VerifyFunc<'TAbstract, 'TReturnValue when 'TAbstract : not struct>
+        (mock:'TAbstract,expr:Expression<Func<'TAbstract,'TReturnValue>>) =
+        let mi,args = toMethodInfo expr.Body
+        let mock =
+            match box mock with
+            | :? Foq.IMockObject as mock -> mock
+            | _ -> invalidArg "mock" "Object instance is not a mock"
+        let actualCalls = countInvocations mock mi args
+        if not <| Foq.Times.AtLeastOnce().Match(actualCalls) then
+            failwith "Expected invocations on the mock not met"
 
 [<Sealed>]
 type It private () =

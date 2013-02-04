@@ -410,6 +410,27 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
                          (remove, ([|Any|], Handler("RemoveHandler",value)))::
                          calls)
 
+/// Specifies valid invocation count
+type Times private (predicate:int -> bool) =
+    member __.Match(n) = predicate(n)       
+    static member Exactly(n:int) = Times((=) n)
+    static member AtLeast(n:int) = Times((<=) n)
+    static member AtLeastOnce() = Times.AtLeast(1)
+    static member AtMost(n:int) = Times((>=) n)
+    static member AtMostOnce() = Times.AtMost(1)
+    static member Never() = Times((=) 0)
+    static member Once() = Times((=) 1)
+
+[<AutoOpen;CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Times =
+    let exactly = Times.Exactly
+    let atleast = Times.AtLeast
+    let atleastonce = Times.AtLeastOnce()
+    let atmost = Times.AtMost
+    let atmostonce = Times.AtMostOnce()
+    let never = Times.Never()
+    let once = Times.Once()
+
 module internal Verification =
     /// Return true if methods match
     let methodsMatch (a:MethodBase) (b:MethodBase) =
@@ -427,13 +448,8 @@ module internal Verification =
             f.Invoke(p,[|actualValue|]) :?> bool
         | PredUntyped(p) -> raise <| NotSupportedException()
     /// Returns invocation count matching specificed expression
-    let countInvocations expr =
-        let (x,expectedMethod,expectedArgs) = toCall expr
-        let mock =
-            match x.EvalUntyped() with
-            | :? IMockObject as mock -> mock
-            | _ -> failwith "Object instance is not a mock"      
-        mock.Invocations 
+    let countInvocations (mock:IMockObject) (expectedMethod:MethodBase) (expectedArgs:Arg[]) =
+        mock.Invocations
         |> Seq.filter (fun invoked ->
             let ps = expectedMethod.GetParameters()
             methodsMatch expectedMethod invoked.Method &&
@@ -443,34 +459,18 @@ module internal Verification =
         )
         |> Seq.length
 
-/// Specifies valid invocation count
-type Times private (predicate:int -> bool) =
-    member __.Match(n) = predicate(n)       
-    static member Exactly(n:int) = Times((=) n)
-    static member AtLeast(n:int) = Times((>=) n)
-    static member AtLeastOnce() = Times.AtLeast(1)
-    static member AtMost(n:int) = Times((<=) n)
-    static member AtMostOnce() = Times.AtMost(1)
-    static member Never() = Times((=) 0)
-    static member Once() = Times((=) 1)
-
-[<AutoOpen;CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module Times =
-    let exactly = Times.Exactly
-    let atleast = Times.AtLeast
-    let atleastonce = Times.AtLeastOnce()
-    let atmost = Times.AtMost
-    let atmostonce = Times.AtMostOnce()
-    let never = Times.Never()
-    let once = Times.Once()
-
 open Verification
 
 type Mock =
     /// Verifies expected call count against instance member invocations on specified mock
-    static member Verify(expr:Expr, times:Times) =
-        let actualCalls = countInvocations expr
-        if not <| times.Match(actualCalls) then 
+    static member Verify(expr:Expr, expectedTimes:Times) =
+        let (x,expectedMethod,expectedArgs) = toCall expr
+        let mock =
+            match x.EvalUntyped() with
+            | :? IMockObject as mock -> mock
+            | _ -> failwith "Object instance is not a mock"           
+        let actualCalls = countInvocations mock expectedMethod expectedArgs
+        if not <| expectedTimes.Match(actualCalls) then 
             failwith "Expected invocations on the mock not met" 
     /// Verifies expression was invoked at least once
     static member Verify(expr:Expr) = Mock.Verify(expr, atleastonce)
