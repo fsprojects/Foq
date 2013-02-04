@@ -149,8 +149,8 @@ module internal CodeEmit =
             emitReturnValueLookup exnValue
             il.Emit(OpCodes.Throw)
 
-    /// Generates recording of invocations
-    let generateRecordInvocation
+    /// Generates invocation add
+    let generateAddInvocation
         (il:ILGenerator) (invocationsField:FieldBuilder) (abstractMethod:MethodInfo) =
         let ps = abstractMethod.GetParameters()
         // Create local array to store arguments
@@ -211,7 +211,7 @@ module internal CodeEmit =
         let returnValuesField = typeBuilder.DefineField("_returnValues", typeof<obj[]>, fields)
         /// Field for method arguments 
         let argsField = typeBuilder.DefineField("_args", typeof<obj[][]>, fields)
-        /// Field for invocation tracking
+        /// Field for method invocations
         let invocationsField = typeBuilder.DefineField("_invocations", typeof<Invocations>, fields)
         // Generate default constructor
         generateConstructor typeBuilder [||] (fun il -> ())
@@ -228,8 +228,8 @@ module internal CodeEmit =
             il.Emit(OpCodes.Stfld, invocationsField)
         // Generate constructor overload
         generateConstructor typeBuilder [|typeof<obj[]>;typeof<obj[][]>|] setFields
-        /// Generates Recorder.Invocations property getter
-        let generateRecorderInvocationsPropertyGetter () =
+        /// Generates Invocations property getter
+        let generateInvocationsPropertyGetter () =
             let mi = (typeof<IMockObject>.GetProperty("Invocations").GetGetMethod())
             let getter = defineMethod typeBuilder mi
             let il = getter.GetILGenerator()
@@ -237,7 +237,7 @@ module internal CodeEmit =
             il.Emit(OpCodes.Ldfld, invocationsField)
             il.Emit(OpCodes.Ret)
         // Generate Recorder.Invocations property getter
-        generateRecorderInvocationsPropertyGetter ()
+        generateInvocationsPropertyGetter ()
         /// Method overloads grouped by type
         let groupedMethods = calls |> Seq.groupBy fst
         /// Method argument lookup
@@ -257,7 +257,7 @@ module internal CodeEmit =
             /// IL generator
             let il = methodBuilder.GetILGenerator()
             // Record invocation
-            generateRecordInvocation il invocationsField abstractMethod
+            generateAddInvocation il invocationsField abstractMethod
             /// Method overloads defined for current method
             let overloads = groupedMethods |> Seq.tryFind (fst >> (=) abstractMethod)
             match overloads with
@@ -280,12 +280,12 @@ module internal CodeEmit =
                         il.Emit(OpCodes.Ret)
             if abstractType.IsInterface then
                 typeBuilder.DefineMethodOverride(methodBuilder, abstractMethod)
-        /// Stub type
-        let stubType = typeBuilder.CreateType()
+        /// Mock type
+        let mockType = typeBuilder.CreateType()
         /// Generated object instance
         let generatedObject = 
             Activator.CreateInstance(
-                stubType, [|box (returnValues.ToArray());box (argsLookup.ToArray())|])
+                mockType, [|box (returnValues.ToArray());box (argsLookup.ToArray())|])
         generatedObject
 
 open CodeEmit
@@ -307,7 +307,6 @@ type PredicateAttribute() = inherit Attribute()
 [<AttributeUsage(AttributeTargets.Method)>]
 type ArrowAttribute() = inherit Attribute()
 
-[<AutoOpen>]
 module internal Reflection =
     /// Returns true if method has specified attribute
     let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
@@ -346,6 +345,8 @@ module internal Reflection =
                           when x.Type = abstractType -> 
             addHandler, removeHandler
         | expr -> raise <| NotSupportedException(expr.ToString())  
+
+open Reflection
 
 /// Generic mock type over abstract types and interfaces
 type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
@@ -409,7 +410,6 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
                          (remove, ([|Any|], Handler("RemoveHandler",value)))::
                          calls)
 
-[<AutoOpen>]
 module internal Verification =
     /// Return true if methods match
     let methodsMatch (a:MethodBase) (b:MethodBase) =
@@ -426,13 +426,13 @@ module internal Verification =
             let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
             f.Invoke(p,[|actualValue|]) :?> bool
         | PredUntyped(p) -> raise <| NotSupportedException()
-    /// Returns invocation count of specificed expression
-    let invocations expr =
+    /// Returns invocation count matching specificed expression
+    let countInvocations expr =
         let (x,expectedMethod,expectedArgs) = toCall expr
         let mock =
             match x.EvalUntyped() with
             | :? IMockObject as mock -> mock
-            | _ -> failwith "Object instance is not a mock"
+            | _ -> failwith "Object instance is not a mock"      
         mock.Invocations 
         |> Seq.filter (fun invoked ->
             let ps = expectedMethod.GetParameters()
@@ -448,7 +448,9 @@ type Times private (predicate:int -> bool) =
     member __.Match(n) = predicate(n)       
     static member Exactly(n:int) = Times((=) n)
     static member AtLeast(n:int) = Times((>=) n)
+    static member AtLeastOnce() = Times.AtLeast(1)
     static member AtMost(n:int) = Times((<=) n)
+    static member AtMostOnce() = Times.AtMost(1)
     static member Never() = Times((=) 0)
     static member Once() = Times((=) 1)
 
@@ -456,16 +458,22 @@ type Times private (predicate:int -> bool) =
 module Times =
     let exactly = Times.Exactly
     let atleast = Times.AtLeast
+    let atleastonce = Times.AtLeastOnce()
     let atmost = Times.AtMost
+    let atmostonce = Times.AtMostOnce()
     let never = Times.Never()
     let once = Times.Once()
+
+open Verification
 
 type Mock =
     /// Verifies expected call count against instance member invocations on specified mock
     static member Verify(expr:Expr, times:Times) =
-        let actualCalls = invocations expr
+        let actualCalls = countInvocations expr
         if not <| times.Match(actualCalls) then 
             failwith "Expected invocations on the mock not met" 
+    /// Verifies expression was invoked at least once
+    static member Verify(expr:Expr) = Mock.Verify(expr, atleastonce)
 
 [<Sealed>]
 type It private () =
