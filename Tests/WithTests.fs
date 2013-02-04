@@ -1,7 +1,35 @@
-﻿module Foq.SetupTests
+﻿module Foq.WithTests
 
 open Foq
 open NUnit.Framework
+
+[<Test>]
+let ``test mock with multiple members`` () =
+    let xs =
+        Mock<System.Collections.Generic.IList<char>>.With(fun xs ->
+            <@ xs.Count --> 2 
+               xs.Item(0) --> '0'
+               xs.Item(1) --> '1'
+               xs.Contains(any()) --> true
+            @>
+        )
+    Assert.AreEqual(2, xs.Count)
+    Assert.AreEqual('0', xs.Item(0))
+    Assert.AreEqual('1', xs.Item(1))
+    Assert.AreEqual(true, xs.Contains('0'))    
+
+[<Test>]
+let ``test mock with exception on member`` () =
+    let xs =
+        Mock<System.Collections.Generic.IList<char>>.With(fun xs ->
+            <@
+               xs.Insert(any(),any()) ==> System.ArgumentOutOfRangeException()
+            @>
+        )
+    Assert.Throws<System.ArgumentOutOfRangeException>(fun () ->
+        xs.Insert(1, 'A')
+    ) |> ignore
+    
 
 type Side = Bid | Ask
 type TimeInForce = GoodForDay | GoodTillCancel
