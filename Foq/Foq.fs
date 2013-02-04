@@ -303,9 +303,13 @@ type WildcardAttribute() = inherit Attribute()
 [<AttributeUsage(AttributeTargets.Method)>]
 type PredicateAttribute() = inherit Attribute()
 
-/// Arrow attribute
+/// Returns attribute
 [<AttributeUsage(AttributeTargets.Method)>]
-type ArrowAttribute() = inherit Attribute()
+type ReturnsAttribute() = inherit Attribute()
+
+/// Raises attribute
+[<AttributeUsage(AttributeTargets.Method)>]
+type RaisesAttribute() = inherit Attribute()
 
 module internal Reflection =
     /// Returns true if method has specified attribute
@@ -333,10 +337,14 @@ module internal Reflection =
     let rec toCallResult abstractType = function
         | Sequential(x,y) ->
             toCallResult abstractType x @ toCallResult abstractType y
-        | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<ArrowAttribute> mi -> 
+        | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<ReturnsAttribute> mi -> 
             let mi, args = toCallOfType abstractType lhs
             let returns = ReturnValue(rhs.EvalUntyped(), mi.ReturnType)
             [mi,(args,returns)]
+        | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<RaisesAttribute> mi -> 
+            let mi, args = toCallOfType abstractType lhs
+            let raises = RaiseValue(rhs.EvalUntyped() :?> exn)
+            [mi,(args,raises)]
         | expr -> invalidOp(expr.ToString())
     /// Converts expression to corresponding event Add and Remove handlers
     let toHandlers abstractType = function
@@ -491,4 +499,5 @@ module It =
 
 [<AutoOpen>]
 module Operators =
-    let [<Arrow>] (-->) (source:'T) (value:'T) = ()
+    let [<Returns>] (-->) (source:'T) (value:'T) = ()
+    let [<Raises>] (==>) (source:'T) (value:exn) = ()
