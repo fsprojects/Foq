@@ -14,7 +14,7 @@ and Invocation = { Method : MethodBase; Args : obj[] }
 /// List of invocations
 and Invocations = System.Collections.Generic.List<Invocation>
 
-module internal CodeEmit =
+module internal Emit =
     /// Boxed value
     type Value = obj
     /// Boxed function
@@ -288,7 +288,7 @@ module internal CodeEmit =
                 mockType, [|box (returnValues.ToArray());box (argsLookup.ToArray())|])
         generatedObject
 
-open CodeEmit
+open Emit
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 

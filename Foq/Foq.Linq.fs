@@ -3,7 +3,7 @@
 open System
 open System.Linq.Expressions
 open System.Reflection
-open Foq.CodeEmit
+open Foq.Emit
 
 [<AutoOpen>]
 module internal Reflection =
@@ -138,10 +138,9 @@ and EventBuilder<'TAbstract when 'TAbstract : not struct>
 
 open Foq.Verification
 
-type Mock =
-    /// Verifies specified function is called at least once on specified mock
-    static member VerifyFunc<'TReturnValue>
-        (expr:Expression<Func<'TReturnValue>>) =
+[<AutoOpen>]
+module internal Verification =
+    let eval (expr:LambdaExpression) =
         let instance, mi, args =
             match expr.Body with
             | :? MethodCallExpression as call -> 
@@ -159,6 +158,13 @@ type Mock =
         let actualCalls = countInvocations mock mi args
         if not <| Foq.Times.AtLeastOnce().Match(actualCalls) then
             failwith "Expected invocations on the mock not met"
+type Mock =
+    /// Verifies specified function is called at least once on specified mock
+    static member VerifyFunc<'TReturnValue>(expr:Expression<Func<'TReturnValue>>) =
+        eval expr
+    static member VerifyAction(expr:Expression<Action>) =
+        eval expr
+        
 
 [<Sealed>]
 type It private () =
