@@ -140,31 +140,34 @@ open Foq.Verification
 
 [<AutoOpen>]
 module internal Verification =
-    let eval (expr:LambdaExpression) =
+    let getInstance (expr:Expression) =
+        match expr with
+        | :? MemberExpression as me ->
+            let getExpression = Expression<Func<obj>>.Lambda<Func<obj>>(me)
+            let caller = getExpression.Compile()                    
+            caller.Invoke()
+        | _ -> raise <| NotSupportedException(expr.ToString())
+    let eval (expr:LambdaExpression) (times:Foq.Times) =
         let instance, mi, args =
             match expr.Body with
             | :? MethodCallExpression as call -> 
-                match call.Object with
-                | :? MemberExpression as me ->
-                    let ge = Expression<Func<obj>>.Lambda<Func<obj>>(me)
-                    let caller = ge.Compile()                    
-                    caller.Invoke(), call.Method, toArgs call.Arguments
-                | _ -> raise <| NotSupportedException()
-            | _ -> raise <| NotSupportedException()
+                getInstance call.Object, call.Method, toArgs call.Arguments                
+            | _ -> raise <| NotSupportedException(expr.ToString())
         let mock =
             match instance with
             | :? Foq.IMockObject as mock -> mock
             | _ -> invalidArg "mock" "Object instance is not a mock"
         let actualCalls = countInvocations mock mi args
-        if not <| Foq.Times.AtLeastOnce().Match(actualCalls) then
+        if not <| times.Match(actualCalls) then
             failwith "Expected invocations on the mock not met"
+
 type Mock =
     /// Verifies specified function is called at least once on specified mock
     static member VerifyFunc<'TReturnValue>(expr:Expression<Func<'TReturnValue>>) =
-        eval expr
+        eval expr Foq.Times.atleastonce
+    /// Verifies specified action is called at least once on specified mock
     static member VerifyAction(expr:Expression<Action>) =
-        eval expr
-        
+        eval expr Foq.Times.atleastonce
 
 [<Sealed>]
 type It private () =
