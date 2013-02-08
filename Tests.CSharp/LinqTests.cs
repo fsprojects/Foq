@@ -160,4 +160,19 @@ public class LinqTests
         mock[index] = 9;
         Mock.VerifyPropertySet(() => mock[index]);
     }
+
+    public interface ISettable
+    {
+        int Value { get; set; }
+    }
+
+    [Test]
+    public void TestVerifyPropertySet()
+    {
+        var index = 1;
+        var mock =
+            new Mock<ISettable>(MockMode.Loose).Create();
+        mock.Value = 1;
+        Mock.VerifyPropertySet(() => mock.Value);
+    }
 }
