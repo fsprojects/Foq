@@ -159,12 +159,12 @@ module internal Verification =
         match expr.Body with
         | :? MemberExpression as call ->
             let pi = call.Member :?> PropertyInfo            
-            getInstance call.Expression, pi.GetGetMethod(), toArgs [||]
+            getInstance call.Expression, pi, toArgs [||]
         | :? MethodCallExpression as call -> 
             let pi = 
                 call.Method.DeclaringType.GetProperties() 
                 |> Seq.find (fun pi -> pi.GetGetMethod() = call.Method)
-            getInstance call.Object, pi.GetGetMethod(), toArgs call.Arguments
+            getInstance call.Object, pi, toArgs call.Arguments
         | _ -> raise <| NotSupportedException(expr.ToString())
     let verify (times:Foq.Times) (instance:obj, mi, args) =
         let mock =
@@ -184,7 +184,14 @@ type Mock =
         getMethod expr |> verify Foq.Times.atleastonce
     /// Verifies specified property getter is called at least once on specified mock
     static member VerifyPropertyGet(expr:Expression<Func<'TReturnValue>>) =
-        getProperty expr |> verify Foq.Times.atleastonce
+        getProperty expr 
+        |> function (o,pi,args) -> o, pi.GetGetMethod(), args
+        |> verify Foq.Times.atleastonce
+    /// Verifies specified property setter is called at least once on specified mock
+    static member VerifyPropertySet(expr:Expression<Func<'TReturnValue>>) =
+        getProperty expr
+        |> function (o,pi,args) -> o, pi.GetSetMethod(), [|yield! args; yield Arg.Any|]
+        |> verify Foq.Times.atleastonce
                
 [<Sealed>]
 type It private () =
