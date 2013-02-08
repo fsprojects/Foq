@@ -7,7 +7,7 @@ using Foq.Linq;
 
 [TestFixture]
 public class LinqTests
-{
+{    
     [Test]
     public void TestSetupFunc()
     {
@@ -139,5 +139,15 @@ public class LinqTests
         var list = new Mock<IList<int>>(MockMode.Loose).Create();
         var count = list.Count;
         Mock.VerifyPropertyGet(() => list.Count);
+    }
+    
+    [Test]
+    public void TestVerifyPropertyGetWithIndexParameters()
+    {
+        var index = 1;
+        var mock =
+            new Mock<IList<int>>(MockMode.Loose).Create();
+        var value = mock[index];   
+        Mock.VerifyPropertyGet(() => mock[index]);
     }
 }
