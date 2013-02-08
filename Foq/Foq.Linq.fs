@@ -98,9 +98,12 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
                 let value = p.GetValue(anonymousObject, [||])
                 yield mi, ([||],ReturnValue(value,p.PropertyType))]
         Mock<'TAbstract>(mode, properties @ calls)               
-    /// Creates a generic instance of the abstract type
+    /// Creates a mocked instance of the abstract type
     member this.Create() = 
         mock(mode = MockMode.Strict,abstractType,calls) :?> 'TAbstract
+    /// Creates a mocked instance of the abstract type
+    static member Of<'TAbstractType>() = 
+        mock(false, typeof<'TAbstractType>, []) :?> 'TAbstract
 and ActionBuilder<'TAbstract when 'TAbstract : not struct>
     internal (mode,call,calls) =
     let mi, args = call
@@ -147,12 +150,15 @@ module internal Verification =
             let caller = getExpression.Compile()                    
             caller.Invoke()
         | _ -> raise <| NotSupportedException(expr.ToString())
-    let eval (expr:LambdaExpression) (times:Foq.Times) =
-        let instance, mi, args =
-            match expr.Body with
-            | :? MethodCallExpression as call -> 
-                getInstance call.Object, call.Method, toArgs call.Arguments                
-            | _ -> raise <| NotSupportedException(expr.ToString())
+    let getMethod (expr:LambdaExpression) =        
+        match expr.Body with
+        | :? MemberExpression as call ->
+            let pi = call.Member :?> PropertyInfo            
+            getInstance call.Expression, pi.GetGetMethod(), toArgs [||]
+        | :? MethodCallExpression as call -> 
+            getInstance call.Object, call.Method, toArgs call.Arguments                
+        | _ -> raise <| NotSupportedException(expr.ToString())
+    let verify (times:Foq.Times) (instance:obj, mi, args) =
         let mock =
             match instance with
             | :? Foq.IMockObject as mock -> mock
@@ -164,10 +170,15 @@ module internal Verification =
 type Mock =
     /// Verifies specified function is called at least once on specified mock
     static member VerifyFunc<'TReturnValue>(expr:Expression<Func<'TReturnValue>>) =
-        eval expr Foq.Times.atleastonce
+        getMethod expr |> verify Foq.Times.atleastonce
     /// Verifies specified action is called at least once on specified mock
     static member VerifyAction(expr:Expression<Action>) =
-        eval expr Foq.Times.atleastonce
+        getMethod expr |> verify Foq.Times.atleastonce
+    /// Verifies specified property getter is called at least once on specified mock
+    static member VerifyPropertyGet(expr:Expression<Func<'TReturnValue>>) =
+        getMethod expr |> verify Foq.Times.atleastonce
+         
+       
 
 [<Sealed>]
 type It private () =

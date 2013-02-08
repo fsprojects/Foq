@@ -132,4 +132,12 @@ public class LinqTests
         list.Clear();
         Mock.VerifyAction(() => list.Clear());
     }
+
+    [Test]
+    public void TestVerifyPropertyGet()
+    {
+        var list = new Mock<IList<int>>(MockMode.Loose).Create();
+        var count = list.Count;
+        Mock.VerifyPropertyGet(() => list.Count);
+    }
 }
