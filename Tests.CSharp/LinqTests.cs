@@ -169,7 +169,6 @@ public class LinqTests
     [Test]
     public void TestVerifyPropertySet()
     {
-        var index = 1;
         var mock =
             new Mock<ISettable>(MockMode.Loose).Create();
         mock.Value = 1;
