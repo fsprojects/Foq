@@ -66,7 +66,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
     /// Abstract type
     let abstractType = typeof<'TAbstract>
     /// Constructs mock builder
-    new () = Mock(MockMode.Strict,[])
+    new () = Mock(MockMode.Loose,[])
     new (mode) = Mock(mode,[])
     /// Specifies a member function of the abstract type
     member this.SetupFunc(expr:Expression<Func<'TAbstract,'TReturnValue>>) =
@@ -100,7 +100,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
         Mock<'TAbstract>(mode, properties @ calls)               
     /// Creates a mocked instance of the abstract type
     member this.Create() = 
-        mock(mode = MockMode.Strict,abstractType,calls) :?> 'TAbstract
+        mock(MockMode.Strict = mode,abstractType,calls) :?> 'TAbstract
     /// Creates a mocked instance of the abstract type
     static member Of<'TAbstractType>() = 
         mock(false, typeof<'TAbstractType>, []) :?> 'TAbstract

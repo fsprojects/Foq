@@ -16,10 +16,9 @@ type IInterface =
     abstract StringProperty : string
 
 [<Test>]
-let ``an interface method that is not implemented that returns something should throw`` () =
+let ``an interface method that is not implemented should return the default value`` () =
     let stub = Mock<IInterface>().Create()
-    Assert.Throws<System.NotImplementedException>( fun () -> 
-        stub.MethodReturnsSomething() |> ignore ) |> ignore
+    Assert.AreEqual(Unchecked.defaultof<int>, stub.MethodReturnsSomething())
 
 [<Test>]
 let ``an interface method that is not implemented and returns nothing should not throw`` () =
