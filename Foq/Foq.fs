@@ -378,8 +378,6 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     /// Creates a boxed instance of the abstract type
     static member Create(abstractType:Type) = mock(false, abstractType, [])
     /// Creates a mocked instance of the abstract type
-    static member Of<'TAbstractType>() = mock(false, typeof<'TAbstractType>, []) :?> 'TAbstract
-    /// Creates a mocked instance of the abstract type
     static member With(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResult (typeof<'TAbstract>) (f default')
@@ -472,6 +470,8 @@ module internal Verification =
 open Verification
 
 type Mock =
+    /// Creates a mocked instance of the abstract type
+    static member Of<'TAbstractType>() = mock(false, typeof<'TAbstractType>, []) :?> 'TAbstractType   
     /// Verifies expected call count against instance member invocations on specified mock
     static member Verify(expr:Expr, expectedTimes:Times) =
         let (x,expectedMethod,expectedArgs) = toCall expr
