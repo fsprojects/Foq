@@ -85,8 +85,21 @@ Public Class Tests
     Public Sub TestSetupProperties()
         Dim list =
             New Mock(Of IList(Of Integer))() _
-                .SetupProperties(New With {Key .Count = 1}) _
+                .SetupProperties(New With {.Count = 1}) _
                 .Create()
         Assert.AreEqual(1, list.Count)
+    End Sub
+    Public Interface IOrder
+        Property Price() As Decimal
+        Property Quantity() As Integer
+    End Interface
+    <Test>
+    Public Sub TestSetupPropertiesTwo()
+        Dim order =
+            New Mock(Of IOrder)() _
+                .SetupProperties(New With {.Price = 9.99D, .Quantity = 10}) _
+                .Create()
+        Assert.AreEqual(9.99, order.Price)
+        Assert.AreEqual(10, order.Quantity)
     End Sub
 End Class
