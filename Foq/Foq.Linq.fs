@@ -68,12 +68,17 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
     /// Constructs mock builder
     new () = Mock(MockMode.Loose,[])
     new (mode) = Mock(mode,[])
+    /// Specifies a member method of the abstact type
+    member this.Setup(expr:Expression<Func<'TAbstract,'TReturnValue>>) = this.SetupFunc(expr)
+    member this.Setup(expr:Expression<Action<'TAbstract>>) = this.SetupAction(expr)
     /// Specifies a member function of the abstract type
     member this.SetupFunc(expr:Expression<Func<'TAbstract,'TReturnValue>>) =
         FuncBuilder<'TAbstract,'TReturnValue>(mode,toMethodInfo expr.Body,calls)
     /// Specifies a member action of the abstract type
     member this.SetupAction(expr:Expression<Action<'TAbstract>>) =
         ActionBuilder<'TAbstract>(mode,toMethodInfo expr.Body,calls)
+    /// Specifies a member subroutine of the abstract type
+    member this.SetupSub(expr:Expression<Action<'TAbstract>>) = this.SetupAction(expr)
     /// Specifies a property getter of the abstract type
     member this.SetupPropertyGet(expr:Expression<Func<'TAbstract,'TReturnValue>>) =
         let pi, args = toPropertyInfo expr.Body
@@ -101,9 +106,6 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
     /// Creates a mocked instance of the abstract type
     member this.Create() = 
         mock(MockMode.Strict = mode,abstractType,calls) :?> 'TAbstract
-    /// Creates a mocked instance of the abstract type
-    static member Of<'TAbstractType>() = 
-        mock(false, typeof<'TAbstractType>, []) :?> 'TAbstract
 and ActionBuilder<'TAbstract when 'TAbstract : not struct>
     internal (mode,call,calls) =
     let mi, args = call
@@ -138,6 +140,11 @@ and EventBuilder<'TAbstract when 'TAbstract : not struct>
                          (add, ([|Any|], Handler("AddHandler",value)))::
                          (remove, ([|Any|], Handler("RemoveHandler",value)))::
                          calls)
+
+type Mock =
+    /// Creates a mocked instance of the abstract type
+    static member Of<'TAbstractType>() = 
+        mock(false, typeof<'TAbstractType>, []) :?> 'TAbstractType
 
 open Foq.Verification
 
@@ -175,13 +182,21 @@ module internal Verification =
         if not <| times.Match(actualCalls) then
             failwith "Expected invocations on the mock not met"
 
-type Mock =
+type Mock with
     /// Verifies specified function is called at least once on specified mock
     static member VerifyFunc<'TReturnValue>(expr:Expression<Func<'TReturnValue>>) =
         getMethod expr |> verify Foq.Times.atleastonce
     /// Verifies specified action is called at least once on specified mock
     static member VerifyAction(expr:Expression<Action>) =
-        getMethod expr |> verify Foq.Times.atleastonce
+        getMethod expr |> verify Foq.Times.atleastonce    
+    /// Verifies specified subroutine is called at least once on specified mock
+    static member VerifySub(expr:Expression<Action>) = 
+        Mock.VerifyAction(expr)
+    /// Verifies specified method is called at least once on specified mock
+    static member Verify<'TReturnValue>(expr:Expression<Func<'TReturnValue>>) =
+        Mock.VerifyFunc<'TReturnValue>(expr)
+    static member Verify(expr:Expression<Action>) =
+        Mock.VerifyAction(expr)
     /// Verifies specified property getter is called at least once on specified mock
     static member VerifyPropertyGet(expr:Expression<Func<'TReturnValue>>) =
         getProperty expr 
@@ -193,9 +208,14 @@ type Mock =
         |> function (o,pi,args) -> o, pi.GetSetMethod(), [|yield! args; yield Arg.Any|]
         |> verify Foq.Times.atleastonce
                
-[<Sealed>]
-type It private () =
+type [<Sealed>] It private () =
     /// Marks argument as matching any value
     [<Foq.Wildcard>] static member IsAny<'TArg>() = Unchecked.defaultof<'TArg>
     /// Marks argument as matching specific values
     [<Foq.Predicate>] static member Is<'TArg>(f:Func<'TArg,bool>) = Unchecked.defaultof<'TArg>
+
+type [<Sealed>] A<'TArg> private () =
+    /// Marks argument as matching any value
+    [<Foq.Wildcard>] static member Ignored = Unchecked.defaultof<'TArg>
+    /// Marks argument as matching specific values
+    [<Foq.Predicate>] static member When(f:Func<'TArg,bool>) = Unchecked.defaultof<'TArg>
