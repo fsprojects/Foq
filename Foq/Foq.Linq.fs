@@ -97,11 +97,20 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
     /// Specifies properties of the abstract type
     member this.SetupProperties(anonymousObject:obj) =
         let ps = anonymousObject.GetType().GetProperties()
+        let types = [|yield abstractType; yield! abstractType.GetInterfaces()|]
         let properties =
-            [for p in ps do                   
-                let mi = abstractType.GetProperty(p.Name).GetGetMethod()
-                let value = p.GetValue(anonymousObject, [||])
-                yield mi, ([||],ReturnValue(value,p.PropertyType))]
+            [for p in ps do
+                let pi = types |> Seq.tryPick (fun t -> 
+                    match t.GetProperty(p.Name) with
+                    | null -> None
+                    | pi -> Some pi
+                )                
+                match pi with
+                | Some pi ->
+                    let mi = pi.GetGetMethod()
+                    let value = p.GetValue(anonymousObject, [||])
+                    yield mi, ([||],ReturnValue(value,p.PropertyType))
+                | None -> ()]
         Mock<'TAbstract>(mode, properties @ calls)               
     /// Creates a mocked instance of the abstract type
     member this.Create() = 
@@ -160,7 +169,7 @@ module internal Verification =
     let getMethod (expr:LambdaExpression) =        
         match expr.Body with
         | :? MethodCallExpression as call -> 
-            getInstance call.Object, call.Method, toArgs call.Arguments                
+            getInstance call.Object, call.Method, toArgs call.Arguments    
         | _ -> raise <| NotSupportedException(expr.ToString())
     let getProperty (expr:LambdaExpression) = 
         match expr.Body with
