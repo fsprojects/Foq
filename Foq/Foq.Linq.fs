@@ -109,7 +109,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
                 | Some pi ->
                     let mi = pi.GetGetMethod()
                     let value = p.GetValue(anonymousObject, [||])
-                    yield mi, ([||],ReturnValue(value,p.PropertyType))
+                    yield mi, ([||],ReturnValue(value, pi.PropertyType))
                 | None -> ()]
         Mock<'TAbstract>(mode, properties @ calls)               
     /// Creates a mocked instance of the abstract type
