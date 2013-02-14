@@ -296,7 +296,7 @@ open Microsoft.FSharp.Quotations.Patterns
 type MockMode = Strict = 0 | Loose = 1
 
 /// Wildcard attribute
-[<AttributeUsage(AttributeTargets.Method)>]
+[<AttributeUsage(AttributeTargets.Method ||| AttributeTargets.Property)>]
 type WildcardAttribute() = inherit Attribute()
 
 /// Predicate attribute
@@ -418,6 +418,11 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
                          (remove, ([|Any|], Handler("RemoveHandler",value)))::
                          calls)
 
+type Mock =
+    /// Creates a mocked instance of the abstract type
+    static member Of<'TAbstractType>() = 
+        mock(false, typeof<'TAbstractType>, []) :?> 'TAbstractType   
+
 /// Specifies valid invocation count
 type Times private (predicate:int -> bool) =
     member __.Match(n) = predicate(n)       
@@ -469,9 +474,7 @@ module internal Verification =
 
 open Verification
 
-type Mock =
-    /// Creates a mocked instance of the abstract type
-    static member Of<'TAbstractType>() = mock(false, typeof<'TAbstractType>, []) :?> 'TAbstractType   
+type Mock with
     /// Verifies expected call count against instance member invocations on specified mock
     static member Verify(expr:Expr, expectedTimes:Times) =
         let (x,expectedMethod,expectedArgs) = toCall expr

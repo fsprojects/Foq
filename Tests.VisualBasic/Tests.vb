@@ -1,38 +1,84 @@
-﻿Imports System, System.Collections.Generic, NUnit.Framework, Foq.Linq
+﻿Imports System, System.Collections.Generic, System.ComponentModel
+Imports NUnit.Framework, Foq.Linq
 
 <TestFixture>
 Public Class Tests
     <Test>
     Public Sub TestSetupFunc()
-        Dim mock =
+        Dim list =
             New Mock(Of IList(Of Integer))() _
-                .SetupFunc(Function(x) x.Contains(1)).Returns(True) _
+                .SetupFunc(Function(mock) mock.Contains(1)).Returns(True) _
                 .Create()
-        Assert.AreEqual(True, mock.Contains(1))
+        Assert.AreEqual(True, list.Contains(1))
     End Sub
     <Test>
-    Public Sub TestSetupAction()
-        Dim mock =
+    Public Sub TestSetupFuncWithAnyIntegerArgument()
+        Dim list =
             New Mock(Of IList(Of Integer))() _
-                .SetupAction(Sub(x) x.Add(1)).Raises(Of ApplicationException) _
+                .SetupFunc(Function(mock) mock.Contains(It.IsAny(Of Integer)())).Returns(True) _
                 .Create()
-        Assert.Throws(Of ApplicationException)(Sub() mock.Add(1))
+        Assert.AreEqual(True, list.Contains(1))
+    End Sub
+    <Test>
+    Public Sub TestSetupFuncWithAReturnsLambda()
+        Dim list =
+            New Mock(Of IList(Of Integer))() _
+                .SetupFunc(Function(mock) mock.Contains(1)).Returns(Function() True) _
+                .Create()
+        Assert.AreEqual(True, list.Contains(1))
+    End Sub
+    <Test>
+    Public Sub TestSetupSub()
+        Dim list =
+            New Mock(Of IList(Of Integer))() _
+                .SetupSub(Sub(mock) mock.Add(1)).Raises(Of ApplicationException) _
+                .Create()
+        Assert.Throws(Of ApplicationException)(Sub() list.Add(1))
     End Sub
     <Test>
     Public Sub TestSetupPropertyGet()
-        Dim mock =
+        Dim list =
             New Mock(Of IList(Of Integer))() _
-                .SetupPropertyGet(Function(x) x.Count).Returns(1) _
+                .SetupPropertyGet(Function(mock) mock.Count).Returns(1) _
                 .Create()
-        Assert.AreEqual(1, mock.Count)
+        Assert.AreEqual(1, list.Count)
     End Sub
     <Test>
     Public Sub TestSetupPropertyIndexer()
-        Dim mock =
+        Dim list =
             New Mock(Of IList(Of Integer))() _
-                .SetupPropertyGet(Function(x) x(1)).Returns(1) _
+                .SetupPropertyGet(Function(mock) mock(1)).Returns(1) _
                 .Create()
-        Assert.AreEqual(1, mock(1))
+        Assert.AreEqual(1, list(1))
+    End Sub
+    <Test>
+    Public Sub TestSetupEvent()
+        Dim e = New Microsoft.FSharp.Control.FSharpEvent(Of PropertyChangedEventHandler, PropertyChangedEventArgs)()
+        Dim instance =
+            New Mock(Of INotifyPropertyChanged)() _
+                .SetupEvent("PropertyChanged").Publishes(e.Publish) _
+                .Create()
+        Dim triggered = False
+        AddHandler instance.PropertyChanged, Sub() triggered = True
+        e.Trigger(Me, New PropertyChangedEventArgs("Name"))
+        Assert.AreEqual(True, triggered)
+    End Sub
+    <Test>
+    Public Sub TestVerifySub()
+        Dim list = Mock.Of(Of IList(Of Integer))()
+        list.Add(1)
+        Mock.Verify(Sub() list.Add(1))
+    End Sub
+    <Test>
+    Public Sub TestVerifyFunc()
+        Dim list = Mock.Of(Of IList(Of Integer))()
+        list.Contains(1)
+        Mock.Verify(Function() list.Contains(1))
+    End Sub
+    <Test>
+    Public Sub TestVerifyPropertyGet()
+        Dim list = Mock.Of(Of IList(Of Integer))()
+        Dim count = list.Count
+        Mock.Verify(Function() list.Count) ' Fails
     End Sub
 End Class
-
