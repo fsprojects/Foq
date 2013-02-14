@@ -79,6 +79,14 @@ Public Class Tests
     Public Sub TestVerifyPropertyGet()
         Dim list = Mock.Of(Of IList(Of Integer))()
         Dim count = list.Count
-        Mock.Verify(Function() list.Count) ' Fails
+        Mock.VerifyPropertyGet(Function() list.Count)
+    End Sub
+    <Test>
+    Public Sub TestSetupProperties()
+        Dim list =
+            New Mock(Of IList(Of Integer))() _
+                .SetupProperties(New With {Key .Count = 1}) _
+                .Create()
+        Assert.AreEqual(1, list.Count)
     End Sub
 End Class
