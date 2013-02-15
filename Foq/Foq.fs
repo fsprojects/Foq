@@ -310,14 +310,18 @@ open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 
 module private Eval =
-#if POWERPACK
-    open Microsoft.FSharp.Linq.QuotationEvaluation // F# PowerPack dependency
+#if POWERPACK // F# PowerPack dependency
+    open Microsoft.FSharp.Linq.QuotationEvaluation
     let eval (expr:Expr) = expr.EvalUntyped()
 #else
     let rec eval = function
         | Value(v,t) -> v
         | Coerce(e,t) -> eval e
         | NewObject(ci,args) -> ci.Invoke(evalAll args)
+        | NewArray(t,args) -> 
+            let xs = Array.CreateInstance(t, args.Length) 
+            args |> List.iteri (fun i arg -> xs.SetValue(eval arg, i))   
+            box xs         
         | NewUnionCase(case,args) -> FSharpValue.MakeUnion(case, evalAll args)
         | NewRecord(t,args) -> FSharpValue.MakeRecord(t, evalAll args)       
         | NewTuple(args) ->             
