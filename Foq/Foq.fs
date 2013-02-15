@@ -4,7 +4,6 @@ open System
 open System.Reflection
 open System.Reflection.Emit
 open Microsoft.FSharp.Reflection
-open Microsoft.FSharp.Linq.QuotationEvaluation // F# PowerPack dependency
 
 /// Mock object interface for verification
 type IMockObject =
@@ -310,7 +309,12 @@ open Emit
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 
+module private Eval =
+    open Microsoft.FSharp.Linq.QuotationEvaluation // F# PowerPack dependency
+    let eval (expr:Expr) = expr.EvalUntyped()
+
 module private Reflection =
+    open Eval
     /// Returns true if method has specified attribute
     let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
     /// Converts expression to a tuple of MethodInfo and Arg array
@@ -319,8 +323,8 @@ module private Reflection =
             match arg with
             | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
             | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> 
-                Pred(pred.EvalUntyped())
-            | expr -> expr.EvalUntyped() |> Arg |]
+                Pred(eval pred)
+            | expr -> eval expr |> Arg |]
     /// Converts expression to a tuple of Expression, MethodInfo and Arg array
     let toCall = function
         | Call(Some(x), mi, args) -> x, mi, toArgs args
@@ -338,11 +342,11 @@ module private Reflection =
             toCallResult abstractType x @ toCallResult abstractType y
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<ReturnsAttribute> mi -> 
             let mi, args = toCallOfType abstractType lhs
-            let returns = ReturnValue(rhs.EvalUntyped(), mi.ReturnType)
+            let returns = ReturnValue(eval rhs, mi.ReturnType)
             [mi,(args,returns)]
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<RaisesAttribute> mi -> 
             let mi, args = toCallOfType abstractType lhs
-            let raises = RaiseValue(rhs.EvalUntyped() :?> exn)
+            let raises = RaiseValue(eval rhs :?> exn)
             [mi,(args,raises)]
         | expr -> invalidOp(expr.ToString())
     /// Converts expression to corresponding event Add and Remove handlers
@@ -471,6 +475,7 @@ module internal Verification =
         )
         |> Seq.length
 
+open Eval
 open Verification
 
 type Mock with
@@ -478,7 +483,7 @@ type Mock with
     static member Verify(expr:Expr, expectedTimes:Times) =
         let (x,expectedMethod,expectedArgs) = toCall expr
         let mock =
-            match x.EvalUntyped() with
+            match eval x with
             | :? IMockObject as mock -> mock
             | _ -> failwith "Object instance is not a mock"           
         let actualCalls = countInvocations mock expectedMethod expectedArgs
