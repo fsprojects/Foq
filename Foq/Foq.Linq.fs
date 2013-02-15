@@ -5,8 +5,7 @@ open System.Linq.Expressions
 open System.Reflection
 open Foq.Emit
 
-[<AutoOpen>]
-module internal Reflection =
+module private Reflection =
     /// Converts argument expressions to Arg array
     let toArgs (args:Expression seq) =
         let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
@@ -60,6 +59,8 @@ module internal Reflection =
 
 /// Mock mode
 type MockMode = Strict = 0 | Loose = 1
+
+open Reflection
 
 /// Generic stub type over abstract types and interfaces
 type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
@@ -155,10 +156,9 @@ type Mock =
     static member Of<'TAbstractType>() = 
         mock(false, typeof<'TAbstractType>, []) :?> 'TAbstractType
 
-open Foq.Verification
-
-[<AutoOpen>]
-module internal Verification =
+module private Verification =
+    open Foq.Verification
+    /// Gets instance value from member expression
     let getInstance (expr:Expression) =
         match expr with
         | :? MemberExpression as me ->
@@ -166,11 +166,13 @@ module internal Verification =
             let caller = getExpression.Compile()                    
             caller.Invoke()
         | _ -> raise <| NotSupportedException(expr.ToString())
+    /// Gets method from lambda expression
     let getMethod (expr:LambdaExpression) =        
         match expr.Body with
         | :? MethodCallExpression as call -> 
             getInstance call.Object, call.Method, toArgs call.Arguments    
         | _ -> raise <| NotSupportedException(expr.ToString())
+    // Gets property from lambda expression
     let getProperty (expr:LambdaExpression) = 
         match expr.Body with
         | :? MemberExpression as call ->
@@ -182,6 +184,7 @@ module internal Verification =
                 |> Seq.find (fun pi -> pi.GetGetMethod() = call.Method)
             getInstance call.Object, pi, toArgs call.Arguments
         | _ -> raise <| NotSupportedException(expr.ToString())
+    /// Verifies if method called on instance the specified number of times
     let verify (times:Foq.Times) (instance:obj, mi, args) =
         let mock =
             match instance with
@@ -190,6 +193,8 @@ module internal Verification =
         let actualCalls = countInvocations mock mi args
         if not <| times.Match(actualCalls) then
             failwith "Expected invocations on the mock not met"
+
+open Verification
 
 type Mock with
     /// Verifies specified function is called at least once on specified mock

@@ -287,10 +287,6 @@ module internal Emit =
                 mockType, [|box (returnValues.ToArray());box (argsLookup.ToArray())|])
         generatedObject
 
-open Emit
-open Microsoft.FSharp.Quotations
-open Microsoft.FSharp.Quotations.Patterns
-
 /// Mock mode
 type MockMode = Strict = 0 | Loose = 1
 
@@ -310,7 +306,11 @@ type ReturnsAttribute() = inherit Attribute()
 [<AttributeUsage(AttributeTargets.Method)>]
 type RaisesAttribute() = inherit Attribute()
 
-module internal Reflection =
+open Emit
+open Microsoft.FSharp.Quotations
+open Microsoft.FSharp.Quotations.Patterns
+
+module private Reflection =
     /// Returns true if method has specified attribute
     let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
     /// Converts expression to a tuple of MethodInfo and Arg array
@@ -351,7 +351,7 @@ module internal Reflection =
                           Lambda(_,Call(Some(_),removeHandler,_));_]) 
                           when x.Type = abstractType -> 
             addHandler, removeHandler
-        | expr -> raise <| NotSupportedException(expr.ToString())  
+        | expr -> raise <| NotSupportedException(expr.ToString())
 
 open Reflection
 
@@ -503,5 +503,7 @@ module It =
 
 [<AutoOpen>]
 module Operators =
+    /// Signifies source expression returns specified value
     let [<Returns>] (-->) (source:'T) (value:'T) = ()
+    /// Signifies source expression raises specified exception
     let [<Raises>] (==>) (source:'T) (value:exn) = ()
