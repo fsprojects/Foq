@@ -310,8 +310,21 @@ open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 
 module private Eval =
+#if POWERPACK
     open Microsoft.FSharp.Linq.QuotationEvaluation // F# PowerPack dependency
     let eval (expr:Expr) = expr.EvalUntyped()
+#else
+    let rec eval = function
+        | Value(v,t) | Coerce(Value(v,t),_) -> v
+        | Coerce(NewObject(ci,args),_) -> ci.Invoke(evalAll args)
+        | NewUnionCase(case,args) -> FSharpValue.MakeUnion(case,evalAll args)
+        | FieldGet(Some(Value(v,_)),fi) -> fi.GetValue(v)
+        | PropertyGet(None, pi, args) -> pi.GetValue(null,evalAll args)
+        | PropertyGet(Some(Value(v,_)),pi,args) -> pi.GetValue(v,evalAll args)
+        | Call(None,mi,args) -> mi.Invoke(null, evalAll args)
+        | arg -> raise <| NotSupportedException(arg.ToString())
+    and evalAll args = [|for arg in args -> eval arg|]
+#endif
 
 module private Reflection =
     open Eval
@@ -322,8 +335,7 @@ module private Reflection =
         [|for arg in args ->
             match arg with
             | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
-            | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> 
-                Pred(eval pred)
+            | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
             | expr -> eval expr |> Arg |]
     /// Converts expression to a tuple of Expression, MethodInfo and Arg array
     let toCall = function
