@@ -60,3 +60,27 @@ let ``test multiple value sequential setup`` () =
                 order.Side          --> Side.Bid
                 order.TimeInForce   --> TimeInForce.GoodForDay @>)
     Assert.AreEqual(99.99M, order.Price)
+
+type PersonRecord = { Name: string; Age: int }
+
+type IFoo =
+    abstract RecordProperty : PersonRecord
+    abstract TupleProperty : string * int
+
+[<Test>]
+let ``test with record property`` () =   
+    let foo =
+        Mock<IFoo>
+            .With(fun foo -> 
+            <@  foo.RecordProperty --> { Name = "Phil"; Age = 27 } @>)
+    Assert.AreEqual("Phil", foo.RecordProperty.Name)
+    Assert.AreEqual(27, foo.RecordProperty.Age)
+
+[<Test>]
+let ``test with tuple property`` () =
+    //let r = 
+    let foo =
+        Mock<IFoo>
+            .With(fun foo -> 
+            <@  foo.TupleProperty --> ("Phil", 27) @>)
+    Assert.AreEqual(("Phil", 27), foo.TupleProperty)
