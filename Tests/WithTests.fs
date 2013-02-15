@@ -71,6 +71,7 @@ type IFoo =
     abstract RecordProperty : PersonRecord
     abstract TupleProperty : string * int
     abstract ReferenceProperty : PersonClass
+    abstract ArrayProperty : int[]
 
 [<Test>]
 let ``test with record property`` () =   
@@ -88,3 +89,8 @@ let ``test with reference property`` () =
     let foo = Mock<IFoo>.With(fun foo -> <@ foo.ReferenceProperty --> PersonClass("Phil", 27) @>)
     Assert.AreEqual("Phil", foo.ReferenceProperty.Name)
     Assert.AreEqual(27, foo.ReferenceProperty.Age)
+
+[<Test>]
+let ``test with array property`` () =    
+    let foo = Mock<IFoo>.With(fun foo -> <@ foo.ArrayProperty --> [|1;2;3|] @>)
+    Assert.AreEqual([|1;2;3|], foo.ArrayProperty)
