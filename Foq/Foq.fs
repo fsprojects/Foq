@@ -315,8 +315,9 @@ module private Eval =
     let eval (expr:Expr) = expr.EvalUntyped()
 #else
     let rec eval = function
-        | Value(v,t) | Coerce(Value(v,t),_) -> v
-        | Coerce(NewObject(ci,args),_) -> ci.Invoke(evalAll args)
+        | Value(v,t) -> v
+        | Coerce(e,t) -> eval e
+        | NewObject(ci,args) -> ci.Invoke(evalAll args)
         | NewUnionCase(case,args) -> FSharpValue.MakeUnion(case, evalAll args)
         | NewRecord(t,args) -> FSharpValue.MakeRecord(t, evalAll args)       
         | NewTuple(args) ->             
