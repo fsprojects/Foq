@@ -317,11 +317,19 @@ module private Eval =
     let rec eval = function
         | Value(v,t) | Coerce(Value(v,t),_) -> v
         | Coerce(NewObject(ci,args),_) -> ci.Invoke(evalAll args)
-        | NewUnionCase(case,args) -> FSharpValue.MakeUnion(case,evalAll args)
+        | NewUnionCase(case,args) -> FSharpValue.MakeUnion(case, evalAll args)
         | FieldGet(Some(Value(v,_)),fi) -> fi.GetValue(v)
-        | PropertyGet(None, pi, args) -> pi.GetValue(null,evalAll args)
-        | PropertyGet(Some(Value(v,_)),pi,args) -> pi.GetValue(v,evalAll args)
-        | Call(None,mi,args) -> mi.Invoke(null, evalAll args)
+        | PropertyGet(None, pi, args) -> pi.GetValue(null, evalAll args)
+        | PropertyGet(Some(Value(v,_)),pi,args) -> pi.GetValue(v, evalAll args)
+        | Call(None,mi,args) -> mi.Invoke(null, evalAll args) 
+        | Lambda(v,Call(None,mi,args)) ->
+            let ft = FSharpType.MakeFunctionType(v.Type, typeof<bool>)                        
+            FSharpValue.MakeFunction(ft, fun x ->
+                let args =
+                    Array.zip (mi.GetParameters()) (args |> Array.ofList) 
+                    |> Array.map (fun (pi,arg) -> if pi.Name = v.Name then x else eval arg)
+                mi.Invoke(null, args)
+            )            
         | arg -> raise <| NotSupportedException(arg.ToString())
     and evalAll args = [|for arg in args -> eval arg|]
 #endif
