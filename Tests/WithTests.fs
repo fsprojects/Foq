@@ -63,24 +63,28 @@ let ``test multiple value sequential setup`` () =
 
 type PersonRecord = { Name: string; Age: int }
 
+type PersonClass (name:string, age:int) =
+    member val Name = name
+    member val Age = age
+
 type IFoo =
     abstract RecordProperty : PersonRecord
     abstract TupleProperty : string * int
+    abstract ReferenceProperty : PersonClass
 
 [<Test>]
 let ``test with record property`` () =   
-    let foo =
-        Mock<IFoo>
-            .With(fun foo -> 
-            <@  foo.RecordProperty --> { Name = "Phil"; Age = 27 } @>)
+    let foo = Mock<IFoo>.With(fun foo -> <@ foo.RecordProperty --> { Name = "Phil"; Age = 27 } @>)
     Assert.AreEqual("Phil", foo.RecordProperty.Name)
     Assert.AreEqual(27, foo.RecordProperty.Age)
 
 [<Test>]
-let ``test with tuple property`` () =
-    //let r = 
-    let foo =
-        Mock<IFoo>
-            .With(fun foo -> 
-            <@  foo.TupleProperty --> ("Phil", 27) @>)
+let ``test with tuple property`` () =    
+    let foo = Mock<IFoo>.With(fun foo -> <@ foo.TupleProperty --> ("Phil", 27) @>)
     Assert.AreEqual(("Phil", 27), foo.TupleProperty)
+
+[<Test>]
+let ``test with reference property`` () =   
+    let foo = Mock<IFoo>.With(fun foo -> <@ foo.ReferenceProperty --> PersonClass("Phil", 27) @>)
+    Assert.AreEqual("Phil", foo.ReferenceProperty.Name)
+    Assert.AreEqual(27, foo.ReferenceProperty.Age)
