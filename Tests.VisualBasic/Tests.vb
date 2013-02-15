@@ -20,6 +20,15 @@ Public Class Tests
         Assert.AreEqual(True, list.Contains(1))
     End Sub
     <Test>
+    Public Sub TestSetupFuncWithLambdaArgument()
+        Dim list =
+            New Mock(Of IList(Of Integer))() _
+                .SetupFunc(Function(mock) mock.Contains(It.Is(Of Integer)(Function(x) x >= 0))).Returns(True) _
+                .Create()
+        Assert.AreEqual(True, list.Contains(1))
+        Assert.AreEqual(False, list.Contains(-1))
+    End Sub
+    <Test>
     Public Sub TestSetupFuncWithAReturnsLambda()
         Dim list =
             New Mock(Of IList(Of Integer))() _

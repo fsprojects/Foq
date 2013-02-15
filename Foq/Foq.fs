@@ -250,6 +250,13 @@ module internal Emit =
             for interfaceType in abstractType.GetInterfaces() do
                 yield! interfaceType.GetMethods()
             }
+        /// Generates a default value
+        let generateDefaultValueReturn (il:ILGenerator) (returnType:Type) =
+            let x = il.DeclareLocal(returnType)
+            il.Emit(OpCodes.Ldloca_S, x.LocalIndex)
+            il.Emit(OpCodes.Initobj, returnType)
+            il.Emit(OpCodes.Ldloc, x.LocalIndex)
+            il.Emit(OpCodes.Ret)
         // Implement abstract type's methods
         for abstractMethod in abstractMethods do
             /// Method builder
@@ -264,20 +271,12 @@ module internal Emit =
             | Some (_, overloads) ->
                 let toOverload = generateOverload il (argsLookup,argsField) (returnValues,returnValuesField)
                 overloads |> Seq.toList |> List.rev |> Seq.iter toOverload
-                il.ThrowException(typeof<MatchFailureException>)
-            | None ->
-                if abstractMethod.ReturnType = typeof<System.Void> || abstractMethod.ReturnType = typeof<unit>
-                then il.Emit(OpCodes.Ret)
-                else 
-                    if isStrict 
-                    then il.ThrowException(typeof<NotImplementedException>)
-                    else
-                        // Generate default value
-                        let x = il.DeclareLocal(abstractMethod.ReturnType)
-                        il.Emit(OpCodes.Ldloca_S, x.LocalIndex)
-                        il.Emit(OpCodes.Initobj, abstractMethod.ReturnType)
-                        il.Emit(OpCodes.Ldloc, x.LocalIndex)
-                        il.Emit(OpCodes.Ret)
+            | None -> ()
+            if abstractMethod.ReturnType = typeof<System.Void> || abstractMethod.ReturnType = typeof<unit>
+            then il.Emit(OpCodes.Ret)
+            elif isStrict 
+            then il.ThrowException(typeof<NotImplementedException>)
+            else generateDefaultValueReturn il abstractMethod.ReturnType
             if abstractType.IsInterface then
                 typeBuilder.DefineMethodOverride(methodBuilder, abstractMethod)
         /// Mock type
