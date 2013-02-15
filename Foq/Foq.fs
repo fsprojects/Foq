@@ -318,6 +318,10 @@ module private Eval =
         | Value(v,t) | Coerce(Value(v,t),_) -> v
         | Coerce(NewObject(ci,args),_) -> ci.Invoke(evalAll args)
         | NewUnionCase(case,args) -> FSharpValue.MakeUnion(case, evalAll args)
+        | NewRecord(t,args) -> FSharpValue.MakeRecord(t, evalAll args)       
+        | NewTuple(args) ->             
+            let t = FSharpType.MakeTupleType [|for arg in args -> arg.Type|]
+            FSharpValue.MakeTuple(evalAll args, t)        
         | FieldGet(Some(Value(v,_)),fi) -> fi.GetValue(v)
         | PropertyGet(None, pi, args) -> pi.GetValue(null, evalAll args)
         | PropertyGet(Some(Value(v,_)),pi,args) -> pi.GetValue(v, evalAll args)
