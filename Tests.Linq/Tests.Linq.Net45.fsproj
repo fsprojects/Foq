@@ -54,7 +54,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Foq.Net45\Foq.Net45.fsproj">
+    <ProjectReference Include="..\Foq\Foq.Net45.fsproj">
       <Name>Foq.Net45</Name>
       <Project>{027a6e50-cda4-41a6-a59b-a9eacb85bd40}</Project>
       <Private>True</Private>
