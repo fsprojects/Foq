@@ -37,6 +37,8 @@
     <Compile Include="MockTests.fs" />
     <Compile Include="VerifyTests.fs" />
     <Compile Include="WithTests.fs" />
+    <Compile Include="EvalTests.fs" />
+    <Compile Include="ReportedIssues.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

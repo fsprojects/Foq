@@ -64,8 +64,8 @@ let ``test multiple value sequential setup`` () =
 type PersonRecord = { Name: string; Age: int }
 
 type PersonClass (name:string, age:int) =
-    member val Name = name
-    member val Age = age
+    member this.Name = name
+    member this.Age = age
 
 type IFoo =
     abstract RecordProperty : PersonRecord

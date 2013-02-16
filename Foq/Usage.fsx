@@ -1,5 +1,4 @@
-﻿#r "..\packages\FSPowerPack.Linq.Community.2.0.0.1\Lib\Net40\FSharp.PowerPack.Linq.dll"
-#load "foq.fs"
+﻿#load "foq.fs"
 
 open Foq
 
@@ -101,7 +100,7 @@ module ``Call Example`` =
 module ``Verify Example`` =
     open System.Collections.Generic    
     let xs = Mock<IList<int>>.With(fun xs -> <@ xs.Contains(any()) --> true @>)    
-    let _ = xs.Contains(1)    
+    let _ = xs.Contains(1)
     Mock.Verify(<@ xs.Contains(0) @>, never)
     Mock.Verify(<@ xs.Contains(any()) @>, once)
 

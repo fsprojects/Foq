@@ -1,5 +1,4 @@
-﻿#r @"..\packages\FSPowerPack.Linq.Community.3.0.0.0\Lib\Net40\FSharp.PowerPack.Linq.dll"
-#r @"..\packages\Foq.0.7\Lib\net45\Foq.dll"
+﻿#r @"..\packages\Foq.0.8\Lib\net45\Foq.dll"
 
 open Foq
 

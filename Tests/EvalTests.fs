@@ -3,8 +3,8 @@
 type PersonRecord = { Name:string; Age:int }
 
 type PersonClass (name, age) =
-    member val Name = name
-    member val Age = age
+    member person.Name = name
+    member person.Age = age
     override a.GetHashCode() = hash a.Name ^^^ hash a.Age
     override a.Equals(b) = b |> function
         | :? PersonClass as b -> a.Name = b.Name && a.Age = b.Age
