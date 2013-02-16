@@ -41,6 +41,8 @@
   <ItemGroup>
     <Compile Include="WithTests.fs" />
     <Compile Include="MockTests.fs" />
+    <Compile Include="EvalTests.fs" />
+    <Compile Include="ReportedIssues.fs" />
     <Compile Include="VerifyTests.fs" />
     <None Include="packages.config" />
   </ItemGroup>
