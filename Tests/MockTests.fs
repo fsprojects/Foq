@@ -169,6 +169,14 @@ let ``an implemented interface method with arity/3 should match specified argume
             .Create()
     Assert.AreEqual(true, stub.Arity3Method(n,s,d))
 
+[<Test>]
+let ``an implemented interface method should match a predicate with named arguments`` () =
+    let instance =
+        Mock<System.Collections.Generic.IList<int>>()
+            .Setup(fun x -> <@ x.Remove(is(fun i -> i >= 0)) @>).Returns(true)
+            .Create()
+    Assert.AreEqual(true, instance.Remove(99))
+
 [<Test; Combinatorial>]
 let ``an implemented interface method with arity/3 should match correct method pattern`` 
     ([<Values(9,0,-1)>] n,
