@@ -337,10 +337,12 @@ module internal Eval =
             let ft = FSharpType.MakeFunctionType(v.Type, mi.ReturnType)
             FSharpValue.MakeFunction(ft, fun x ->
                 let args =
-                    Array.zip (mi.GetParameters()) (args |> Array.ofList) 
-                    |> Array.map (fun (pi,arg) -> if pi.Name = v.Name then x else eval arg)
+                    args |> Array.ofList |> Array.map (function
+                        | Var(v') when v.Name = v'.Name -> x
+                        | arg -> eval arg
+                    )
                 mi.Invoke(null, args)
-            )            
+            )
         | arg -> raise <| NotSupportedException(arg.ToString())
     and evalAll args = [|for arg in args -> eval arg|]
 #endif
