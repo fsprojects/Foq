@@ -2,7 +2,6 @@
 
 open System
 open System.Reflection
-open System.Reflection.Emit
 open Microsoft.FSharp.Reflection
 
 /// Mock object interface for verification
@@ -14,6 +13,7 @@ and Invocation = { Method : MethodBase; Args : obj[] }
 and Invocations = System.Collections.Generic.List<Invocation>
 
 module internal Emit =
+    open System.Reflection.Emit
     /// Boxed value
     type Value = obj
     /// Boxed function
@@ -309,7 +309,7 @@ open Emit
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 
-module private Eval =
+module internal Eval =
 #if POWERPACK // F# PowerPack dependency
     open Microsoft.FSharp.Linq.QuotationEvaluation
     let eval (expr:Expr) = expr.EvalUntyped()
@@ -320,20 +320,21 @@ module private Eval =
         | NewObject(ci,args) -> ci.Invoke(evalAll args)
         | NewArray(t,args) -> 
             let array = Array.CreateInstance(t, args.Length) 
-            args |> List.iteri (fun i arg -> array.SetValue(eval arg, i))   
+            args |> List.iteri (fun i arg -> array.SetValue(eval arg, i))
             box array
         | NewUnionCase(case,args) -> FSharpValue.MakeUnion(case, evalAll args)
-        | NewRecord(t,args) -> FSharpValue.MakeRecord(t, evalAll args)       
-        | NewTuple(args) ->             
+        | NewRecord(t,args) -> FSharpValue.MakeRecord(t, evalAll args)
+        | NewTuple(args) ->
             let t = FSharpType.MakeTupleType [|for arg in args -> arg.Type|]
-            FSharpValue.MakeTuple(evalAll args, t)        
-        | FieldGet(Some(Value(v,_)),fi) -> fi.GetValue(v)
+            FSharpValue.MakeTuple(evalAll args, t)
+        | FieldGet(None,fi) -> fi.GetValue(null)
+        | FieldGet(Some(x),fi) -> fi.GetValue(eval x)
         | PropertyGet(None, pi, args) -> pi.GetValue(null, evalAll args)
         | PropertyGet(Some(x),pi,args) -> pi.GetValue(eval x, evalAll args)
         | Call(None,mi,args) -> mi.Invoke(null, evalAll args)
         | Call(Some(x),mi,args) -> mi.Invoke(eval x, evalAll args)
         | Lambda(v,Call(None,mi,args)) ->
-            let ft = FSharpType.MakeFunctionType(v.Type, typeof<bool>)                        
+            let ft = FSharpType.MakeFunctionType(v.Type, mi.ReturnType)
             FSharpValue.MakeFunction(ft, fun x ->
                 let args =
                     Array.zip (mi.GetParameters()) (args |> Array.ofList) 
