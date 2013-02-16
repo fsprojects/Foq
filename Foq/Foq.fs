@@ -319,9 +319,9 @@ module private Eval =
         | Coerce(e,t) -> eval e
         | NewObject(ci,args) -> ci.Invoke(evalAll args)
         | NewArray(t,args) -> 
-            let xs = Array.CreateInstance(t, args.Length) 
-            args |> List.iteri (fun i arg -> xs.SetValue(eval arg, i))   
-            box xs         
+            let array = Array.CreateInstance(t, args.Length) 
+            args |> List.iteri (fun i arg -> array.SetValue(eval arg, i))   
+            box array
         | NewUnionCase(case,args) -> FSharpValue.MakeUnion(case, evalAll args)
         | NewRecord(t,args) -> FSharpValue.MakeRecord(t, evalAll args)       
         | NewTuple(args) ->             
@@ -329,8 +329,9 @@ module private Eval =
             FSharpValue.MakeTuple(evalAll args, t)        
         | FieldGet(Some(Value(v,_)),fi) -> fi.GetValue(v)
         | PropertyGet(None, pi, args) -> pi.GetValue(null, evalAll args)
-        | PropertyGet(Some(Value(v,_)),pi,args) -> pi.GetValue(v, evalAll args)
-        | Call(None,mi,args) -> mi.Invoke(null, evalAll args) 
+        | PropertyGet(Some(x),pi,args) -> pi.GetValue(eval x, evalAll args)
+        | Call(None,mi,args) -> mi.Invoke(null, evalAll args)
+        | Call(Some(x),mi,args) -> mi.Invoke(eval x, evalAll args)
         | Lambda(v,Call(None,mi,args)) ->
             let ft = FSharpType.MakeFunctionType(v.Type, typeof<bool>)                        
             FSharpValue.MakeFunction(ft, fun x ->
