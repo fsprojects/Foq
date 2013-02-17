@@ -518,7 +518,7 @@ type Mock with
         let mock =
             match eval x with
             | :? IMockObject as mock -> mock
-            | _ -> failwith "Object instance is not a mock"           
+            | _ -> failwith "Object instance is not a mock"
         let actualCalls = countInvocations mock expectedMethod expectedArgs
         if not <| expectedTimes.Match(actualCalls) then 
             failwith "Expected invocations on the mock not met" 
@@ -546,4 +546,6 @@ module Operators =
     /// Signifies source expression raises specified exception
     let [<Raises>] (==>) (source:'T) (value:exn) = ()
     /// Returns a mock of the required type
-    let mock() : 'TAbstractType = Mock.Of<'TAbstractType>() 
+    let mock() : 'TAbstractType = Mock.Of<'TAbstractType>()
+    /// Verifies the expression occurs the specified number of times
+    let verify expr times = Mock.Verify(expr, times)

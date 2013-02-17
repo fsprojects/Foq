@@ -24,8 +24,9 @@ type Order(product, quantity) =
         else mailer.Send("Unfilled")
     member order.IsFilled = filled
 
-open Foq
 open NUnit.Framework
+open FsUnit
+open Foq
 
 let [<Test>] ``filling removes inventory if in stock`` () =
     // setup data
@@ -39,9 +40,9 @@ let [<Test>] ``filling removes inventory if in stock`` () =
     // exercise
     order.Fill(warehouse)
     // verify expectations
-    Mock.Verify(<@ warehouse.HasInventory(product,quantity) @>, once)
-    Mock.Verify(<@ warehouse.Remove(product, quantity) @>, once)
-    Assert.IsTrue(order.IsFilled)
+    verify <@ warehouse.HasInventory(product,quantity) @> once
+    verify <@ warehouse.Remove(product, quantity) @> once
+    order.IsFilled |> should be True
 
 let [<Test>] ``filling does not remove if not enough in stock`` () =
     // setup data
@@ -55,8 +56,8 @@ let [<Test>] ``filling does not remove if not enough in stock`` () =
     // exercise
     order.Fill(warehouse)
     // verify expectations
-    Mock.Verify(<@ warehouse.Remove(product, quantity) @>, never)
-    Assert.IsFalse(order.IsFilled)
+    verify <@ warehouse.Remove(product, quantity) @> never
+    order.IsFilled |> should be False
 
 let [<Test>] ``order sends mail if unfilled`` () =
     // setup data
@@ -66,4 +67,4 @@ let [<Test>] ``order sends mail if unfilled`` () =
     // exercise
     order.Fill(mock())
     // verify
-    Mock.Verify(<@ mailer.Send(any()) @>, once)
+    verify <@ mailer.Send(any()) @> once
