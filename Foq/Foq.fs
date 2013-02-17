@@ -417,7 +417,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     static member With(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResult (typeof<'TAbstract>) (f default')
-        Mock<'TAbstract>(MockMode.Strict, calls).Create()
+        Mock<'TAbstract>(MockMode.Loose, calls).Create()
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (mode, call, calls) =
