@@ -61,9 +61,9 @@ let [<Test>] ``filling does not remove if not enough in stock`` () =
 let [<Test>] ``order sends mail if unfilled`` () =
     // setup data
     let order = Order("TALISKER", 51)
-    let mailer = Mock.Of<MailService>()
+    let mailer = mock()
     order.SetMailer(mailer)
     // exercise
-    order.Fill(Mock.Of<Warehouse>())
+    order.Fill(mock())
     // verify
     Mock.Verify(<@ mailer.Send(any()) @>, once)

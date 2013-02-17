@@ -545,3 +545,5 @@ module Operators =
     let [<Returns>] (-->) (source:'T) (value:'T) = ()
     /// Signifies source expression raises specified exception
     let [<Raises>] (==>) (source:'T) (value:exn) = ()
+    /// Returns a mock of the required type
+    let mock() : 'TAbstractType = Mock.Of<'TAbstractType>() 
