@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Tests.Linq</RootNamespace>
     <AssemblyName>Tests.Linq</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <Name>Tests.Linq.Net45</Name>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -41,12 +41,13 @@
   <ItemGroup>
     <Compile Include="LinqTests.fs" />
     <None Include="packages.config" />
+    <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core, Version=4.3.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="mscorlib" />
     <Reference Include="nunit.framework">
-      <HintPath>..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
+      <HintPath>..\..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -54,9 +55,9 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Foq\Foq.Net45.fsproj">
-      <Name>Foq.Net45</Name>
-      <Project>{027a6e50-cda4-41a6-a59b-a9eacb85bd40}</Project>
+    <ProjectReference Include="..\..\Foq\Foq.fsproj">
+      <Name>Foq</Name>
+      <Project>{b01ad807-6bcb-46c7-b2e8-c5bf9e0f1786}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
