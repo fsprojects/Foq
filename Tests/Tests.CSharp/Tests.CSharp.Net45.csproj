@@ -40,7 +40,7 @@
   <ItemGroup>
     <Reference Include="FSharp.Core, Version=4.3.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="nunit.framework">
-      <HintPath>..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
+      <HintPath>..\..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -55,7 +55,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Foq\Foq.Net45.fsproj">
+    <ProjectReference Include="..\..\Foq\Foq.Net45.fsproj">
       <Project>{027a6e50-cda4-41a6-a59b-a9eacb85bd40}</Project>
       <Name>Foq.Net45</Name>
     </ProjectReference>

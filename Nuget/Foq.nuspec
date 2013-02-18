@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Foq</id>
-    <version>0.7</version>
+    <version>0.8</version>
     <title>Foq</title>
     <authors>Phillip Trelford</authors>
     <owners>Phillip Treford</owners>
@@ -10,17 +10,10 @@
     <projectUrl>http://foq.codeplex.com/</projectUrl>
     <iconUrl>http://trelford.com/fock.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Foq is a lightweight thread-safe mocking library for F# &amp; C#, with a similar API to Moq.</description>
-    <releaseNotes>Foq 0.7 adds methods Verify(expression), With(expressions) &amp; SetupProperties(anonymousObject).</releaseNotes>
+    <description>Foq is a lightweight thread-safe mocking library for F#, C#, and VB with a similar API to Moq.</description>
+    <releaseNotes>Foq 0.8 is dependency free.</releaseNotes>
     <copyright>Copyright 2012</copyright>
-    <tags>F# C# testing unittest unittesting TDD stubs stubbing fakes faking mocks mocking moq</tags>
-    <dependencies>
-      <group targetFramework="net40">
-         <dependency id="FSPowerPack.Linq.Community" version="2.0.0.1" />
-      </group>
-      <group targetFramework="net45">
-         <dependency id="FSPowerPack.Linq.Community" version="3.0.0.0" />
-      </group>
-    </dependencies>
+    <tags>F# C# VB testing unittest unittesting TDD stubs stubbing fakes faking mocks mocking moq</tags>
+    <dependencies/>
   </metadata>
 </package>
