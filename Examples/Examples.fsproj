@@ -52,6 +52,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <Compile Include="TaxExample.fs" />
+    <Compile Include="ShoppingCartExample.fs" />
     <Compile Include="WarehouseExample.fs" />
     <None Include="App.config" />
   </ItemGroup>
