@@ -56,6 +56,7 @@
     <Compile Include="WarehouseExample.fs" />
     <Compile Include="BalanceExample.fs" />
     <Compile Include="StoreSample.fs" />
+    <Compile Include="AtmExample.fs" />
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
