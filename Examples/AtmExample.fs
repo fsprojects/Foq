@@ -18,8 +18,8 @@ let TEST_CHECKING_ACCOUNT = { new Account }
 
 type AtmGui(createTransaction:unit->Transaction) =
     let mutable userAccount = None
-    let mutable display = ""    
-    let mutable amount = 0M
+    let mutable enteredAmount = None
+    let mutable display = ""
     let dispense amount = ()
     let myCashAccount () = TEST_CASH_ACCOUNT
     let doWithdrawal(account:Account, amount:decimal) =
@@ -28,17 +28,20 @@ type AtmGui(createTransaction:unit->Transaction) =
         transaction.SetDestAccount(myCashAccount())
         transaction.SetAmount(amount)
         transaction.Process()
-        if transaction.Successful then dispense(amount)        
+        if transaction.Successful then dispense(amount)
+    let doAction() =
+        match userAccount, enteredAmount with
+        | Some account, Some amount -> doWithdrawal(account, amount)
+        | None, _ -> invalidOp "No account"
+        | _, None -> invalidOp "No amount"
     member atm.SetAccount(account) = 
         userAccount <- Some account
     member atm.PressButton(button) =
-        if button = "Continue" then
-            match userAccount with
-            | Some account -> doWithdrawal(account, amount)
-            | None -> invalidOp "No account"
+        if button = "Continue" then doAction()
     member atm.PressButtons([<ParamArray>] digits:string[]) =
         let entered = String.Join("",digits)
-        amount <- Decimal.Parse(entered) / 100M
+        let amount = Decimal.Parse(entered) / 100M
+        enteredAmount <- Some amount
         let us = CultureInfo.CreateSpecificCulture("en-US")
         display <- amount.ToString("C", us)
     member atm.GetDisplayContents() =
@@ -51,16 +54,16 @@ let insertCardAndInputPin(atm:AtmGui) =
     atm.SetAccount(TEST_CHECKING_ACCOUNT)
 
 let [<Test>] ``test checking withdrawal`` () =
-    let mockTransaction = Mock.Of<Transaction>();
+    let mockTransaction = Mock.Of<Transaction>()
     let atm = new AtmGui(fun () -> mockTransaction)    
 
-    insertCardAndInputPin(atm);
+    insertCardAndInputPin(atm)
 
-    atm.PressButton("Withdraw");
-    atm.PressButton("Checking");
-    atm.PressButtons("1", "0", "0", "0", "0");
+    atm.PressButton("Withdraw")
+    atm.PressButton("Checking")
+    atm.PressButtons("1", "0", "0", "0", "0")
     Assert.AreEqual("$100.00", atm.GetDisplayContents());
-    atm.PressButton("Continue");
+    atm.PressButton("Continue")
 
     Mock.Verify(<@ mockTransaction.SetAmount(100M) @>)
     Mock.Verify(<@ mockTransaction.SetSourceAccount(TEST_CHECKING_ACCOUNT) @>)
