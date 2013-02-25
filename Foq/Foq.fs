@@ -347,6 +347,10 @@ module private QuotationEvaluation =
         | Sequential(lhs,rhs) -> eval env lhs |> ignore; eval env rhs
         | IfThenElse(condition, t, f) ->
             if eval env condition |> unbox then eval env t else eval env f
+        | UnionCaseTest(t,info) -> 
+            let target = eval env t
+            let case, _ = FSharpValue.GetUnionFields(target, info.DeclaringType)
+            case.Tag = info.Tag |> box
         | arg -> raise <| NotSupportedException(arg.ToString())
     and evalAll env args = [|for arg in args -> eval env arg|]
 
