@@ -135,11 +135,12 @@ module internal Emit =
             emitReturnValueLookup f
             // Emit Invoke
             let args = mi.GetParameters() |> Array.map (fun arg -> arg.ParameterType)
+            let returnType = if mi.ReturnType = typeof<Void> then typeof<unit> else mi.ReturnType
             if args.Length = 1 then il.Emit(OpCodes.Ldarg_1)
             else
                 for i = 1 to args.Length do il.Emit(OpCodes.Ldarg, i)
                 il.Emit(OpCodes.Newobj, FSharpType.MakeTupleType(args).GetConstructor(args))
-            let invoke = typeof<FSharpFunc<obj,obj>>.GetMethod("Invoke")
+            let invoke = FSharpType.MakeFunctionType(typeof<obj>, returnType).GetMethod("Invoke")
             il.Emit(OpCodes.Callvirt, invoke)
             if mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> then il.Emit(OpCodes.Pop)
             il.Emit(OpCodes.Ret)
