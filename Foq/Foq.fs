@@ -310,7 +310,7 @@ open Emit
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 
-module private Quotation =
+module private QuotationEvaluation =
     let rec eval (env:(string * obj) list) = function
         | Value(v,t) -> v
         | Var(x) -> (env |> List.find (fst >> (=) x.Name)) |> snd
@@ -344,6 +344,7 @@ module private Quotation =
         | Let(var, assignment, body) ->
             let env = (var.Name, eval env assignment)::env
             eval env body
+        | Sequential(lhs,rhs) -> eval env lhs |> ignore; eval env rhs
         | IfThenElse(condition, t, f) ->
             if eval env condition |> unbox then eval env t else eval env f
         | arg -> raise <| NotSupportedException(arg.ToString())
@@ -354,7 +355,8 @@ module Eval =
     open Microsoft.FSharp.Linq.QuotationEvaluation
     let eval (expr:Expr) = expr.EvalUntyped()
 #else
-    let eval expr = Quotation.eval [] expr
+    open QuotationEvaluation
+    let eval expr = eval [] expr
 #endif
 
 module private Reflection =

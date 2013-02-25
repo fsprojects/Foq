@@ -107,4 +107,9 @@ type Tests () =
     member test.``branch false`` () =
         Assert.AreEqual(-1, eval <@ if false then 0 else -1 @>)
 
+    [<Test>]
+    member test.``sequential`` () =
+        let sideEffect () = ()
+        Assert.AreEqual(42, eval <@ sideEffect(); 42 @>)
+
 
