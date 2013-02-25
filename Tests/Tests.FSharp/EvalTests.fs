@@ -112,4 +112,7 @@ type Tests () =
         let sideEffect () = ()
         Assert.AreEqual(42, eval <@ sideEffect(); 42 @>)
 
-
+    [<Test>]
+    member test.``union case test`` () =
+        let sideEffect () = ()
+        Assert.AreEqual(42, eval <@ Some(42) |> function Some(x) -> x | None -> 0 @>)
