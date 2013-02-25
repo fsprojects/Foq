@@ -1,4 +1,5 @@
-﻿/// Store sample based on http://code.google.com/p/moq/source/browse/trunk/Samples/StoreSample/#StoreSample
+﻿/// Store sample based on Moq's store sample:
+//  http://code.google.com/p/moq/source/browse/trunk/Samples/StoreSample/#StoreSample
 module ``Store Sample``
 
 open System
@@ -57,7 +58,7 @@ let [<Test>] ``should category selection set products`` () =
             .SetupEvent(fun x -> <@ x.CategorySelected @>)
             .Publishes(event.Publish)
             .Create()
-    let presenter = ProductsPresenter(catalog, view)                        
+    let presenter = ProductsPresenter(catalog, view)
     // Act
     event.Trigger(view, CategoryEventArgs({Category.Id=1; Name="" }))
     // Assert
@@ -70,14 +71,14 @@ let [<Test>] ``should not place order if not enough inventory`` () =
     let view = 
         Mock.Of<IProductsView>()
     let presenter = ProductsPresenter(catalog, view);
-    let order = Order(product={Id=1; Name=""}, quantity=5)                 
+    let order = Order(product={Id=1; Name=""}, quantity=5)
     // Act
     presenter.PlaceOrder(order);
     // Assert
     Assert.IsFalse(order.Filled)
     Mock.Verify(<@ catalog.HasInventory(1, 5) @>)
 
-let [<Test>] ``should not place order if fails to remove`` () =               
+let [<Test>] ``should not place order if fails to remove`` () = 
     // Arrange
     let catalog = 
         Mock<ICatalogService>.With(fun c ->

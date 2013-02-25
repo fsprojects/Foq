@@ -105,7 +105,6 @@ let [<Test>] CalculateTwoLineTotals() =
     Assert.AreEqual(25M, o.Lines.[0].Total)
     Assert.AreEqual(30M, o.Lines.[1].Total)
 
-
 let [<Test>] CalculateLineTotalsUsingFake() =
     let dataAccess = 
         Mock<IShopDataAccess>.With(fun dataAccess ->
