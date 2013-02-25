@@ -70,3 +70,13 @@ type Tests () =
     member test.``function application`` () =
         let f (x:int) = x
         Assert.AreEqual(1, eval [] <@ f 1 @>)
+
+    [<Test>]
+    member test.``function application * 2`` () =
+        let add (a:int) (b:int) = a + b
+        Assert.AreEqual(3, eval [] <@ add 1 2 @>)
+
+    [<Test>]
+    member test.``function application * 3`` () =
+        let add (a:int) (b:int) (c:int) = (a + b + c)
+        Assert.AreEqual(6, eval [] <@ add 1 2 3 @>)

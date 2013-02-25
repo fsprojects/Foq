@@ -339,8 +339,11 @@ module internal Eval =
             let ft = FSharpType.MakeFunctionType(var.Type, body.Type)
             FSharpValue.MakeFunction(ft, fun arg -> eval ((var,arg)::env) body)
         | Application(lambda, arg) ->
-            let lambda, arg = eval env lambda, eval env arg
-            lambda.GetType().GetMethod("Invoke").Invoke(lambda, [|arg|])
+            let lambda = eval env lambda
+            let flags = BindingFlags.Instance ||| BindingFlags.Public
+            let mi = lambda.GetType().GetMethod("Invoke", flags, null, [|arg.Type|], null)
+            let arg = eval env arg
+            mi.Invoke(lambda, [|arg|])
         | arg -> raise <| NotSupportedException(arg.ToString())
     and evalAll env args = [|for arg in args -> eval env arg|]
 #endif
