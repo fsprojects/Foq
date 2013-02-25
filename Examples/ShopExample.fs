@@ -138,6 +138,43 @@ let [<Test>] CalculateLineTotalsUsingDelegate() =
     Assert.AreEqual(135, o.Lines.[0].Total)
     Assert.AreEqual(30, o.Lines.[1].Total)
 
+let [<Test>] CalculateLineTotalsUsingManualMock() =
+    let dataAccess =
+        { new IShopDataAccess with
+            member __.GetProductPrice(productId) =
+                match productId with
+                | 1234 -> 45M
+                | 2345 -> 15M
+                | _ -> raise <| ArgumentOutOfRangeException("productId")
+            member __.Save(_,_) = failwith "Not implemented"
+        }
+
+    let o = Order(11, dataAccess)
+    o.Lines.Add(1234, 3)
+    o.Lines.Add(2345, 2)
+
+    Assert.AreEqual(135, o.Lines.[0].Total)
+    Assert.AreEqual(30, o.Lines.[1].Total)
+
+let [<Test>] CalculateLineTotalsUsingDelegateMock() =
+    let mockDataAccess f =
+        { new IShopDataAccess with
+            member __.GetProductPrice(productId) = f productId
+            member __.Save(_,_) = failwith "Not implemented"
+        }
+
+    let getProductId = function
+        | 1234 -> 45M
+        | 2345 -> 15M
+        | _ -> raise <| ArgumentOutOfRangeException("productId")
+
+    let o = Order(12, mockDataAccess getProductId)
+    o.Lines.Add(1234, 3)
+    o.Lines.Add(2345, 2)
+
+    Assert.AreEqual(135, o.Lines.[0].Total)
+    Assert.AreEqual(30, o.Lines.[1].Total)
+
 let [<Test>] CalculateLineTotalsUsingDynamicMock() =
     let dataAccess = 
         Mock<IShopDataAccess>.With(fun dataAccess ->
