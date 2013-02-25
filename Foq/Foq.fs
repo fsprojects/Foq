@@ -315,37 +315,34 @@ module internal Eval =
     open Microsoft.FSharp.Linq.QuotationEvaluation
     let eval (expr:Expr) = expr.EvalUntyped()
 #else
-    let rec eval = function
+    let rec eval (env:(Var*obj) list) = function
         | Value(v,t) -> v
-        | Coerce(e,t) -> eval e
-        | NewObject(ci,args) -> ci.Invoke(evalAll args)
-        | NewArray(t,args) -> 
+        | Var(x) -> (env |> List.find (fun (v,_) -> v.Name = x.Name)) |> snd
+        | Coerce(e,t) -> eval env e
+        | NewObject(ci,args) -> ci.Invoke(evalAll env args)
+        | NewArray(t,args) ->
             let array = Array.CreateInstance(t, args.Length) 
-            args |> List.iteri (fun i arg -> array.SetValue(eval arg, i))
+            args |> List.iteri (fun i arg -> array.SetValue(eval env arg, i))
             box array
-        | NewUnionCase(case,args) -> FSharpValue.MakeUnion(case, evalAll args)
-        | NewRecord(t,args) -> FSharpValue.MakeRecord(t, evalAll args)
+        | NewUnionCase(case,args) -> FSharpValue.MakeUnion(case, evalAll env args)
+        | NewRecord(t,args) -> FSharpValue.MakeRecord(t, evalAll env args)
         | NewTuple(args) ->
             let t = FSharpType.MakeTupleType [|for arg in args -> arg.Type|]
-            FSharpValue.MakeTuple(evalAll args, t)
+            FSharpValue.MakeTuple(evalAll env args, t)
         | FieldGet(None,fi) -> fi.GetValue(null)
-        | FieldGet(Some(x),fi) -> fi.GetValue(eval x)
-        | PropertyGet(None, pi, args) -> pi.GetValue(null, evalAll args)
-        | PropertyGet(Some(x),pi,args) -> pi.GetValue(eval x, evalAll args)
-        | Call(None,mi,args) -> mi.Invoke(null, evalAll args)
-        | Call(Some(x),mi,args) -> mi.Invoke(eval x, evalAll args)
-        | Lambda(v,Call(None,mi,args)) ->
-            let ft = FSharpType.MakeFunctionType(v.Type, mi.ReturnType)
-            FSharpValue.MakeFunction(ft, fun x ->
-                let args =
-                    args |> Array.ofList |> Array.map (function
-                        | Var(v') when v.Name = v'.Name -> x
-                        | arg -> eval arg
-                    )
-                mi.Invoke(null, args)
-            )
+        | FieldGet(Some(x),fi) -> fi.GetValue(eval env x)
+        | PropertyGet(None, pi, args) -> pi.GetValue(null, evalAll env args)
+        | PropertyGet(Some(x),pi,args) -> pi.GetValue(eval env x, evalAll env args)
+        | Call(None,mi,args) -> mi.Invoke(null, evalAll env args)
+        | Call(Some(x),mi,args) -> mi.Invoke(eval env x, evalAll env args)
+        | Lambda(var,body) ->
+            let ft = FSharpType.MakeFunctionType(var.Type, body.Type)
+            FSharpValue.MakeFunction(ft, fun arg -> eval ((var,arg)::env) body)
+        | Application(lambda, arg) ->
+            let lambda, arg = eval env lambda, eval env arg
+            lambda.GetType().GetMethod("Invoke").Invoke(lambda, [|arg|])
         | arg -> raise <| NotSupportedException(arg.ToString())
-    and evalAll args = [|for arg in args -> eval arg|]
+    and evalAll env args = [|for arg in args -> eval env arg|]
 #endif
 
 module private Reflection =
@@ -357,8 +354,8 @@ module private Reflection =
         [|for arg in args ->
             match arg with
             | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
-            | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
-            | expr -> eval expr |> Arg |]
+            | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval [] pred)
+            | expr -> eval [] expr |> Arg |]
     /// Converts expression to a tuple of Expression, MethodInfo and Arg array
     let toCall = function
         | Call(Some(x), mi, args) -> x, mi, toArgs args
@@ -376,11 +373,11 @@ module private Reflection =
             toCallResult abstractType x @ toCallResult abstractType y
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<ReturnsAttribute> mi -> 
             let mi, args = toCallOfType abstractType lhs
-            let returns = ReturnValue(eval rhs, mi.ReturnType)
+            let returns = ReturnValue(eval [] rhs, mi.ReturnType)
             [mi,(args,returns)]
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<RaisesAttribute> mi -> 
             let mi, args = toCallOfType abstractType lhs
-            let raises = RaiseValue(eval rhs :?> exn)
+            let raises = RaiseValue(eval [] rhs :?> exn)
             [mi,(args,raises)]
         | expr -> invalidOp(expr.ToString())
     /// Converts expression to corresponding event Add and Remove handlers
@@ -517,7 +514,7 @@ type Mock with
     static member Verify(expr:Expr, expectedTimes:Times) =
         let (x,expectedMethod,expectedArgs) = toCall expr
         let mock =
-            match eval x with
+            match eval [] x with
             | :? IMockObject as mock -> mock
             | _ -> failwith "Object instance is not a mock"
         let actualCalls = countInvocations mock expectedMethod expectedArgs
