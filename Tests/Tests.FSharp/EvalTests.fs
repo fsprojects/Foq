@@ -114,5 +114,8 @@ type Tests () =
 
     [<Test>]
     member test.``union case test`` () =
-        let sideEffect () = ()
         Assert.AreEqual(42, eval <@ Some(42) |> function Some(x) -> x | None -> 0 @>)
+
+    [<Test>]
+    member test.``type test`` () =
+        Assert.AreEqual(42, eval <@ box 42 |> function :? int as x -> x | _ -> 0 @>)
