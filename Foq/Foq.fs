@@ -344,6 +344,8 @@ module private Quotation =
         | Let(var, assignment, body) ->
             let env = (var.Name, eval env assignment)::env
             eval env body
+        | IfThenElse(condition, t, f) ->
+            if eval env condition |> unbox then eval env t else eval env f
         | arg -> raise <| NotSupportedException(arg.ToString())
     and evalAll env args = [|for arg in args -> eval env arg|]
 

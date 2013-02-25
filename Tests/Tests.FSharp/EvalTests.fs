@@ -99,3 +99,12 @@ type Tests () =
         let tuple = 1,2
         Assert.AreEqual(2, eval <@ let _,y = tuple in y @>)
 
+    [<Test>]
+    member test.``branch true`` () =
+        Assert.AreEqual(0, eval <@ if true then 0 else -1 @>)
+
+    [<Test>]
+    member test.``branch false`` () =
+        Assert.AreEqual(-1, eval <@ if false then 0 else -1 @>)
+
+
