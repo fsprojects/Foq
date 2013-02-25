@@ -36,47 +36,66 @@ type Tests () =
         ]
     
     [<Test;TestCaseSource("Expressions")>]
-    static member ``evaluates`` (expr:Expr) = eval [] expr
+    static member ``evaluates`` (expr:Expr) = eval expr
 
     member test.LocalProperty = 1
 
     [<Test>]
     member test.``local property getter`` () =
-        Assert.AreEqual(test.LocalProperty, eval [] <@ test.LocalProperty @>)
+        Assert.AreEqual(test.LocalProperty, eval <@ test.LocalProperty @>)
 
     member test.LocalMethod() = 1
 
     [<Test>]
     member test.``local property method`` () =
-        Assert.AreEqual(test.LocalMethod(), eval [] <@ test.LocalMethod() @>)
+        Assert.AreEqual(test.LocalMethod(), eval <@ test.LocalMethod() @>)
 
     static member GlobalProperty = 1
 
     [<Test>]
     member test.``global property getter`` () =
-        Assert.AreEqual(Tests.GlobalProperty, eval [] <@ Tests.GlobalProperty @>)
+        Assert.AreEqual(Tests.GlobalProperty, eval <@ Tests.GlobalProperty @>)
 
     static member GlobalMethod() = 1
 
     [<Test>]
     member test.``global property method`` () =
-        Assert.AreEqual(Tests.GlobalMethod(), eval [] <@ Tests.GlobalMethod() @>)
+        Assert.AreEqual(Tests.GlobalMethod(), eval <@ Tests.GlobalMethod() @>)
 
     [<Test>]
     member test.``local field`` () =
-        Assert.AreEqual(localField, eval [] <@ localField @>)
+        Assert.AreEqual(localField, eval <@ localField @>)
 
     [<Test>]
     member test.``function application`` () =
         let f (x:int) = x
-        Assert.AreEqual(1, eval [] <@ f 1 @>)
+        Assert.AreEqual(1, eval <@ f 1 @>)
 
     [<Test>]
     member test.``function application * 2`` () =
         let add (a:int) (b:int) = a + b
-        Assert.AreEqual(3, eval [] <@ add 1 2 @>)
+        Assert.AreEqual(3, eval <@ add 1 2 @>)
 
     [<Test>]
     member test.``function application * 3`` () =
         let add (a:int) (b:int) (c:int) = (a + b + c)
-        Assert.AreEqual(6, eval [] <@ add 1 2 3 @>)
+        Assert.AreEqual(6, eval <@ add 1 2 3 @>)
+
+    [<Test>]
+    member test.``let`` () =
+        Assert.AreEqual(1, eval <@ let x = 1 in x @>)
+
+    [<Test>]
+    member test.``let * 2`` () =
+        Assert.AreEqual(1, eval <@ let x = 1 in let y = x in y @>)
+
+    [<Test>]
+    member test.``tuple get 1`` () =
+        let tuple = 1,2
+        Assert.AreEqual(1, eval <@ let x,_ = tuple in x @>)
+
+    [<Test>]
+    member test.``tuple get 2`` () =
+        let tuple = 1,2
+        Assert.AreEqual(2, eval <@ let _,y = tuple in y @>)
+
