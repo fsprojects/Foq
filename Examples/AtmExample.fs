@@ -1,4 +1,4 @@
-﻿/// ATM example based on Alexander Chaffee & William Pietri's article
+﻿/// ATM example based on code in Alexander Chaffee & William Pietri's article
 /// Unit testing with mock objects: http://www.ibm.com/developerworks/library/j-mocktest/index.html
 module ``ATM Example``
 

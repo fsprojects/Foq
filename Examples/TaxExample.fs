@@ -3,7 +3,7 @@
 module ``Tax Example``
 
 type ITaxCalculator =
-    abstract GetTax : decimal -> decimal
+    abstract GetTax : rawPrice:decimal -> decimal
 
 type Product (id, name, rawPrice) =
     member product.ID = id
