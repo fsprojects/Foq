@@ -511,25 +511,25 @@ type Mock =
         mock(false, typeof<'TAbstractType>, []) :?> 'TAbstractType
 
 /// Specifies valid invocation count
-type Times private (predicate:int -> bool) =
+type Times internal (predicate:int -> bool) =
     member __.Match(n) = predicate(n)
     static member Exactly(n:int) = Times((=) n)
     static member AtLeast(n:int) = Times((<=) n)
-    static member AtLeastOnce() = Times.AtLeast(1)
+    static member AtLeastOnce = Times.AtLeast(1)
     static member AtMost(n:int) = Times((>=) n)
-    static member AtMostOnce() = Times.AtMost(1)
-    static member Never() = Times((=) 0)
-    static member Once() = Times((=) 1)
+    static member AtMostOnce = Times.AtMost(1)
+    static member Never = Times((=) 0)
+    static member Once = Times((=) 1)
 
 [<AutoOpen;CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Times =
     let exactly = Times.Exactly
     let atleast = Times.AtLeast
-    let atleastonce = Times.AtLeastOnce()
+    let atleastonce = Times.AtLeastOnce
     let atmost = Times.AtMost
-    let atmostonce = Times.AtMostOnce()
-    let never = Times.Never()
-    let once = Times.Once()
+    let atmostonce = Times.AtMostOnce
+    let never = Times.Never
+    let once = Times.Once
 
 module internal Verification =
     /// Return true if methods match
@@ -612,3 +612,5 @@ module Operators =
     let mock() : 'TAbstractType = Mock.Of<'TAbstractType>()
     /// Verifies the expression occurs the specified number of times
     let verify expr times = Mock.Verify(expr, times)
+    /// Expects the expression occurs the specified number of times
+    let expect expr times = Mock.Expect(expr, times)
