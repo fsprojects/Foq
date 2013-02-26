@@ -150,6 +150,14 @@ public class LinqTests
     }
 
     [Test]
+    public void TestExpectPropertyGet()
+    {
+        var list = Mock.Of<IList<int>>();
+        Mock.ExpectPropertyGet(() => list.Count, Times.Once);
+        var count = list.Count;
+    }
+
+    [Test]
     public void TestVerifyPropertyGet()
     {
         var list = Mock.Of<IList<int>>();
@@ -181,10 +189,17 @@ public class LinqTests
     }
 
     [Test]
+    public void TestExpectPropertySet()
+    {
+        var mock = Mock.Of<ISettable>();
+        Mock.ExpectPropertySet(() => mock.Value, Times.Once);
+        mock.Value = 1;
+    }
+
+    [Test]
     public void TestVerifyPropertySet()
     {
-        var mock =
-            new Mock<ISettable>(MockMode.Loose).Create();
+        var mock = Mock.Of<ISettable>();
         mock.Value = 1;
         Mock.VerifyPropertySet(() => mock.Value);
     }
