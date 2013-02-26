@@ -230,21 +230,30 @@ type Mock with
         getProperty expr
         |> function (o,pi,args) -> o, pi.GetSetMethod(), [|yield! args; yield Arg.Any|]
         |> verify Foq.Times.atleastonce
-    /// Expects specified function is called at least once on specified mock
+    /// Expects specified function is called on specified mock
     static member ExpectFunc<'TReturnValue>(expr:Expression<Func<'TReturnValue>>, times:Foq.Times) =
         getMethod expr |> expect times
-    /// Expects specified action is called at least once on specified mock
+    /// Expects specified action is called on specified mock
     static member ExpectAction(expr:Expression<Action>, times:Foq.Times) =
         getMethod expr |> expect times
-    /// Expects specified subroutine is called at least once on specified mock
+    /// Expects specified subroutine is called on specified mock
     static member ExpectSub(expr:Expression<Action>, times:Foq.Times) = 
         Mock.ExpectAction(expr, times)
-    /// Expects specified method is called at least once on specified mock
+    /// Expects specified method is called on specified mock
     static member Expect<'TReturnValue>(expr:Expression<Func<'TReturnValue>>, times:Foq.Times) =
         Mock.ExpectFunc<'TReturnValue>(expr, times)
     static member Expect(expr:Expression<Action>, times:Foq.Times) =
         Mock.ExpectAction(expr, times)
-
+    /// Expects specified property getter is called on specified mock
+    static member ExpectPropertyGet(expr:Expression<Func<'TReturnValue>>, times:Foq.Times) =
+        getProperty expr 
+        |> function (o,pi,args) -> o, pi.GetGetMethod(), args
+        |> expect times
+    /// Expects specified property setter is called on specified mock
+    static member ExpectPropertySet(expr:Expression<Func<'TReturnValue>>, times:Foq.Times) =
+        getProperty expr
+        |> function (o,pi,args) -> o, pi.GetSetMethod(), [|yield! args; yield Arg.Any|]
+        |> expect times
 type [<Sealed>] It private () =
     /// Marks argument as matching any value
     [<Foq.Wildcard>] static member IsAny<'TArg>() = Unchecked.defaultof<'TArg>

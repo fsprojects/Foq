@@ -123,4 +123,16 @@ Public Class Tests
         Assert.AreEqual(9.99, order.Price)
         Assert.AreEqual(10, order.Quantity)
     End Sub
+    <Test>
+    Public Sub TestExpectPropertySet()
+        Dim order = Mock.Of(Of IOrder)()
+        Mock.ExpectPropertySet(Function() order.Price, Times.Once)
+        order.Price = 1
+    End Sub
+    <Test>
+    Public Sub TestVerifyPropertySet()
+        Dim order = Mock.Of(Of IOrder)()
+        order.Price = 1
+        Mock.VerifyPropertySet(Function() order.Price)
+    End Sub
 End Class
