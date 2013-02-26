@@ -5,6 +5,15 @@ open NUnit.Framework
 open System.Collections.Generic
 
 [<Test>]
+let ``expect method call with any argument value`` () =
+    // Arrange 
+    let xs = Mock<IList<int>>.With(fun xs -> <@ xs.Contains(any()) --> true @>)
+    Mock.Expect(<@ xs.Contains(0) @>, never)
+    Mock.Expect(<@ xs.Contains(any()) @>, once)
+    // Act
+    xs.Contains(1) |> ignore
+
+[<Test>]
 let ``verify method call with any argument value`` () =
     // Arrange 
     let xs = Mock<IList<int>>.With(fun xs -> <@ xs.Contains(any()) --> true @>)
@@ -38,16 +47,28 @@ let ``verify property getter`` () =
     Mock.Verify(<@ xs.Count @>, once)
 
 [<Test>]
+let ``expect action`` () =
+    let xs = Mock.Of<IList<int>>()
+    Mock.Expect(<@ xs.Clear() @>, once)
+    let _ = xs.Contains(1)
+    let _ = xs.Clear()
+    Mock.Verify(<@ xs.Clear() @>, once)
+
+[<Test>]
 let ``verify action`` () =
-    let xs = Mock<IList<int>>().Create()
+    let xs = Mock.Of<IList<int>>()
     Mock.Verify(<@ xs.Clear() @>, never)
     let _ = xs.Clear()
     Mock.Verify(<@ xs.Clear() @>, once)
 
 [<Test>]
-let ``expect action`` () =
-    let xs = Mock<IList<int>>().Create()
-    Mock.Expect(<@ xs.Clear() @>, once)
-    let _ = xs.Contains(1)
-    let _ = xs.Clear()
-    Mock.Verify(<@ xs.Clear() @>, once)
+let ``expect property setter`` () =
+    let xs = Mock.Of<IList<int>>()
+    Mock.Expect(<@ xs.[0] <- 1 @>, once)
+    xs.[0] <- 1
+
+[<Test>]
+let ``verify property setter`` () =
+    let xs = Mock.Of<IList<int>>()
+    xs.[0] <- 1
+    Mock.Expect(<@ xs.[0] <- 1 @>, once)
