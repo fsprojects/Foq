@@ -43,3 +43,11 @@ let ``verify action`` () =
     Mock.Verify(<@ xs.Clear() @>, never)
     let _ = xs.Clear()
     Mock.Verify(<@ xs.Clear() @>, once)
+
+[<Test>]
+let ``expect action`` () =
+    let xs = Mock<IList<int>>().Create()
+    Mock.Expect(<@ xs.Clear() @>, once)
+    let _ = xs.Contains(1)
+    let _ = xs.Clear()
+    Mock.Verify(<@ xs.Clear() @>, once)

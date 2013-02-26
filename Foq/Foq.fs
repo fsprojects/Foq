@@ -7,6 +7,8 @@ open Microsoft.FSharp.Reflection
 /// Mock object interface for verification
 type IMockObject =
     abstract Invocations : Invocations
+    [<CLIEvent>]
+    abstract Invoked : IEvent<EventHandler,EventArgs>
 /// Member invocation record
 and Invocation = { Method : MethodBase; Args : obj[] }
 /// List of invocations
@@ -175,6 +177,15 @@ module internal Emit =
         let invoke = typeof<System.Collections.Generic.List<obj[]>>.GetMethod("Add")
         il.Emit(OpCodes.Callvirt, invoke)
 
+    /// Generates trigger
+    let generateTrigger (il:ILGenerator) (invokedField:FieldBuilder) =
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldfld, invokedField)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Newobj, typeof<EventArgs>.GetConstructor([||]))
+        let trigger = typeof<Event<EventHandler,EventArgs>>.GetMethod("Trigger")
+        il.Emit(OpCodes.Callvirt, trigger)
+
     /// Generates method overload
     let generateOverload 
         (il:ILGenerator)
@@ -213,6 +224,8 @@ module internal Emit =
         let argsField = typeBuilder.DefineField("_args", typeof<obj[][]>, fields)
         /// Field for method invocations
         let invocationsField = typeBuilder.DefineField("_invocations", typeof<Invocations>, fields)
+        /// Field for invoked event
+        let invokedField = typeBuilder.DefineField("_invoked", typeof<Event<EventHandler,EventArgs>>, fields)
         // Generate default constructor
         generateConstructor typeBuilder [||] (fun il -> ())
         // Set fields from constructor arguments
@@ -226,6 +239,9 @@ module internal Emit =
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Newobj, typeof<Invocations>.GetConstructor([||]))
             il.Emit(OpCodes.Stfld, invocationsField)
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Newobj, typeof<Event<EventHandler,EventArgs>>.GetConstructor([||]))
+            il.Emit(OpCodes.Stfld, invokedField)
         // Generate constructor overload
         generateConstructor typeBuilder [|typeof<obj[]>;typeof<obj[][]>|] setFields
         /// Generates Invocations property getter
@@ -236,8 +252,24 @@ module internal Emit =
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Ldfld, invocationsField)
             il.Emit(OpCodes.Ret)
-        // Generate Recorder.Invocations property getter
+        // Generate IMockObject.Invocations property getter
         generateInvocationsPropertyGetter ()
+        /// Generates invoked event
+        let generateEventHandler mi  handlerName =
+            let add = defineMethod typeBuilder mi
+            let il = add.GetILGenerator()
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldfld, invokedField)
+            let get_Publish = typeof<Event<EventHandler,EventArgs>>.GetProperty("Publish").GetGetMethod()
+            il.Emit(OpCodes.Callvirt, get_Publish)
+            il.Emit(OpCodes.Ldarg_1)
+            let handler = typeof<IDelegateEvent<EventHandler>>.GetMethod(handlerName)
+            il.Emit(OpCodes.Callvirt, handler)
+            il.Emit(OpCodes.Ret)
+        // Generate IMockObject.Invoked event
+        let invoked = typeof<IMockObject>.GetEvent("Invoked")
+        generateEventHandler (invoked.GetAddMethod()) "AddHandler"
+        generateEventHandler (invoked.GetRemoveMethod()) "RemoveHandler"
         /// Method overloads grouped by type
         let groupedMethods = calls |> Seq.groupBy fst
         /// Method argument lookup
@@ -263,8 +295,10 @@ module internal Emit =
             let methodBuilder = defineMethod typeBuilder abstractMethod
             /// IL generator
             let il = methodBuilder.GetILGenerator()
-            // Record invocation
+            // Add invocation
             generateAddInvocation il invocationsField abstractMethod
+            // Trigger invoked event
+            generateTrigger il invokedField
             /// Method overloads defined for current method
             let overloads = groupedMethods |> Seq.tryFind (fst >> (=) abstractMethod)
             match overloads with
@@ -474,11 +508,11 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
 type Mock =
     /// Creates a mocked instance of the abstract type
     static member Of<'TAbstractType>() = 
-        mock(false, typeof<'TAbstractType>, []) :?> 'TAbstractType   
+        mock(false, typeof<'TAbstractType>, []) :?> 'TAbstractType
 
 /// Specifies valid invocation count
 type Times private (predicate:int -> bool) =
-    member __.Match(n) = predicate(n)       
+    member __.Match(n) = predicate(n)
     static member Exactly(n:int) = Times((=) n)
     static member AtLeast(n:int) = Times((<=) n)
     static member AtLeastOnce() = Times.AtLeast(1)
@@ -502,7 +536,7 @@ module internal Verification =
     let methodsMatch (a:MethodBase) (b:MethodBase) =
         a.Name = b.Name &&
         a.GetParameters().Length = b.GetParameters().Length &&
-        Array.zip (a.GetParameters()) (b.GetParameters())       
+        Array.zip (a.GetParameters()) (b.GetParameters())
         |> Array.forall (fun (a,b) -> a.ParameterType = b.ParameterType)
     /// Returns true if arguments match
     let argsMatch argType expectedArg actualValue =
@@ -513,17 +547,21 @@ module internal Verification =
             let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
             f.Invoke(p,[|actualValue|]) :?> bool
         | PredUntyped(p) -> raise <| NotSupportedException()
+    let invokeMatch (expectedMethod:MethodBase) (expectedArgs:Arg[]) (actual:Invocation) =
+        let ps = expectedMethod.GetParameters()
+        methodsMatch expectedMethod actual.Method &&
+        Array.zip expectedArgs actual.Args
+        |> Array.mapi (fun i (e,a) -> ps.[i].ParameterType,e,a)
+        |> Array.forall (fun (t,e,a) -> argsMatch t e a)
     /// Returns invocation count matching specificed expression
-    let countInvocations (mock:IMockObject) (expectedMethod:MethodBase) (expectedArgs:Arg[]) =
+    let countInvocations (mock:IMockObject) (expectedMethod) (expectedArgs) =
         mock.Invocations
-        |> Seq.filter (fun invoked ->
-            let ps = expectedMethod.GetParameters()
-            methodsMatch expectedMethod invoked.Method &&
-            Array.zip expectedArgs invoked.Args
-            |> Array.mapi (fun i (e,a) -> ps.[i].ParameterType,e,a)
-            |> Array.forall (fun (t,e,a) -> argsMatch t e a)
-        )
+        |> Seq.filter (invokeMatch expectedMethod expectedArgs)
         |> Seq.length
+    let getMock (x:obj) =
+        match x with
+        | :? IMockObject as mock -> mock
+        | _ -> failwith "Object instance is not a mock"
 
 open Eval
 open Verification
@@ -532,15 +570,23 @@ type Mock with
     /// Verifies expected call count against instance member invocations on specified mock
     static member Verify(expr:Expr, expectedTimes:Times) =
         let (x,expectedMethod,expectedArgs) = toCall expr
-        let mock =
-            match eval x with
-            | :? IMockObject as mock -> mock
-            | _ -> failwith "Object instance is not a mock"
+        let mock = x |> eval |> getMock
         let actualCalls = countInvocations mock expectedMethod expectedArgs
         if not <| expectedTimes.Match(actualCalls) then 
             failwith "Expected invocations on the mock not met" 
     /// Verifies expression was invoked at least once
     static member Verify(expr:Expr) = Mock.Verify(expr, atleastonce)
+    /// Verifies expected expression call count on invocation
+    static member Expect(expr:Expr, expectedTimes:Times) =
+        let (x,expectedMethod,expectedArgs) = toCall expr
+        let mock = x |> eval |> getMock
+        mock.Invoked.Subscribe(fun _ ->
+            let last = mock.Invocations.[mock.Invocations.Count-1]
+            if invokeMatch expectedMethod expectedArgs last then
+                let actualCalls = countInvocations mock expectedMethod expectedArgs
+                if not <| expectedTimes.Match(actualCalls) then 
+                    failwith "Unexpected member invocation" 
+        ) |> ignore
 
 [<Sealed>]
 type It private () =
