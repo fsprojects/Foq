@@ -413,7 +413,7 @@ module private Reflection =
     let toCall = function
         | Call(Some(x), mi, args) -> x, mi, toArgs args
         | PropertyGet(Some(x), pi, args) -> x, pi.GetGetMethod(), toArgs args
-        | PropertySet(Some(x), pi, args, value) -> x, pi.GetSetMethod(), toArgs args
+        | PropertySet(Some(x), pi, args, value) -> x, pi.GetSetMethod(), toArgs [yield! args;yield value]
         | expr -> raise <| NotSupportedException(expr.ToString())
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toCallOfType abstractType expr =
