@@ -121,8 +121,16 @@ public class LinqTests
     public void TestVerifyFunc()
     {
         var list = new Mock<IList<int>>().SetupFunc(mock => mock.Contains(1)).Returns(true).Create();
-        var _ = list.Contains(1);     
-        Mock.VerifyFunc(() => list.Contains(1));
+        var _ = list.Contains(1);
+        Mock.Verify(() => list.Contains(1));
+    }
+
+    [Test]
+    public void TestExpectFunc()
+    {
+        var list = new Mock<IList<int>>().SetupFunc(mock => mock.Contains(1)).Returns(true).Create();
+        Mock.Expect(() => list.Contains(1), Times.Once);
+        var _ = list.Contains(1);
     }
 
     [Test]
@@ -130,7 +138,7 @@ public class LinqTests
     {
         var list = new Mock<IList<int>>(MockMode.Loose).Create();
         list.Clear();
-        Mock.VerifyAction(() => list.Clear());
+        Mock.Verify(() => list.Clear());
     }
 
     [Test]

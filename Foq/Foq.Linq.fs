@@ -163,11 +163,11 @@ module private Verification =
         match expr with
         | :? MemberExpression as me ->
             let getExpression = Expression<Func<obj>>.Lambda<Func<obj>>(me)
-            let caller = getExpression.Compile()                    
+            let caller = getExpression.Compile()
             caller.Invoke()
         | _ -> raise <| NotSupportedException(expr.ToString())
     /// Gets method from lambda expression
-    let getMethod (expr:LambdaExpression) =        
+    let getMethod (expr:LambdaExpression) =
         match expr.Body with
         | :? MethodCallExpression as call -> 
             getInstance call.Object, call.Method, toArgs call.Arguments    
@@ -176,7 +176,7 @@ module private Verification =
     let getProperty (expr:LambdaExpression) = 
         match expr.Body with
         | :? MemberExpression as call ->
-            let pi = call.Member :?> PropertyInfo            
+            let pi = call.Member :?> PropertyInfo
             getInstance call.Expression, pi, toArgs [||]
         | :? MethodCallExpression as call -> 
             let pi = 
@@ -186,15 +186,24 @@ module private Verification =
         | _ -> raise <| NotSupportedException(expr.ToString())
     /// Verifies if method called on instance the specified number of times
     let verify (times:Foq.Times) (instance:obj, mi, args) =
-        let mock =
-            match instance with
-            | :? Foq.IMockObject as mock -> mock
-            | _ -> invalidArg "mock" "Object instance is not a mock"
+        let mock = getMock instance
         let actualCalls = countInvocations mock mi args
         if not <| times.Match(actualCalls) then
             failwith "Expected invocations on the mock not met"
+    /// Expects method call on instance the specified number of times
+    let expect (times:Foq.Times) (instance:obj, mi, args) =
+        let mock = getMock instance
+        mock.Invoked.Subscribe(fun _ ->
+            let last = mock.Invocations.[mock.Invocations.Count-1]
+            if invokeMatch mi args last then
+                let actualCalls = countInvocations mock mi args
+                if not <| times.Match(actualCalls) then
+                    failwith "Expected invocations on the mock not met"
+        ) |> ignore
 
 open Verification
+
+type Times internal (predicate) = inherit Foq.Times(predicate)
 
 type Mock with
     /// Verifies specified function is called at least once on specified mock
@@ -202,7 +211,7 @@ type Mock with
         getMethod expr |> verify Foq.Times.atleastonce
     /// Verifies specified action is called at least once on specified mock
     static member VerifyAction(expr:Expression<Action>) =
-        getMethod expr |> verify Foq.Times.atleastonce    
+        getMethod expr |> verify Foq.Times.atleastonce
     /// Verifies specified subroutine is called at least once on specified mock
     static member VerifySub(expr:Expression<Action>) = 
         Mock.VerifyAction(expr)
@@ -221,7 +230,21 @@ type Mock with
         getProperty expr
         |> function (o,pi,args) -> o, pi.GetSetMethod(), [|yield! args; yield Arg.Any|]
         |> verify Foq.Times.atleastonce
-               
+    /// Expects specified function is called at least once on specified mock
+    static member ExpectFunc<'TReturnValue>(expr:Expression<Func<'TReturnValue>>, times:Foq.Times) =
+        getMethod expr |> expect times
+    /// Expects specified action is called at least once on specified mock
+    static member ExpectAction(expr:Expression<Action>, times:Foq.Times) =
+        getMethod expr |> expect times
+    /// Expects specified subroutine is called at least once on specified mock
+    static member ExpectSub(expr:Expression<Action>, times:Foq.Times) = 
+        Mock.ExpectAction(expr, times)
+    /// Expects specified method is called at least once on specified mock
+    static member Expect<'TReturnValue>(expr:Expression<Func<'TReturnValue>>, times:Foq.Times) =
+        Mock.ExpectFunc<'TReturnValue>(expr, times)
+    static member Expect(expr:Expression<Action>, times:Foq.Times) =
+        Mock.ExpectAction(expr, times)
+
 type [<Sealed>] It private () =
     /// Marks argument as matching any value
     [<Foq.Wildcard>] static member IsAny<'TArg>() = Unchecked.defaultof<'TArg>
