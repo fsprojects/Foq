@@ -40,8 +40,15 @@ let ``verify method call with matching argument value`` () =
     Mock.Verify(<@ xs.Contains(is(fun x -> x > 0)) @>, once)
 
 [<Test>]
-let ``verify property getter`` () =
+let ``expect property getter`` () =
     let xs = Mock<IList<int>>.With(fun xs -> <@ xs.Count --> 1 @>)
+    Mock.Expect(<@ xs.Count @>, once)
+    let _ = xs.Count
+    Mock.Verify(<@ xs.Count @>, once)
+
+[<Test>]
+let ``verify property getter`` () =
+    let xs = Mock.Of<IList<int>>()
     Mock.Verify(<@ xs.Count @>, never)
     let _ = xs.Count
     Mock.Verify(<@ xs.Count @>, once)

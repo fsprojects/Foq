@@ -118,14 +118,6 @@ public class LinqTests
     }
 
     [Test]
-    public void TestVerifyFunc()
-    {
-        var list = new Mock<IList<int>>().SetupFunc(mock => mock.Contains(1)).Returns(true).Create();
-        var _ = list.Contains(1);
-        Mock.Verify(() => list.Contains(1));
-    }
-
-    [Test]
     public void TestExpectFunc()
     {
         var list = new Mock<IList<int>>().SetupFunc(mock => mock.Contains(1)).Returns(true).Create();
@@ -134,9 +126,25 @@ public class LinqTests
     }
 
     [Test]
+    public void TestVerifyFunc()
+    {
+        var list = new Mock<IList<int>>().SetupFunc(mock => mock.Contains(1)).Returns(true).Create();
+        var _ = list.Contains(1);
+        Mock.Verify(() => list.Contains(1));
+    }
+
+    [Test]
+    public void TestExpectAction()
+    {
+        var list = Mock.Of<IList<int>>();
+        Mock.Expect(() => list.Clear(), Times.Once);
+        list.Clear();
+    }
+
+    [Test]
     public void TestVerifyAction()
     {
-        var list = new Mock<IList<int>>(MockMode.Loose).Create();
+        var list = Mock.Of<IList<int>>();
         list.Clear();
         Mock.Verify(() => list.Clear());
     }
@@ -144,7 +152,7 @@ public class LinqTests
     [Test]
     public void TestVerifyPropertyGet()
     {
-        var list = new Mock<IList<int>>(MockMode.Loose).Create();
+        var list = Mock.Of<IList<int>>();
         var count = list.Count;
         Mock.VerifyPropertyGet(() => list.Count);
     }
@@ -153,8 +161,7 @@ public class LinqTests
     public void TestVerifyPropertyGetWithIndexParameters()
     {
         var index = 1;
-        var mock =
-            new Mock<IList<int>>(MockMode.Loose).Create();
+        var mock = Mock.Of<IList<int>>();
         var value = mock[index];
         Mock.VerifyPropertyGet(() => mock[index]);
     }
@@ -163,8 +170,7 @@ public class LinqTests
     public void TestVerifyPropertySetWithIndexParameters()
     {
         var index = 1;
-        var mock =
-            new Mock<IList<int>>(MockMode.Loose).Create();
+        var mock = Mock.Of<IList<int>>();
         mock[index] = 9;
         Mock.VerifyPropertySet(() => mock[index]);
     }

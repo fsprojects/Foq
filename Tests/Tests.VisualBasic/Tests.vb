@@ -73,10 +73,22 @@ Public Class Tests
         Assert.AreEqual(True, triggered)
     End Sub
     <Test>
+    Public Sub TestExpectSub()
+        Dim list = Mock.Of(Of IList(Of Integer))()
+        Mock.ExpectSub(Sub() list.Add(1), Times.Once)
+        list.Add(1)
+    End Sub
+    <Test>
     Public Sub TestVerifySub()
         Dim list = Mock.Of(Of IList(Of Integer))()
         list.Add(1)
         Mock.Verify(Sub() list.Add(1))
+    End Sub
+    <Test>
+    Public Sub TestExpectFunc()
+        Dim list = Mock.Of(Of IList(Of Integer))()
+        Mock.Expect(Function() list.Contains(1), Times.Once)
+        list.Contains(1)
     End Sub
     <Test>
     Public Sub TestVerifyFunc()
