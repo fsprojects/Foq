@@ -8,7 +8,7 @@
     <ProjectGuid>{e13a0168-e60b-4f45-b1e3-daca2030959c}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Foq.VS2008</RootNamespace>
-    <AssemblyName>Foq.VS2008</AssemblyName>
+    <AssemblyName>Foq</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <Name>Foq.VS2008</Name>
   </PropertyGroup>
