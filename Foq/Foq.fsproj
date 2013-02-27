@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Foq.fs" />
+    <None Include="Assert.fsx" />
     <None Include="Usage.fsx" />
     <Compile Include="Foq.Linq.fs" />
     <None Include="Usage.Linq.fsx" />
