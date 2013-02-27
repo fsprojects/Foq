@@ -1,5 +1,5 @@
-﻿#load "..\Foq\Foq.fs"
-#load "..\Foq\Foq.Linq.fs"
+﻿#load "Foq.fs"
+#load "Foq.Linq.fs"
 
 open Foq.Linq
 
