@@ -8,11 +8,11 @@
     <owners>Phillip Treford</owners>
     <licenseUrl>http://foq.codeplex.com/license</licenseUrl>
     <projectUrl>http://foq.codeplex.com/</projectUrl>
-    <iconUrl>http://trelford.com/fock.png</iconUrl>
+    <iconUrl>http://trelford.com/Foq.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Foq is a lightweight thread-safe mocking library for F#, C#, and VB with a similar API to Moq.</description>
-    <releaseNotes>Foq 0.8 is dependency free.</releaseNotes>
-    <copyright>Copyright 2012</copyright>
+    <releaseNotes>Foq 0.8 is dependency free. Foq 0.8 adds expectations to verification: expect &lt;@ mock.Call() @&gt; once</releaseNotes>
+    <copyright>Copyright 2012-2013</copyright>
     <tags>F# C# VB testing unittest unittesting TDD stubs stubbing fakes faking mocks mocking moq</tags>
     <dependencies/>
   </metadata>
