@@ -98,11 +98,18 @@ module ``Call Example`` =
     Assert.IsTrue(called)
 
 module ``Verify Example`` =
-    open System.Collections.Generic    
-    let xs = Mock<IList<int>>.With(fun xs -> <@ xs.Contains(any()) --> true @>)    
+    open System.Collections.Generic
+    let xs = Mock.Of<IList<int>>()
     let _ = xs.Contains(1)
     Mock.Verify(<@ xs.Contains(0) @>, never)
     Mock.Verify(<@ xs.Contains(any()) @>, once)
+
+module ``Expect Example`` =
+    open System.Collections.Generic
+    let xs = Mock.Of<IList<int>>()
+    Mock.Expect(<@ xs.Contains(0) @>, never)
+    Mock.Expect(<@ xs.Contains(any()) @>, once)
+    xs.Contains(1) |> ignore
 
 module ``Calculator Example`` =
     type ICalculator =
