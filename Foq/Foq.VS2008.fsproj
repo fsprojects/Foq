@@ -28,10 +28,12 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
+    <DocumentationFile>bin\Release\Foq.VS2008.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Foq.fs" />
+    <None Include="Assert.fsx" />
     <None Include="Usage.fsx" />
   </ItemGroup>
   <ItemGroup>
