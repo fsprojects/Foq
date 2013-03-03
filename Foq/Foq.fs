@@ -432,6 +432,10 @@ module private Reflection =
             let mi, args = toCallOfType abstractType lhs
             let raises = RaiseValue(eval rhs :?> exn)
             [mi,(args,raises)]
+        | Call(Some(_), mi, args) when mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> ->
+            [mi,(toArgs args,Unit)]
+        | PropertySet(Some(_), pi, args, value) ->
+            [pi.GetSetMethod(),(toArgs [yield! args; yield value], Unit)]
         | expr -> invalidOp(expr.ToString())
     /// Converts expression to corresponding event Add and Remove handlers
     let toHandlers abstractType = function
@@ -587,6 +591,24 @@ type Mock with
                 if not <| expectedTimes.Match(actualCalls) then 
                     failwith "Unexpected member invocation" 
         ) |> ignore
+
+type Mock<'TAbstract> with
+    /// Verifies expected expression sequence
+    static member Expects(f:'TAbstract -> Expr<_>) =
+        let default' = Unchecked.defaultof<'TAbstract>
+        let calls = toCallResult (typeof<'TAbstract>) (f default')
+        let mockObject = mock(false, typeof<'TAbstract>, calls) 
+        let mock = mockObject :?> IMockObject        
+        mock.Invoked
+        |> Observable.scan (fun count _ -> count + 1) -1
+        |> Observable.subscribe (fun index ->
+            let last = mock.Invocations.[mock.Invocations.Count-1]
+            let expected = calls.[index]
+            let expectedMethod, (expectedArgs, result) = expected
+            if not <| invokeMatch expectedMethod expectedArgs last then
+                failwith "Unexpected member invocation"           
+        ) |> ignore
+        mockObject :?> 'TAbstract
 
 [<Sealed>]
 type It private () =

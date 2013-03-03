@@ -53,13 +53,11 @@ let ``verify property getter`` () =
     let _ = xs.Count
     Mock.Verify(<@ xs.Count @>, once)
 
-[<Test>]
-let ``expect action`` () =
+let [<Test>] ``expect action`` () =
     let xs = Mock.Of<IList<int>>()
-    Mock.Expect(<@ xs.Clear() @>, once)
-    let _ = xs.Contains(1)
-    let _ = xs.Clear()
-    Mock.Verify(<@ xs.Clear() @>, once)
+    expect <@ xs.Clear() @> once
+    xs.Clear()
+    verify <@ xs.Clear() @> once
 
 [<Test>]
 let ``verify action`` () =
@@ -79,3 +77,17 @@ let ``verify property setter`` () =
     let xs = Mock.Of<IList<int>>()
     xs.[0] <- 1
     Mock.Expect(<@ xs.[0] <- 1 @>, once)
+
+[<Test>]
+let ``expects calls`` () =
+    let xs = Mock<IList<int>>.Expects(fun xs ->
+        <@
+            xs.Clear()
+            xs.[any()] --> any()
+            xs.[any()] <- any()
+            xs.Contains(any()) --> any()
+        @>)
+    xs.Clear()
+    let value = xs.[0]
+    xs.[0] <- value
+    xs.Contains(1) |> ignore
