@@ -85,9 +85,30 @@ let ``expects calls`` () =
             xs.Clear()
             xs.[any()] --> any()
             xs.[any()] <- any()
+            xs.Count --> any()
             xs.Contains(any()) --> any()
         @>)
     xs.Clear()
     let value = xs.[0]
     xs.[0] <- value
+    let count = xs.Count
     xs.Contains(1) |> ignore
+
+[<Test>]
+let ``verify sequence`` () =
+    let xs = Mock.Of<IList<int>>()
+   
+    xs.Clear()
+    let value = xs.[0]
+    xs.[0] <- value
+    let count = xs.Count
+    xs.Contains(1) |> ignore
+
+    Mock.VerifySequence
+        <@
+            xs.Clear()
+            xs.[any()] --> any()
+            xs.[any()] <- any()
+            xs.Count --> any()
+            xs.Contains(any()) --> any()
+        @>
