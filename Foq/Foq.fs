@@ -416,27 +416,31 @@ module private Reflection =
         | PropertySet(Some(x), pi, args, value) -> x, pi.GetSetMethod(), toArgs [yield! args;yield value]
         | expr -> raise <| NotSupportedException(expr.ToString())
     /// Converts expression to a tuple of MethodInfo and Arg array
-    let toCallOfType abstractType expr =
+    let toCallOf abstractType expr =
         match toCall expr with
         | x, mi, args when x.Type = abstractType -> mi, args
-        | _ -> raise <| NotSupportedException(expr.ToString())
+        | _ -> raise <| NotSupportedException(expr.ToString())   
     /// Converts expression to a tuple of MethodInfo, Arg array and Result
-    let rec toCallResult abstractType = function
-        | Sequential(x,y) ->
-            toCallResult abstractType x @ toCallResult abstractType y
+    let rec toCallResult = function
+        | Sequential(x,y) -> toCallResult x @ toCallResult y
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<ReturnsAttribute> mi -> 
-            let mi, args = toCallOfType abstractType lhs
+            let x, mi, args = toCall lhs
             let returns = ReturnValue(eval rhs, mi.ReturnType)
-            [mi,(args,returns)]
+            [x, mi,(args,returns)]
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<RaisesAttribute> mi -> 
-            let mi, args = toCallOfType abstractType lhs
+            let x, mi, args = toCall lhs
             let raises = RaiseValue(eval rhs :?> exn)
-            [mi,(args,raises)]
-        | Call(Some(_), mi, args) when mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> ->
-            [mi,(toArgs args,Unit)]
-        | PropertySet(Some(_), pi, args, value) ->
-            [pi.GetSetMethod(),(toArgs [yield! args; yield value], Unit)]
+            [x, mi,(args,raises)]
+        | Call(Some(x), mi, args) when mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> ->
+            [x, mi,(toArgs args,Unit)]
+        | PropertySet(Some(x), pi, args, value) ->
+            [x, pi.GetSetMethod(),(toArgs [yield! args; yield value], Unit)]
         | expr -> invalidOp(expr.ToString())
+    let rec toCallResultOf abstractType expr =
+        let calls = toCallResult expr
+        [for (x,mi,(arg,result)) in calls -> 
+            if x.Type = abstractType then mi,(arg,result)
+            else raise <| NotSupportedException(expr.ToString())]
     /// Converts expression to corresponding event Add and Remove handlers
     let toHandlers abstractType = function
         | Call(None, mi, [Lambda(_,Call(Some(x),addHandler,_));
@@ -457,7 +461,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     /// Specifies a method or property of the abstract type as a quotation
     member this.Setup(f:'TAbstract -> Expr<'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
-        let call = toCallOfType abstractType (f default')
+        let call = toCallOf abstractType (f default')
         ResultBuilder<'TAbstract,'TReturnValue>(mode,call,calls)
     /// Specifies an event of the abstract type as a quotation
     member this.SetupEvent(f:'TAbstract -> Expr<'TEvent>) =
@@ -471,7 +475,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     /// Creates a mocked instance of the abstract type
     static member With(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
-        let calls = toCallResult (typeof<'TAbstract>) (f default')
+        let calls = toCallResultOf typeof<'TAbstract> (f default')
         Mock<'TAbstract>(MockMode.Loose, calls).Create()
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
@@ -591,12 +595,25 @@ type Mock with
                 if not <| expectedTimes.Match(actualCalls) then 
                     failwith "Unexpected member invocation" 
         ) |> ignore
+    // Verify call sequence in order
+    static member VerifySequence(expr:Expr) =
+        let calls = toCallResult expr
+        let mocks = System.Collections.Generic.Dictionary()
+        for call in calls do
+            let target, expectedMethod,(expectedArgs,result) = call
+            let mock = eval target |> getMock
+            if not <| mocks.ContainsKey mock then mocks.Add(mock,0)
+            let n = mocks.[mock]
+            let actual = mock.Invocations.[n]
+            if not <| invokeMatch expectedMethod expectedArgs actual then
+                failwith "Unexpected member invocation"
+            mocks.[mock] <- n + 1            
 
 type Mock<'TAbstract> with
     /// Verifies expected expression sequence
     static member Expects(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
-        let calls = toCallResult (typeof<'TAbstract>) (f default')
+        let calls = toCallResultOf typeof<'TAbstract> (f default')
         let mockObject = mock(false, typeof<'TAbstract>, calls) 
         let mock = mockObject :?> IMockObject        
         mock.Invoked
