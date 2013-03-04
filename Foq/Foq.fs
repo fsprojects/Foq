@@ -574,6 +574,19 @@ module internal Verification =
 open Eval
 open Verification
 
+[<AutoOpen>]
+module private Format =
+    let actual (mi:MethodBase,args:obj seq) =
+        let args = args |> Seq.map (sprintf "%O")
+        mi.Name + "(" + (String.concat "," args) + ")"
+    let expected (mi:MethodBase,args:Arg[]) =
+        let args = args |> Seq.map (function Arg x -> x | _ -> box "_") 
+        actual (mi, args)
+    let unexpected (expectedMethod:MethodInfo,expectedArgs:Arg[],invocation:Invocation) =
+        "Unexpected member invocation\r\n" +
+        "Expected: " + expected(expectedMethod,expectedArgs) + "\r\n" +
+        "Actual: " + actual(invocation.Method,invocation.Args)
+
 type Mock with
     /// Verifies expected call count against instance member invocations on specified mock
     static member Verify(expr:Expr, expectedTimes:Times) =
@@ -581,7 +594,7 @@ type Mock with
         let mock = x |> eval |> getMock
         let actualCalls = countInvocations mock expectedMethod expectedArgs
         if not <| expectedTimes.Match(actualCalls) then 
-            failwith "Expected invocations on the mock not met" 
+            failwith <| expected(expectedMethod,expectedArgs)
     /// Verifies expression was invoked at least once
     static member Verify(expr:Expr) = Mock.Verify(expr, atleastonce)
     /// Verifies expected expression call count on invocation
@@ -593,7 +606,7 @@ type Mock with
             if invokeMatch expectedMethod expectedArgs last then
                 let actualCalls = countInvocations mock expectedMethod expectedArgs
                 if not <| expectedTimes.Match(actualCalls) then 
-                    failwith "Unexpected member invocation" 
+                    failwith <| unexpected(expectedMethod,expectedArgs,last)
         ) |> ignore
     // Verify call sequence in order
     static member VerifySequence(expr:Expr) =
@@ -605,8 +618,8 @@ type Mock with
             if not <| mocks.ContainsKey mock then mocks.Add(mock,0)
             let n = mocks.[mock]
             let actual = mock.Invocations.[n]
-            if not <| invokeMatch expectedMethod expectedArgs actual then
-                failwith "Unexpected member invocation"
+            if not <| invokeMatch expectedMethod expectedArgs actual then                
+                failwith  <| unexpected(expectedMethod,expectedArgs,actual)
             mocks.[mock] <- n + 1            
 
 type Mock<'TAbstract> with
@@ -623,7 +636,7 @@ type Mock<'TAbstract> with
             let expected = calls.[index]
             let expectedMethod, (expectedArgs, result) = expected
             if not <| invokeMatch expectedMethod expectedArgs last then
-                failwith "Unexpected member invocation"           
+                failwith <| unexpected(expectedMethod,expectedArgs,last)
         ) |> ignore
         mockObject :?> 'TAbstract
 
