@@ -576,22 +576,22 @@ open Verification
 
 [<AutoOpen>]
 module private Format =
-    let actual (mi:MethodBase,args:obj seq) =
+    let invoke (mi:MethodBase,args:obj seq) =
         let args = args |> Seq.map (sprintf "%O")
         mi.Name + "(" + (String.concat "," args) + ")"
     let expected (mi:MethodBase,args:Arg[]) =
         let args = args |> Seq.map (function Arg x -> x | _ -> box "_") 
-        actual (mi, args)
-    let unexpected (expectedMethod:MethodInfo,expectedArgs:Arg[],invocation:Invocation) =
+        invoke (mi, args)
+    let unexpected (expectedMethod,expectedArgs,invocation:Invocation) =
         "Unexpected member invocation\r\n" +
         "Expected: " + expected(expectedMethod,expectedArgs) + "\r\n" +
-        "Actual: " + actual(invocation.Method,invocation.Args)
+        "Actual: " + invoke(invocation.Method,invocation.Args)
 
 type Mock with
     /// Verifies expected call count against instance member invocations on specified mock
     static member Verify(expr:Expr, expectedTimes:Times) =
-        let (x,expectedMethod,expectedArgs) = toCall expr
-        let mock = x |> eval |> getMock
+        let target,expectedMethod,expectedArgs = toCall expr
+        let mock = target |> eval |> getMock
         let actualCalls = countInvocations mock expectedMethod expectedArgs
         if not <| expectedTimes.Match(actualCalls) then 
             failwith <| expected(expectedMethod,expectedArgs)
@@ -599,8 +599,8 @@ type Mock with
     static member Verify(expr:Expr) = Mock.Verify(expr, atleastonce)
     /// Verifies expected expression call count on invocation
     static member Expect(expr:Expr, expectedTimes:Times) =
-        let (x,expectedMethod,expectedArgs) = toCall expr
-        let mock = x |> eval |> getMock
+        let target,expectedMethod,expectedArgs = toCall expr
+        let mock = target |> eval |> getMock
         mock.Invoked.Subscribe(fun _ ->
             let last = mock.Invocations.[mock.Invocations.Count-1]
             if invokeMatch expectedMethod expectedArgs last then
@@ -612,19 +612,18 @@ type Mock with
     static member VerifySequence(expr:Expr) =
         let calls = toCallResult expr
         let mocks = System.Collections.Generic.Dictionary()
-        for call in calls do
-            let target, expectedMethod,(expectedArgs,result) = call
+        for target, expectedMethod,(expectedArgs,result) in calls do          
             let mock = eval target |> getMock
             if not <| mocks.ContainsKey mock then mocks.Add(mock,0)
             let n = mocks.[mock]
             let actual = mock.Invocations.[n]
             if not <| invokeMatch expectedMethod expectedArgs actual then                
                 failwith  <| unexpected(expectedMethod,expectedArgs,actual)
-            mocks.[mock] <- n + 1            
+            mocks.[mock] <- n + 1
 
 type Mock<'TAbstract> with
     /// Verifies expected expression sequence
-    static member Expects(f:'TAbstract -> Expr<_>) =
+    static member ExpectSequence(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResultOf typeof<'TAbstract> (f default')
         let mockObject = mock(false, typeof<'TAbstract>, calls) 
@@ -640,8 +639,7 @@ type Mock<'TAbstract> with
         ) |> ignore
         mockObject :?> 'TAbstract
 
-[<Sealed>]
-type It private () =
+type [<Sealed>] It private () =
     /// Marks argument as matching any value
     [<Wildcard>] static member IsAny<'TArg>() = Unchecked.defaultof<'TArg>
     /// Marks argument as matching specific values
