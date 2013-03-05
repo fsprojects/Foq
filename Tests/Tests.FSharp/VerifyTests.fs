@@ -79,8 +79,8 @@ let ``verify property setter`` () =
     Mock.Expect(<@ xs.[0] <- 1 @>, once)
 
 [<Test>]
-let ``expects calls`` () =
-    let xs = Mock<IList<int>>.Expects(fun xs ->
+let ``expect sequence of calls`` () =
+    let xs = Mock<IList<int>>.ExpectSequence(fun xs ->
         <@
             xs.Clear()
             xs.[any()] --> any()
