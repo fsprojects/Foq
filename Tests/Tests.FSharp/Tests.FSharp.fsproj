@@ -8,7 +8,7 @@
     <ProjectGuid>{dd713c6a-ba21-4df9-a847-a2bc8e90fdc6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Tests</RootNamespace>
-    <AssemblyName>Tests</AssemblyName>
+    <AssemblyName>Tests.FSharp</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <Name>Tests.FSharp</Name>
   </PropertyGroup>
