@@ -2,6 +2,7 @@
 #load "Assert.fsx"
 #load "Foq.fs"
 #else
+module Foq.Usage
 open NUnit.Framework
 #endif
 
