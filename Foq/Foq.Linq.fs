@@ -105,14 +105,14 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
                     match t.GetProperty(p.Name) with
                     | null -> None
                     | pi -> Some pi
-                )                
+                )
                 match pi with
                 | Some pi ->
                     let mi = pi.GetGetMethod()
                     let value = p.GetValue(anonymousObject, [||])
                     yield mi, ([||],ReturnValue(value, pi.PropertyType))
                 | None -> ()]
-        Mock<'TAbstract>(mode, properties @ calls)               
+        Mock<'TAbstract>(mode, properties @ calls)
     /// Creates a mocked instance of the abstract type
     member this.Create() = 
         mock(MockMode.Strict = mode,abstractType,calls) :?> 'TAbstract
@@ -254,6 +254,24 @@ type Mock with
         getProperty expr
         |> function (o,pi,args) -> o, pi.GetSetMethod(), [|yield! args; yield Arg.Any|]
         |> expect times
+    /// Records expectations in scope of IDisposable (e.g. C# using block)
+    static member RecordExpectations(mock:obj) =
+        let mock = mock :?> Foq.IMockObject
+        let past = mock.Invocations |> Seq.toArray
+        mock.Invocations.Clear()
+        let recorded () =
+            let anyArgs = Array.map (fun _ -> Foq.Emit.Any)
+            mock.Invocations
+            |> Seq.map (fun i -> i.Method, i.Args |> anyArgs)
+            |> Seq.toList
+        let setup calls =
+            mock.Invocations.Clear()
+            for invoke in past do mock.Invocations.Add invoke
+            Foq.Expectations.setup mock calls 
+        { new IDisposable with member x.Dispose() = recorded () |> setup }
+    /// Verify all expectations
+    static member VerifyAll(mock) = Mock.VerifyAll mock 
+
 type [<Sealed>] It private () =
     /// Marks argument as matching any value
     [<Foq.Wildcard>] static member IsAny<'TArg>() = Unchecked.defaultof<'TArg>
