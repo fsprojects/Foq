@@ -12,6 +12,8 @@ let ``expect method call with any argument value`` () =
     Mock.Expect(<@ xs.Contains(any()) @>, once)
     // Act
     xs.Contains(1) |> ignore
+    // Assert
+    Mock.VerifyAll(xs)
 
 [<Test>]
 let ``verify method call with any argument value`` () =
@@ -44,7 +46,7 @@ let ``expect property getter`` () =
     let xs = Mock<IList<int>>.With(fun xs -> <@ xs.Count --> 1 @>)
     Mock.Expect(<@ xs.Count @>, once)
     let _ = xs.Count
-    Mock.Verify(<@ xs.Count @>, once)
+    Mock.VerifyAll xs
 
 [<Test>]
 let ``verify property getter`` () =
@@ -57,7 +59,7 @@ let [<Test>] ``expect action`` () =
     let xs = Mock.Of<IList<int>>()
     expect <@ xs.Clear() @> once
     xs.Clear()
-    verify <@ xs.Clear() @> once
+    verifyAll xs
 
 [<Test>]
 let ``verify action`` () =
@@ -71,12 +73,14 @@ let ``expect property setter`` () =
     let xs = Mock.Of<IList<int>>()
     Mock.Expect(<@ xs.[0] <- 1 @>, once)
     xs.[0] <- 1
+    Mock.VerifyAll xs
 
 [<Test>]
 let ``verify property setter`` () =
-    let xs = Mock.Of<IList<int>>()
-    xs.[0] <- 1
+    let xs = Mock.Of<IList<int>>()    
     Mock.Expect(<@ xs.[0] <- 1 @>, once)
+    xs.[0] <- 1
+    Mock.VerifyAll xs
 
 [<Test>]
 let ``expect sequence of calls`` () =
@@ -93,6 +97,7 @@ let ``expect sequence of calls`` () =
     xs.[0] <- value
     let count = xs.Count
     xs.Contains(1) |> ignore
+    Mock.VerifyAll xs
 
 [<Test>]
 let ``verify sequence`` () =
