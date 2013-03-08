@@ -639,7 +639,7 @@ type Mock with
     /// Verifies all expectations
     static member VerifyAll(mock:obj) =
         let mock = mock :?> IMockObject
-        for verifier in mock.Verifiers do verifier.Invoke()
+        for verify in mock.Verifiers do verify.Invoke()
 
 type Mock<'TAbstract> with
     /// Verifies expected expression sequence
@@ -647,17 +647,22 @@ type Mock<'TAbstract> with
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResultOf typeof<'TAbstract> (f default')
         let mockObject = mock(false, typeof<'TAbstract>, calls) 
-        let mock = mockObject :?> IMockObject        
-        mock.Invoked
-        |> Observable.scan (fun count _ -> count + 1) -1
-        |> Observable.subscribe (fun index ->
+        let mock = mockObject :?> IMockObject
+        let index = ref 0
+        mock.Invoked.Subscribe (fun _ ->
             let last = mock.Invocations.[mock.Invocations.Count-1]
-            let expected = calls.[index]
+            if !index = calls.Length then 
+                failwith <| "Unexpected member invocation: " + invoke(last.Method, last.Args)
+            let expected = calls.[!index]
+            incr index
             let expectedMethod, (expectedArgs, result) = expected
             if not <| invokeMatch expectedMethod expectedArgs last then
                 failwith <| unexpected(expectedMethod,expectedArgs,last)
         ) |> ignore
-        let verify () = () // TODO: implement this
+        let verify () = 
+            if !index < calls.Length then
+                let mi, (args,_) = calls.[!index]
+                failwith <| "Missing expected member invocation: " + expected(mi, args)
         mock.Verifiers.Add(Action(verify))
         mockObject :?> 'TAbstract
 
