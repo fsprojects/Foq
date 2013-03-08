@@ -10,7 +10,7 @@
     <RootNamespace>Tests.Linq</RootNamespace>
     <AssemblyName>Tests.FSharp.Linq</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <Name>Tests.Linq.Net45</Name>
+    <Name>Tests.FSharp.Linq</Name>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -57,10 +57,17 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Foq\Foq.fsproj">
       <Name>Foq</Name>
-      <Project>{b01ad807-6bcb-46c7-b2e8-c5bf9e0f1786}</Project>
+      <Project>{5efa4f62-ee28-4607-80df-e5c32da85e9d}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>copy "$(ProjectDir)App.config" "$(TargetDir)$(TargetFileName).config"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.
 	<Target Name="BeforeBuild">
