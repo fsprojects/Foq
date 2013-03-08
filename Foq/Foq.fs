@@ -641,13 +641,9 @@ type Mock with
         let mock = mock :?> IMockObject
         for verify in mock.Verifiers do verify.Invoke()
 
-type Mock<'TAbstract> with
-    /// Verifies expected expression sequence
-    static member ExpectSequence(f:'TAbstract -> Expr<_>) =
-        let default' = Unchecked.defaultof<'TAbstract>
-        let calls = toCallResultOf typeof<'TAbstract> (f default')
-        let mockObject = mock(false, typeof<'TAbstract>, calls) 
-        let mock = mockObject :?> IMockObject
+[<AutoOpen>]
+module internal Expectations =
+    let setup (mock:IMockObject) (calls:(#MethodBase * Arg[]) list) =
         let index = ref 0
         mock.Invoked.Subscribe (fun _ ->
             let last = mock.Invocations.[mock.Invocations.Count-1]
@@ -655,15 +651,25 @@ type Mock<'TAbstract> with
                 failwith <| "Unexpected member invocation: " + invoke(last.Method, last.Args)
             let expected = calls.[!index]
             incr index
-            let expectedMethod, (expectedArgs, result) = expected
+            let expectedMethod, expectedArgs = expected
             if not <| invokeMatch expectedMethod expectedArgs last then
                 failwith <| unexpected(expectedMethod,expectedArgs,last)
         ) |> ignore
         let verify () = 
             if !index < calls.Length then
-                let mi, (args,_) = calls.[!index]
+                let mi, args = calls.[!index]
                 failwith <| "Missing expected member invocation: " + expected(mi, args)
         mock.Verifiers.Add(Action(verify))
+
+type Mock<'TAbstract> with
+    /// Verifies expected expression sequence
+    static member ExpectSequence(f:'TAbstract -> Expr<_>) =
+        let default' = Unchecked.defaultof<'TAbstract>
+        let calls = toCallResultOf typeof<'TAbstract> (f default')
+        let mockObject = mock(false, typeof<'TAbstract>, calls) 
+        let mock = mockObject :?> IMockObject
+        let calls = calls |> List.map (fun (mi,(args,_)) -> mi,args)
+        setup mock calls
         mockObject :?> 'TAbstract
 
 type [<Sealed>] It private () =
