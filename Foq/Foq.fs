@@ -9,10 +9,13 @@ type IMockObject =
     abstract Invocations : Invocations
     [<CLIEvent>]
     abstract Invoked : IEvent<EventHandler,EventArgs>
+    abstract Verifiers : Verifiers
 /// Member invocation record
 and Invocation = { Method : MethodBase; Args : obj[] }
 /// List of invocations
 and Invocations = System.Collections.Generic.List<Invocation>
+/// List of verifiers
+and Verifiers = System.Collections.Generic.List<Action>
 
 module internal Emit =
     open System.Reflection.Emit
@@ -230,6 +233,8 @@ module internal Emit =
         let invocationsField = typeBuilder.DefineField("_invocations", typeof<Invocations>, fields)
         /// Field for invoked event
         let invokedField = typeBuilder.DefineField("_invoked", typeof<Event<EventHandler,EventArgs>>, fields)
+        /// Field for verifiers
+        let verifiersField = typeBuilder.DefineField("_verifiers", typeof<Verifiers>, fields)
         // Generate default constructor
         generateConstructor typeBuilder [||] (fun il -> ())
         // Set fields from constructor arguments
@@ -246,18 +251,23 @@ module internal Emit =
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Newobj, typeof<Event<EventHandler,EventArgs>>.GetConstructor([||]))
             il.Emit(OpCodes.Stfld, invokedField)
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Newobj, typeof<Verifiers>.GetConstructor([||]))
+            il.Emit(OpCodes.Stfld, verifiersField)
         // Generate constructor overload
         generateConstructor typeBuilder [|typeof<obj[]>;typeof<obj[][]>|] setFields
-        /// Generates Invocations property getter
-        let generateInvocationsPropertyGetter () =
-            let mi = (typeof<IMockObject>.GetProperty("Invocations").GetGetMethod())
+        /// Generates a property getter
+        let generatePropertyGetter name (field:FieldBuilder) =
+            let mi = (typeof<IMockObject>.GetProperty(name).GetGetMethod())
             let getter = defineMethod typeBuilder mi
             let il = getter.GetILGenerator()
             il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldfld, invocationsField)
+            il.Emit(OpCodes.Ldfld, field)
             il.Emit(OpCodes.Ret)
         // Generate IMockObject.Invocations property getter
-        generateInvocationsPropertyGetter ()
+        generatePropertyGetter "Invocations" invocationsField
+        // Generate IMockObject.Verifiers property getter
+        generatePropertyGetter "Verifiers" verifiersField
         /// Generates invoked event
         let generateEventHandler mi  handlerName =
             let add = defineMethod typeBuilder mi
@@ -605,13 +615,15 @@ type Mock with
     static member Expect(expr:Expr, expectedTimes:Times) =
         let target,expectedMethod,expectedArgs = toCall expr
         let mock = target |> eval |> getMock
-        mock.Invoked.Subscribe(fun _ ->
+        let verify () =
+            let actualCalls = countInvocations mock expectedMethod expectedArgs
+            if not <| expectedTimes.Match(actualCalls) then 
+                failwith <| expected(expectedMethod,expectedArgs)
+        mock.Invoked.Subscribe(fun _ -> 
             let last = mock.Invocations.[mock.Invocations.Count-1]
-            if invokeMatch expectedMethod expectedArgs last then
-                let actualCalls = countInvocations mock expectedMethod expectedArgs
-                if not <| expectedTimes.Match(actualCalls) then 
-                    failwith <| unexpected(expectedMethod,expectedArgs,last)
-        ) |> ignore
+            if invokeMatch expectedMethod expectedArgs last then verify()        
+            ) |> ignore
+        mock.Verifiers.Add(Action(verify))
     // Verify call sequence in order
     static member VerifySequence(expr:Expr) =
         let calls = toCallResult expr
@@ -624,6 +636,10 @@ type Mock with
             if not <| invokeMatch expectedMethod expectedArgs actual then                
                 failwith  <| unexpected(expectedMethod,expectedArgs,actual)
             mocks.[mock] <- n + 1
+    /// Verifies all expectations
+    static member VerifyAll(mock:obj) =
+        let mock = mock :?> IMockObject
+        for verifier in mock.Verifiers do verifier.Invoke()
 
 type Mock<'TAbstract> with
     /// Verifies expected expression sequence
@@ -641,6 +657,8 @@ type Mock<'TAbstract> with
             if not <| invokeMatch expectedMethod expectedArgs last then
                 failwith <| unexpected(expectedMethod,expectedArgs,last)
         ) |> ignore
+        let verify () = () // TODO: implement this
+        mock.Verifiers.Add(Action(verify))
         mockObject :?> 'TAbstract
 
 type [<Sealed>] It private () =
@@ -668,3 +686,5 @@ module Operators =
     let verify expr times = Mock.Verify(expr, times)
     /// Expects the expression occurs the specified number of times
     let expect expr times = Mock.Expect(expr, times)
+    /// Verifies all expectations set on the specified mock object
+    let verifyAll mock = Mock.VerifyAll mock
