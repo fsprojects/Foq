@@ -64,7 +64,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Foq\Foq.fsproj">
       <Name>Foq</Name>
-      <Project>{b01ad807-6bcb-46c7-b2e8-c5bf9e0f1786}</Project>
+      <Project>{5efa4f62-ee28-4607-80df-e5c32da85e9d}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
