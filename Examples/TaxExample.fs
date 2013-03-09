@@ -18,7 +18,7 @@ open Foq
  
 let [<Test>] ``the price with tax for a $25 product with $5 tax should be $30`` () =
     // Initialize our product
-    let myProduct = Product(id=1,name="Simple Product",rawPrice=25.0M);
+    let myProduct = Product(id=1,name="Simple Product",rawPrice=25.0M)
     
     // Create a mock with Foq
     let fakeTaxCalculator = 

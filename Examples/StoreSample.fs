@@ -48,7 +48,7 @@ let [<Test>] ``should set view categories`` () =
     let presenter = ProductsPresenter(catalog, view)
     // Assert
     Mock.Verify(<@ view.SetCategories(any()) @>)
-                   
+
 let [<Test>] ``should category selection set products`` () =
     // Arrange
     let catalog = Mock.Of<ICatalogService>()
@@ -86,7 +86,7 @@ let [<Test>] ``should not place order if fails to remove`` () =
                c.Remove(1,5) ==> InvalidOperationException() @>)
     let view = Mock.Of<IProductsView>();
     let presenter = ProductsPresenter(catalog, view);
-    let order = Order(product={Id=1; Name=""}, quantity=5)    
+    let order = Order(product={Id=1; Name=""}, quantity=5)
     // Act
     presenter.PlaceOrder(order)
     // Assert

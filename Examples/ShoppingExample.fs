@@ -6,11 +6,11 @@ module ``Shopping Example``
 open System
 open System.Collections.Generic
 
-type IShoppingDataAccess =   
+type IShoppingDataAccess =
     abstract GetProductName : productID:int -> string
     abstract GetUnitPrice : productID:int -> int
     abstract SaveBasketItems : basketID:Guid * basketItems:BasketItem[] -> unit
-and BasketItem(productID:int, quantity:int, dataAccess:IShoppingDataAccess) =   
+and BasketItem(productID:int, quantity:int, dataAccess:IShoppingDataAccess) =
     let unitPrice = dataAccess.GetUnitPrice(productID)
     let productName = dataAccess.GetProductName(productID) 
     member item.UnitPrice = unitPrice
@@ -20,13 +20,13 @@ and BasketItem(productID:int, quantity:int, dataAccess:IShoppingDataAccess) =
     member item.GetPrice() = unitPrice * quantity
 and Basket(dataAccess:IShoppingDataAccess) =
     let basketItems = List<_>()
-    let basketID = Guid.NewGuid()    
+    let basketID = Guid.NewGuid()
     member basket.AddItem(item:BasketItem) = basketItems.Add(item)
     member basket.Save() =  
         dataAccess.SaveBasketItems(basketID,basketItems.ToArray())
-    member basket.CalculateSubTotal() =        
-        let mutable subTotal = 0M;
-        for item in basketItems do           
+    member basket.CalculateSubTotal() =
+        let mutable subTotal = 0M
+        for item in basketItems do
             subTotal <- subTotal + decimal (item.GetPrice())
         subTotal
 

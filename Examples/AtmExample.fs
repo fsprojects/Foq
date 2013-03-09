@@ -55,16 +55,16 @@ let insertCardAndInputPin(atm:AtmGui) =
 
 let [<Test>] ``test checking withdrawal`` () =
     let mockTransaction = Mock.Of<Transaction>()
-    let atm = new AtmGui(fun () -> mockTransaction)    
+    let atm = new AtmGui(fun () -> mockTransaction)
 
     insertCardAndInputPin(atm)
 
     atm.PressButton("Withdraw")
     atm.PressButton("Checking")
     atm.PressButtons("1", "0", "0", "0", "0")
-    Assert.AreEqual("$100.00", atm.GetDisplayContents());
+    Assert.AreEqual("$100.00", atm.GetDisplayContents())
     atm.PressButton("Continue")
 
     Mock.Verify(<@ mockTransaction.SetAmount(100M) @>)
     Mock.Verify(<@ mockTransaction.SetSourceAccount(TEST_CHECKING_ACCOUNT) @>)
-    Mock.Verify(<@ mockTransaction.SetDestAccount(TEST_CASH_ACCOUNT) @>)    
+    Mock.Verify(<@ mockTransaction.SetDestAccount(TEST_CASH_ACCOUNT) @>)
