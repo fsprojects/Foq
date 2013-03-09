@@ -32,14 +32,14 @@ let [<Test>] ``adding a valid product fire event`` () =
 
     // setup an event argument for our event
     let productEventArgs = ProductEventArgs(product);
- 
+
     // creating our objects and events
     let myShoppingCart = ShoppingCart()
     let isCalled = ref false
     use subscription = myShoppingCart.ProductAdded.Subscribe(fun _ -> isCalled := true)
-    
+
     // Testing the Add method if it fires the event
     myShoppingCart.Add(product)
- 
+
     // make sure the event was called
     !isCalled |> should be True
