@@ -59,6 +59,8 @@
     <Compile Include="AtmExample.fs" />
     <Compile Include="ShoppingExample.fs" />
     <Compile Include="ShopExample.fs" />
+    <Compile Include="TimeExample.fs" />
+    <Compile Include="PaymentProxyExample.fs" />
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
