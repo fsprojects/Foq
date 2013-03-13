@@ -212,7 +212,7 @@ module internal Emit =
     /// Builds a mock from the specified calls
     let mock (isStrict, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list) =
         /// Stub name for abstract type
-        let mockName = "Mock" + abstractType.Name
+        let mockName = "Mock." + abstractType.Name.Replace("'", "!")
         /// Builder for assembly
         let assemblyBuilder =
             AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(mockName),AssemblyBuilderAccess.Run)
