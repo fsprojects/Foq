@@ -58,4 +58,12 @@ let [<Test>] ``generic interface`` () =
         .Arity1(any())
     |> Assert.IsTrue
 
+type IInterface' =
+    abstract Arity0 : unit -> 'a
 
+let [<Test>] ``generic return value`` () =
+    Mock<IInterface'>()
+        .Setup(fun mock -> <@ mock.Arity0() @>).Returns(any())
+        .Create()
+        .Arity0()
+    |> ignore
