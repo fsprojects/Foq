@@ -52,7 +52,11 @@ module internal Emit =
     let defineMethod (typeBuilder:TypeBuilder) (abstractMethod:MethodInfo) =
         let attr = MethodAttributes.Public ||| MethodAttributes.HideBySig ||| MethodAttributes.Virtual
         let args = abstractMethod.GetParameters() |> Array.map (fun arg -> arg.ParameterType)
-        typeBuilder.DefineMethod(abstractMethod.Name, attr, abstractMethod.ReturnType, args)
+        let m = typeBuilder.DefineMethod(abstractMethod.Name, attr, abstractMethod.ReturnType, args)
+        if abstractMethod.IsGenericMethod then
+            let names = abstractMethod.GetGenericArguments() |> Array.map (fun x -> x.Name)
+            m.DefineGenericParameters(names) |> ignore
+        m
 
     /// Generates method overload args match
     let generateArgs 
@@ -313,8 +317,10 @@ module internal Emit =
             generateAddInvocation il invocationsField abstractMethod
             // Trigger invoked event
             generateTrigger il invokedField
+            let definition (m:MethodInfo) =
+                if m.IsGenericMethod then m.GetGenericMethodDefinition() else m
             /// Method overloads defined for current method
-            let overloads = groupedMethods |> Seq.tryFind (fst >> (=) abstractMethod)
+            let overloads = groupedMethods |> Seq.tryFind (fst >> definition >> (=) abstractMethod)
             match overloads with
             | Some (_, overloads) ->
                 let toOverload = generateOverload il (argsLookup,argsField) (returnValues,returnValuesField)
@@ -621,19 +627,19 @@ type Mock with
                 failwith <| expected(expectedMethod,expectedArgs)
         mock.Invoked.Subscribe(fun _ -> 
             let last = mock.Invocations.[mock.Invocations.Count-1]
-            if invokeMatch expectedMethod expectedArgs last then verify()        
+            if invokeMatch expectedMethod expectedArgs last then verify()
             ) |> ignore
         mock.Verifiers.Add(Action(verify))
     // Verify call sequence in order
     static member VerifySequence(expr:Expr) =
         let calls = toCallResult expr
         let mocks = System.Collections.Generic.Dictionary()
-        for target, expectedMethod,(expectedArgs,result) in calls do          
+        for target, expectedMethod,(expectedArgs,result) in calls do
             let mock = eval target |> getMock
             if not <| mocks.ContainsKey mock then mocks.Add(mock,0)
             let n = mocks.[mock]
             let actual = mock.Invocations.[n]
-            if not <| invokeMatch expectedMethod expectedArgs actual then                
+            if not <| invokeMatch expectedMethod expectedArgs actual then
                 failwith  <| unexpected(expectedMethod,expectedArgs,actual)
             mocks.[mock] <- n + 1
     /// Verifies all expectations

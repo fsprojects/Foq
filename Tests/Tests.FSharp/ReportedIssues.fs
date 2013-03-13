@@ -40,3 +40,47 @@ let ``Cannot create mock of a interface`` () =
             .Create()
     let x = channel.QueueDeclare(null)
     channel.Publish(IncomeExchange, RoutingKey "key1", Persistent true, Priority 0uy, None, null)    
+
+// From http://pastebin.com/C5vPSYsA
+
+open Foq
+open Foq.It
+open System
+
+type IBar = abstract member Bar : unit -> unit
+
+type IFoo =
+    // .Create explodes if this member is exposed
+    abstract member Do<'a> : Action<'a> -> bool
+    abstract member DoTyped : Action<IBar> -> bool
+    abstract member DoDummy : Action -> bool
+
+type Foo () =
+    interface IFoo with
+        member x.Do (a) = true
+        member x.DoTyped (a) = true
+        member x.DoDummy (a)  = true
+
+let asrt = Assert.IsTrue //System.Diagnostics.Debug.Assert
+
+let [<Test>] ``should handle generic methods`` () =
+    (Foq.Mock<IFoo>()
+        .Setup(fun x -> <@ x.DoTyped(any()) @>)
+        .Returns(true)
+        .Create())
+        .DoTyped (fun x -> ())
+    |> asrt
+
+    (Foq.Mock<IFoo>()
+        .Setup(fun x -> <@ x.DoDummy(any()) @>)
+        .Returns(true)
+        .Create()
+        .DoDummy(fun () -> ()))
+    |> asrt
+    
+    (Foq.Mock<IFoo>()
+        .Setup(fun x -> <@ x.Do<IBar>(any()) @>)
+            .Returns(true)
+        .Create()
+        .Do<IBar>(any()))
+    |> asrt
