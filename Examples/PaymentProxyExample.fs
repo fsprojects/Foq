@@ -14,11 +14,10 @@ open NUnit.Framework
 open Foq
 
 let [<Test>] ``take payment proxy should be called via payment processor`` () =
-    let proxy =
-        Mock<IPaymentProcessing>()
-            .Setup(fun mock -> <@ mock.TakePayment(any(),any(),any()) @>).Returns(true)
-            .Create()
-
+    let proxy = 
+        Mock<IPaymentProcessing>
+            .Function(fun mock -> <@ mock.TakePayment @>).Returns(true)
+            
     let pp = PaymentProcessor(proxy)
     let result = pp.TakePayment(1, 1, 10.0)
     Assert.IsTrue(result)

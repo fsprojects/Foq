@@ -431,6 +431,7 @@ module private Reflection =
             | expr -> eval expr |> Arg |]
     /// Converts expression to a tuple of Expression, MethodInfo and Arg array
     let toCall = function
+        | Lambda(_,Let(a,_,Let(b,_,Let(c,_,Call(Some(x),mi,[Var(a');Var(b');Var(c')]))))) when a=a' && b=b' && c=c' -> x, mi, [|Any;Any;Any|]
         | Call(Some(x), mi, args) -> x, mi, toArgs args
         | PropertyGet(Some(x), pi, args) -> x, pi.GetGetMethod(), toArgs args
         | PropertySet(Some(x), pi, args, value) -> x, pi.GetSetMethod(), toArgs [yield! args;yield value]
@@ -498,6 +499,21 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResultOf typeof<'TAbstract> (f default')
         Mock<'TAbstract>(MockMode.Loose, calls).Create()
+    /// Specifies a mock with the specified function specified
+    static member Function(f:'TAbstract -> Expr<'TArgs -> 'TReturnValue>) =
+        let default' = Unchecked.defaultof<'TAbstract>
+        let call = toCallOf typeof<'TAbstract> (f default')
+        ReturnBuilder<'TAbstract,'TReturnValue>(call)
+/// Generic builder for specifying method result
+and ReturnBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
+    internal (call) =
+    let mi, args = call
+    /// Specifies the return value of a method or property
+    member this.Returns(value:'TReturnValue) =
+        let result = 
+            if typeof<'TReturnValue> = typeof<unit> then Unit 
+            else ReturnValue(value,typeof<'TReturnValue>)
+        mock(false,typeof<'TAbstractType>,[(mi, (args, result))]) :?> 'TAbstractType
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (mode, call, calls) =
