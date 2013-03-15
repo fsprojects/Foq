@@ -141,3 +141,23 @@ let ``verify repeat`` () =
         <@
             for i = 1 to 10 do xs.Add(any())
         @>
+
+[<Test>]
+let ``verify repeat sequence`` () =
+    // Arrange
+    let xs = Mock.Of<IList<int>>()
+    // Act
+    xs.Clear()
+    for i = 1 to 10 do 
+        xs.Add(i)
+        xs.RemoveAt(0)
+    let count = xs.Count
+    // Assert
+    Mock.VerifySequence
+        <@
+            xs.Clear()
+            for i = 1 to 10 do 
+                xs.Add(i)
+                xs.RemoveAt(0)
+            xs.Count --> any()
+        @>
