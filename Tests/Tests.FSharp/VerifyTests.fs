@@ -117,3 +117,27 @@ let ``verify sequence`` () =
             xs.Count --> any()
             xs.Contains(any()) --> any()
         @>
+
+[<Test>]
+let ``expect repeat`` () =
+    // Arrange
+    let xs = Mock<IList<int>>.ExpectSequence(fun mock ->
+        <@
+            for i = 1 to 10 do mock.Add(any())
+        @>)
+    // Act
+    for i = 1 to 10 do xs.Add(1)
+    // Assert
+    Mock.VerifyAll(xs)
+
+[<Test>]
+let ``verify repeat`` () =
+    // Arrange
+    let xs = Mock.Of<IList<int>>()
+    // Act
+    for i = 1 to 10 do xs.Add(any())
+    // Assert
+    Mock.VerifySequence
+        <@
+            for i = 1 to 10 do xs.Add(any())
+        @>
