@@ -442,6 +442,7 @@ module private Reflection =
         | _ -> raise <| NotSupportedException(expr.ToString())   
     /// Converts expression to a tuple of MethodInfo, Arg array and Result
     let rec toCallResult = function
+        | ForIntegerRangeLoop(v,a,b,y) -> [for i = eval a :?> int to eval b :?> int do yield! toCallResult y]
         | Sequential(x,y) -> toCallResult x @ toCallResult y
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<ReturnsAttribute> mi -> 
             let x, mi, args = toCall lhs
