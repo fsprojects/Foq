@@ -493,6 +493,11 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
         let default' = Unchecked.defaultof<'TAbstract>
         let handlers = toHandlers abstractType (f default')
         EventBuilder<'TAbstract,'TEvent>(mode,handlers,calls)
+    /// Specifies an event of the abstract type as a quotation
+    member this.SetupMethod(f:'TAbstract -> Expr<'TArgs -> 'TReturnValue>) =
+        let default' = Unchecked.defaultof<'TAbstract>
+        let call = toCallOf abstractType (f default')
+        ResultBuilder<'TAbstract,'TReturnValue>(mode,call,calls)
     /// Creates a mocked instance of the abstract type
     member this.Create() = mock(MockMode.Strict = mode, typeof<'TAbstract>, calls) :?> 'TAbstract
     /// Creates a boxed instance of the abstract type
