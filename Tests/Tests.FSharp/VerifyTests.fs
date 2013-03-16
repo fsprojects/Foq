@@ -157,7 +157,7 @@ let ``verify repeat sequence`` () =
         <@
             xs.Clear()
             for i = 1 to 10 do 
-                xs.Add(i)
+                xs.Add(any())
                 xs.RemoveAt(0)
             xs.Count --> any()
         @>
