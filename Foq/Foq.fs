@@ -429,12 +429,21 @@ module private Reflection =
             | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
             | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
             | expr -> eval expr |> Arg |]
+    let (|MethodCall|_|) expr =
+        let areEqual args vars =
+            let eq = function Var(arg),var -> arg = var | _ -> false
+            vars |> List.rev |> List.zip args |> List.forall eq
+        let rec traverse vars = function
+            | Let(var,_,e) -> traverse (var::vars) e
+            | Call(Some(x),mi,args) when vars.Length = args.Length && areEqual args vars -> 
+                Some(x,mi,[|for arg in args -> Any|])
+            | _ -> None
+        traverse [] expr
     /// Converts expression to a tuple of Expression, MethodInfo and Arg array
     let toCall = function
         | Lambda(unitVar,Call(Some(x),mi,[])) -> x, mi, [||]
         | Lambda(a,Call(Some(x),mi,[Var(a')])) when a=a' -> x, mi, [|Any|]
-        | Lambda(_,Let(a,_,Let(b,_,Call(Some(x),mi,[Var(a');Var(b')])))) when a=a' && b=b' -> x, mi, [|Any;Any|]
-        | Lambda(_,Let(a,_,Let(b,_,Let(c,_,Call(Some(x),mi,[Var(a');Var(b');Var(c')]))))) when a=a' && b=b' && c=c' -> x, mi, [|Any;Any;Any|]
+        | Lambda(_,MethodCall(x,mi,args)) -> x, mi, args
         | Call(Some(x), mi, args) -> x, mi, toArgs args
         | PropertyGet(Some(x), pi, args) -> x, pi.GetGetMethod(), toArgs args
         | PropertySet(Some(x), pi, args, value) -> x, pi.GetSetMethod(), toArgs [yield! args;yield value]
