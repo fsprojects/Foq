@@ -429,12 +429,13 @@ module private Reflection =
             | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
             | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
             | expr -> eval expr |> Arg |]
+    /// Active pattern matches method call expressions
     let (|MethodCall|_|) expr =
         let areEqual args vars =
             let eq = function Var(arg),var -> arg = var | _ -> false
             vars |> List.rev |> List.zip args |> List.forall eq
         let rec traverse vars = function
-            | Let(var,_,e) -> traverse (var::vars) e
+            | Let(var,TupleGet(_,n),e) when n = List.length vars -> traverse (var::vars) e
             | Call(Some(x),mi,args) when vars.Length = args.Length && areEqual args vars -> 
                 Some(x,mi,[|for arg in args -> Any|])
             | _ -> None
