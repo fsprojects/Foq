@@ -24,3 +24,16 @@ let [<Test>] ``f(1,2)`` () =
 let [<Test>] ``f(1,2,3)`` () =
     let x = Mock<IFoo>.Method(fun x -> <@ x.F3 @>).Returns(true)
     Assert.IsTrue(x.F3(1,2,3))
+
+let [<Test>] ``f(...)`` () =
+    let x = 
+        Mock<IFoo>()
+            .SetupMethod(fun x -> <@ x.F0 @>).Returns(true)
+            .SetupMethod(fun x -> <@ x.F1 @>).Returns(true)
+            .SetupMethod(fun x -> <@ x.F2 @>).Returns(true)
+            .SetupMethod(fun x -> <@ x.F3 @>).Returns(true)
+            .Create()
+    Assert.IsTrue(x.F0())
+    Assert.IsTrue(x.F1(1))
+    Assert.IsTrue(x.F2(1,2))
+    Assert.IsTrue(x.F3(1,2,3))
