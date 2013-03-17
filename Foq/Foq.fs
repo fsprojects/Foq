@@ -740,3 +740,7 @@ module Operators =
     let expect expr times = Mock.Expect(expr, times)
     /// Verifies all expectations set on the specified mock object
     let verifyAll mock = Mock.VerifyAll mock
+    /// Verifies an expression sequence has occured
+    let verifySeq expr = Mock.VerifySequence expr
+    /// Expects the expression sequence to occur
+    let expectSeq expr = Mock.ExpectSequence expr
