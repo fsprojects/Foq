@@ -680,8 +680,10 @@ type Mock with
                 failwith  <| unexpected(expectedMethod,expectedArgs,actual)
             mocks.[mock] <- n + 1
         for pair in mocks do
-            let mock, n = pair.Key, pair.Value
-            if mock.Invocations.Count > n then failwith "Off by one"
+            let mock, n = pair.Key, pair.Value 
+            if mock.Invocations.Count > n then 
+                let last = mock.Invocations.[n]
+                failwith <| "Unexpected member invocation: " + invoke(last.Method, last.Args)
     /// Verifies all expectations
     static member VerifyAll(mock:obj) =
         let mock = mock :?> IMockObject
