@@ -673,10 +673,15 @@ type Mock with
             let mock = eval target |> getMock
             if not <| mocks.ContainsKey mock then mocks.Add(mock,0)
             let n = mocks.[mock]
+            if mock.Invocations.Count = n then
+                failwith <| "Missing expected member invocation: " + expected(expectedMethod,expectedArgs)
             let actual = mock.Invocations.[n]
             if not <| invokeMatch expectedMethod expectedArgs actual then
                 failwith  <| unexpected(expectedMethod,expectedArgs,actual)
             mocks.[mock] <- n + 1
+        for pair in mocks do
+            let mock, n = pair.Key, pair.Value
+            if mock.Invocations.Count > n then failwith "Off by one"
     /// Verifies all expectations
     static member VerifyAll(mock:obj) =
         let mock = mock :?> IMockObject
