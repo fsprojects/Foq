@@ -6,8 +6,8 @@ type  Product = string
 type  Quantity = int
 
 type Warehouse =
-    abstract member HasInventory: Product * Quantity -> bool
-    abstract member Remove : Product * Quantity -> unit
+    abstract HasInventory: Product * Quantity -> bool
+    abstract Remove : Product * Quantity -> unit
 
 type MailService =
     abstract Send : Message -> unit
