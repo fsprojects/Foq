@@ -360,3 +360,9 @@ let ``test strict mode`` () =
 let ``test loose mode`` () =
     let mock = Mock<IList<int>>(MockMode.Loose).Create()
     Assert.AreEqual(Unchecked.defaultof<int>, mock.Count)
+
+[<Test>]
+let ``test unimplemented member with out arg`` () =
+    let mock = Mock.Of<IDictionary<string,int>>()   
+    let hasValue, value = mock.TryGetValue("x")
+    Assert.IsFalse(hasValue)
