@@ -366,3 +366,13 @@ let ``test unimplemented member with out arg`` () =
     let mock = Mock.Of<IDictionary<string,int>>()   
     let hasValue, value = mock.TryGetValue("x")
     Assert.IsFalse(hasValue)
+
+[<Test>]
+let ``test specify out arg member by name'`` () =
+    let x = ref 0
+    let mock = 
+        Mock<IDictionary<string,int>>()
+            .SetupByName("TryGetValue").Returns(true)
+            .Create()
+    let success = mock.TryGetValue("x",x)
+    Assert.IsTrue(success)
