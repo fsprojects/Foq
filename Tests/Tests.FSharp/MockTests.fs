@@ -302,6 +302,30 @@ let ``an implemented abstract base class property setter should accept the speci
     stub.Area <- area
     Assert.AreEqual(Some(area), !specifiedValue)
 
+type BaseClass () =
+    abstract AbstractMethod : unit -> bool
+    default __.AbstractMethod() = false
+    member __.ConcreteMethod() = true
+    abstract AbstractProperty : bool
+    default __.AbstractProperty = false
+    member __.ConcreteProperty = true
+
+[<Test>]
+let ``an implemented base class method should return the specified value`` () =
+    let mock =
+        Mock<BaseClass>()
+            .Setup(fun x -> <@ x.AbstractMethod() @>).Returns(true)
+            .Create()
+    Assert.IsTrue(mock.AbstractMethod())
+
+[<Test>]
+let ``an implemented base class property should return the specified value`` () =
+    let mock =
+        Mock<BaseClass>()
+            .Setup(fun x -> <@ x.AbstractProperty @>).Returns(true)
+            .Create()
+    Assert.IsTrue(mock.AbstractProperty)
+
 open System.ComponentModel
 
 let [<Test>] ``an implemented interface event can add handlers`` () =
