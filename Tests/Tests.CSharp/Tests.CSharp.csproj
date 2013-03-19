@@ -44,9 +44,14 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DynamicTests.cs" />
-    <Compile Include="LinqTests.cs" />
+    <Compile Include="DynamicTests.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="LinqTests.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProtectedTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -72,6 +72,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
     /// Specifies a member method of the abstact type
     member this.Setup(expr:Expression<Func<'TAbstract,'TReturnValue>>) = this.SetupFunc(expr)
     member this.Setup(expr:Expression<Action<'TAbstract>>) = this.SetupAction(expr)
+    member this.Setup(name:string) = this.SetupByName(name)
     /// Specifies a member function of the abstract type
     member this.SetupFunc(expr:Expression<Func<'TAbstract,'TReturnValue>>) =
         FuncBuilder<'TAbstract,'TReturnValue>(mode,toMethodInfo expr.Body,calls)
@@ -113,6 +114,12 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
                     yield mi, ([||],ReturnValue(value, pi.PropertyType))
                 | None -> ()]
         Mock<'TAbstract>(mode, properties @ calls)
+    /// Setup member by name
+    member this.SetupByName<'TReturnValue>(name:string) =
+        let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
+        let mi = typeof<'TAbstract>.GetMethod(name, attr)
+        let args = [|for arg in mi.GetParameters() -> Any|] 
+        FuncBuilder<'TAbstract,'TReturnValue>(mode,(mi,args),calls)
     /// Creates a mocked instance of the abstract type
     member this.Create() = 
         mock(MockMode.Strict = mode,abstractType,calls) :?> 'TAbstract

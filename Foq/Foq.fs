@@ -50,7 +50,8 @@ module internal Emit =
 
     /// Defines method
     let defineMethod (typeBuilder:TypeBuilder) (abstractMethod:MethodInfo) =
-        let attr = MethodAttributes.Public ||| MethodAttributes.HideBySig ||| MethodAttributes.Virtual
+        let attr =
+            MethodAttributes.Public ||| MethodAttributes.HideBySig ||| MethodAttributes.Virtual
         let args = abstractMethod.GetParameters() |> Array.map (fun arg -> arg.ParameterType)
         let m = typeBuilder.DefineMethod(abstractMethod.Name, attr, abstractMethod.ReturnType, args)
         if abstractMethod.IsGenericMethod then
@@ -296,7 +297,8 @@ module internal Emit =
         let returnValues = ResizeArray<obj>()
         /// Abstract type's methods including interfaces
         let abstractMethods = seq {
-            yield! abstractType.GetMethods()
+            let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
+            yield! abstractType.GetMethods(attr) |> Seq.filter (fun mi -> not mi.IsFinal)
             for interfaceType in abstractType.GetInterfaces() do
                 yield! interfaceType.GetMethods()
             }
@@ -500,7 +502,8 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
         ResultBuilder<'TAbstract,'TReturnValue>(mode,call,calls)
     /// Specifies a method or property of the abstract type by name
     member this.SetupByName<'TReturnValue>(name) =
-        let mi = typeof<'TAbstract>.GetMethod(name)
+        let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
+        let mi = typeof<'TAbstract>.GetMethod(name, attr)
         let args = [|for arg in mi.GetParameters() -> Any|] 
         ResultBuilder<'TAbstract,'TReturnValue>(mode,(mi,args),calls)
     /// Specifies an event of the abstract type as a quotation
