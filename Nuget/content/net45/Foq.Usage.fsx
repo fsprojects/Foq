@@ -1,5 +1,5 @@
 ﻿#if INTERACTIVE // Emulate minimal NUnit in F# Interactive
-#r @"..\packages\Foq.0.8\Lib\net45\Foq.dll"
+#r @"..\packages\Foq.0.9\Lib\net45\Foq.dll"
 
 type TestAttribute() = inherit System.Attribute()
 
@@ -12,6 +12,7 @@ module Assert =
         let fail () = failwith "Expected %s" typeof<'T>.Name
         try f (); fail () with :? 'T as e -> e | _ -> fail()
 #else
+module Foq.Usage
 open NUnit.Framework
 #endif
 open Foq

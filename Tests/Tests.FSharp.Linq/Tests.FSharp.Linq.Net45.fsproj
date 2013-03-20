@@ -8,7 +8,7 @@
     <ProjectGuid>{98ec705e-f1d0-4977-9ccc-dc8ecd70b0f5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Tests.Linq</RootNamespace>
-    <AssemblyName>Tests.Linq</AssemblyName>
+    <AssemblyName>Tests.FSharp.Linq</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <Name>Tests.Linq.Net45</Name>
     <TargetFrameworkProfile />

@@ -55,8 +55,7 @@
   </ItemGroup>
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetDir)$(TargetName).dll" ..\..\..\Nuget\Lib\net45
-copy "$(TargetDir)$(TargetName).xml" ..\..\..\Nuget\Lib\net45
-copy "$(TargetDir)$(TargetName).pdb" ..\..\..\Nuget\Lib\net45</PostBuildEvent>
+copy "$(TargetDir)$(TargetName).xml" ..\..\..\Nuget\Lib\net45</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
