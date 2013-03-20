@@ -3,7 +3,7 @@ using Foq.Linq;
 
 public abstract class AbstractBaseClass
 {
-    public abstract int AbstractMethod();
+    public abstract bool AbstractMethod();
 }
 
 public abstract class ClassWithProtectedMember : AbstractBaseClass
@@ -15,9 +15,14 @@ public abstract class ClassWithProtectedMember : AbstractBaseClass
         return ProtectedMember();
     }
 
-    public sealed override int AbstractMethod()
+    public sealed override bool AbstractMethod()
     {
-        throw new System.NotImplementedException();
+        return true;
+    }
+
+    public bool ConcreteMethod()
+    {
+        return true;
     }
 }
 
@@ -25,7 +30,7 @@ public abstract class ClassWithProtectedMember : AbstractBaseClass
 class ProtectedTests
 {
     [Test]
-    public void TestAccess()
+    public void TestProtectedMemberAccess()
     {
         var mock =
             new Mock<ClassWithProtectedMember>()
@@ -33,6 +38,20 @@ class ProtectedTests
                 .Create();
 
         Assert.AreEqual(1, mock.Accessor());
+    }
+
+    [Test]
+    public void TestSealedMethod()
+    {
+        var mock = Mock.Of<ClassWithProtectedMember>();
+        Assert.IsTrue(mock.AbstractMethod());
+    }
+
+    [Test]
+    public void TestConcreteMethod()
+    {
+        var mock = Mock.Of<ClassWithProtectedMember>();
+        Assert.IsTrue(mock.ConcreteMethod());
     }
 }
 
