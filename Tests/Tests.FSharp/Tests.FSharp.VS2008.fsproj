@@ -8,7 +8,7 @@
     <ProjectGuid>{1198e170-aeb4-4594-899d-3b6d229f939a}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Foq.VS2008</RootNamespace>
-    <AssemblyName>Tests</AssemblyName>
+    <AssemblyName>Tests.FSharp</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <Name>Tests.FSharp.VS2008</Name>
   </PropertyGroup>
@@ -44,6 +44,7 @@
     <Compile Include="EvalTests.fs" />
     <Compile Include="MockTests.fs" />
     <Compile Include="ReportedIssues.fs" />
+    <Compile Include="GenericsTests.fs" />
     <Compile Include="VerifyTests.fs" />
     <Compile Include="WarehouseExample.fs" />
     <Compile Include="WithTests.fs" />
