@@ -45,7 +45,9 @@ module private Reflection =
         | :? MethodCallExpression as call ->           
             call.Method,            
             Array.zip (call.Method.GetParameters()) [|for arg in call.Arguments -> arg|]
-            |> Array.map (fun (pi,arg) -> if pi.IsOut then Any else resolve arg)
+            |> Array.map (fun (pi,arg) -> 
+                if pi.IsOut || pi.ParameterType.IsByRef then Any else resolve arg
+            )
         | _ -> raise <| NotSupportedException(expr.GetType().ToString())    
     /// Converts expression to a tuple of PropertyInfo and Arg array
     let toPropertyInfo (expr:Expression) =
