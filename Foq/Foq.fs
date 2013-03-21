@@ -178,7 +178,7 @@ module internal Emit =
             il.Emit(OpCodes.Ldc_I4, argIndex)
             il.Emit(OpCodes.Ldarg, argIndex + 1)
             let arg = ps.[argIndex]
-            if not arg.IsOut then il.Emit(OpCodes.Box, arg.ParameterType)
+            if not arg.IsOut && not arg.ParameterType.IsByRef then il.Emit(OpCodes.Box, arg.ParameterType)            
             il.Emit(OpCodes.Stelem_Ref)
         // Add invocation to invocations list
         il.Emit(OpCodes.Ldarg_0)
