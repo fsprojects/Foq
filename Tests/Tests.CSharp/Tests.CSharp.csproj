@@ -44,6 +44,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ByRefTests.cs" />
     <Compile Include="DynamicTests.cs">
       <SubType>Code</SubType>
     </Compile>

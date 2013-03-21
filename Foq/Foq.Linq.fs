@@ -6,43 +6,46 @@ open System.Reflection
 open Foq.Emit
 
 module private Reflection =
-    /// Converts argument expressions to Arg array
+    /// Converts argument expressions to Arg array    
+    let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
+    let isWildcard mi = hasAttribute typeof<Foq.WildcardAttribute> mi
+    let isPredicate mi = hasAttribute typeof<Foq.PredicateAttribute> mi
+    /// Resolves Expression to Arg
+    let rec resolve : Expression -> Arg = function
+        | :? ConstantExpression as constant ->          
+            Arg(constant.Value)
+        | :? UnaryExpression as unary ->
+            unary.Operand |> resolve
+        | :? MethodCallExpression as call when isWildcard call.Method ->
+            Any
+        | :? MethodCallExpression as call when isPredicate call.Method ->
+            let lambda = call.Arguments.[0] :?> LambdaExpression
+            let del = lambda.Compile()
+            let f = fun x -> del.DynamicInvoke([|x|]) :?> bool
+            PredUntyped(f)
+        | :? MemberExpression as call ->
+            let instance = 
+                match call.Expression with
+                | :? ConstantExpression as ce -> ce.Value
+                | null -> null
+                | _ -> raise <| NotSupportedException() 
+            let value =
+                match call.Member with
+                | :? FieldInfo as fi -> fi.GetValue(instance)
+                | :? PropertyInfo as pi -> pi.GetValue(instance, [||])
+                | _ -> raise <| NotSupportedException()
+            Arg(value)
+        | arg -> raise <| NotSupportedException(arg.GetType().ToString())
+    // Return resolved arguments
     let toArgs (args:Expression seq) =
-        let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
-        let isWildcard mi = hasAttribute typeof<Foq.WildcardAttribute> mi
-        let isPredicate mi = hasAttribute typeof<Foq.PredicateAttribute> mi
-        /// Resolves Expression to Arg
-        let rec resolve : Expression -> Arg = function
-            | :? ConstantExpression as constant ->
-                Arg(constant.Value)
-            | :? UnaryExpression as unary ->
-                unary.Operand |> resolve
-            | :? MethodCallExpression as call when isWildcard call.Method ->
-                Any
-            | :? MethodCallExpression as call when isPredicate call.Method ->
-                let lambda = call.Arguments.[0] :?> LambdaExpression
-                let del = lambda.Compile()
-                let f = fun x -> del.DynamicInvoke([|x|]) :?> bool
-                PredUntyped(f)
-            | :? MemberExpression as call ->
-                let instance = 
-                    match call.Expression with
-                    | :? ConstantExpression as ce -> ce.Value
-                    | null -> null
-                    | _ -> raise <| NotSupportedException() 
-                let value =
-                    match call.Member with
-                    | :? FieldInfo as fi -> fi.GetValue(instance)
-                    | :? PropertyInfo as pi -> pi.GetValue(instance, [||])
-                    | _ -> raise <| NotSupportedException()
-                Arg(value)
-            | arg -> raise <| NotSupportedException(arg.GetType().ToString())
-        // Return resolved arguments
         [| for arg in args -> resolve arg |]
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toMethodInfo (expr:Expression) =
         match expr with
-        | :? MethodCallExpression as call -> call.Method, toArgs call.Arguments
+        | :? MethodCallExpression as call ->           
+            call.Method,            
+            Array.zip (call.Method.GetParameters()) [|for arg in call.Arguments -> arg|]
+            |> Array.map (fun (pi,arg) -> if pi.IsOut then Any else resolve arg)
         | _ -> raise <| NotSupportedException(expr.GetType().ToString())    
     /// Converts expression to a tuple of PropertyInfo and Arg array
     let toPropertyInfo (expr:Expression) =
