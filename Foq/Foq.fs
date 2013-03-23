@@ -26,7 +26,7 @@ module internal Emit =
     /// Boxed event
     type PublishedEvent = obj
     /// Method argument type
-    type Arg = Any | Arg of Value | Pred of Func | PredUntyped of Func
+    type Arg = Any | Arg of Value | OutArg of Value | Pred of Func | PredUntyped of Func
     /// Method result type
     type Result = 
         | Unit
@@ -66,13 +66,16 @@ module internal Emit =
         /// Index of argument values for current method overload
         let argsLookupIndex = argsLookup.Count
         // Add arguments to lookup
-        args |> Array.map (function Any -> null | Arg(value) -> value | Pred(f) -> f | PredUntyped(f) -> f) |> argsLookup.Add
+        args 
+        |> Array.map (function Any -> null | Arg(value) -> value | OutArg(value) -> value | Pred(f) -> f | PredUntyped(f) -> f) 
+        |> argsLookup.Add
         // Emit argument matching
         args |> Seq.iteri (fun argIndex arg ->
             let emitArgBox () =
                 il.Emit(OpCodes.Ldarg, argIndex+1)
-                il.Emit(OpCodes.Box, mi.GetParameters().[argIndex].ParameterType)
-            let emitArgLookup value =
+                let pi = mi.GetParameters().[argIndex]
+                il.Emit(OpCodes.Box, pi.ParameterType)
+            let emitArgLookup () =
                 il.Emit(OpCodes.Ldarg_0)
                 il.Emit(OpCodes.Ldfld, argsField)
                 il.Emit(OpCodes.Ldc_I4, argsLookupIndex)
@@ -83,19 +86,26 @@ module internal Emit =
             | Any -> ()
             | Arg(value) ->
                 emitArgBox ()
-                emitArgLookup value
+                emitArgLookup ()
                 // Emit Object.Equals(box args.[argIndex+1], _args.[argsLookupIndex].[argIndex])
                 il.EmitCall(OpCodes.Call, typeof<obj>.GetMethod("Equals",[|typeof<obj>;typeof<obj>|]), null) 
                 il.Emit(OpCodes.Brfalse_S, unmatched)
+            | OutArg(value) ->               
+                il.Emit(OpCodes.Ldarg, argIndex+1)
+                emitArgLookup ()             
+                let pi = mi.GetParameters().[argIndex]
+                let t = pi.ParameterType.GetElementType()
+                il.Emit(OpCodes.Unbox_Any, t)
+                il.Emit(OpCodes.Stobj, t)
             | Pred(f) ->
-                emitArgLookup f
+                emitArgLookup ()
                 il.Emit(OpCodes.Ldarg, argIndex+1)
                 let argType = mi.GetParameters().[argIndex].ParameterType
                 let invoke = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
                 il.Emit(OpCodes.Callvirt, invoke)
                 il.Emit(OpCodes.Brfalse_S, unmatched)
             | PredUntyped(f) ->
-                emitArgLookup f
+                emitArgLookup ()
                 il.Emit(OpCodes.Ldarg, argIndex+1)
                 let argType = mi.GetParameters().[argIndex].ParameterType
                 il.Emit(OpCodes.Box, argType)
@@ -177,8 +187,8 @@ module internal Emit =
             il.Emit(OpCodes.Ldloc, local0)
             il.Emit(OpCodes.Ldc_I4, argIndex)
             il.Emit(OpCodes.Ldarg, argIndex + 1)
-            let arg = ps.[argIndex]
-            if not arg.IsOut && not arg.ParameterType.IsByRef then il.Emit(OpCodes.Box, arg.ParameterType)            
+            let t = ps.[argIndex].ParameterType            
+            if not t.IsByRef then il.Emit(OpCodes.Box, t)
             il.Emit(OpCodes.Stelem_Ref)
         // Add invocation to invocations list
         il.Emit(OpCodes.Ldarg_0)
@@ -614,6 +624,7 @@ module internal Verification =
         match expectedArg with
         | Any -> true
         | Arg(expected) -> obj.Equals(expected,actualValue)
+        | OutArg(_) -> true
         | Pred(p) ->
             let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
             f.Invoke(p,[|actualValue|]) :?> bool
