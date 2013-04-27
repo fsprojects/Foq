@@ -63,6 +63,7 @@
     <Compile Include="PaymentProxyExample.fs" />
     <Compile Include="CurrencyExample.fs" />
     <Compile Include="BookExample.fs" />
+    <Compile Include="CandyShop.fs" />
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
