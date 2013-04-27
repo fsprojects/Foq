@@ -84,3 +84,29 @@ let [<Test>] ``should handle generic methods`` () =
         .Create()
         .Do<IBar>(any()))
     |> asrt
+
+// From: http://stackoverflow.com/questions/16167068/can-you-set-up-recursive-mocks-in-foq/
+
+type IPublishChannel =
+    abstract Bus : IBus
+and IBus =
+    abstract OpenPublishChannel : unit -> IPublishChannel
+
+let [<Test>] ``Can you set up recursive mocks in foq?`` () =
+
+    let mockBus = ref (Mock.Of<IBus>())
+    let mockChannel = ref (Mock.Of<IPublishChannel>())
+
+    mockChannel :=
+        Mock<IPublishChannel>()
+            .Setup(fun x -> <@ x.Bus @>).Returns(fun () -> !mockBus)
+            .Create()
+    
+    mockBus :=
+        Mock<IBus>()
+            .Setup(fun x -> <@ x.OpenPublishChannel() @>).Returns(fun () -> !mockChannel)   
+            .Create()
+
+    Assert.AreEqual(!mockChannel, (!mockBus).OpenPublishChannel())
+    Assert.AreEqual(!mockBus, (!mockChannel).Bus)
+        
