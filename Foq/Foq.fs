@@ -550,6 +550,9 @@ and ReturnBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
             if typeof<'TReturnValue> = typeof<unit> then Unit 
             else ReturnValue(value,typeof<'TReturnValue>)
         mock(false,typeof<'TAbstract>,[(mi, (args, result))]) :?> 'TAbstract
+    /// Specifies a computed return value of a method or property
+    member this.Returns(f:unit -> 'TReturnVaue) =
+        mock(false,typeof<'TAbstract>,[(mi, (args, ReturnFunc(f)))]) :?> 'TAbstract
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (mode, call, calls) =
