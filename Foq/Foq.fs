@@ -535,8 +535,13 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResultOf typeof<'TAbstract> (f default')
         Mock<'TAbstract>(MockMode.Loose, calls).Create()
-    /// Specifies a mock of a type with a specified method
+    /// Specifies a mock of a type with a given method
     static member Method(f:'TAbstract -> Expr<'TArgs -> 'TReturnValue>) =
+        let default' = Unchecked.defaultof<'TAbstract>
+        let call = toCallOf typeof<'TAbstract> (f default')
+        ReturnBuilder<'TAbstract,'TReturnValue>(call)
+    /// Specifies a mock of a type with a given property
+    static member Property(f:'TAbstract -> Expr<'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let call = toCallOf typeof<'TAbstract> (f default')
         ReturnBuilder<'TAbstract,'TReturnValue>(call)
