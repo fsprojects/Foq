@@ -62,6 +62,12 @@ let ``an implemented interface property getter should return the specified value
     Assert.AreEqual(returnValue,"Fock")
 
 [<Test>]
+let ``an implemented interface property getter should return the specified value(2)`` () =
+    let stub = Mock<IInterface>.Property(fun x -> <@ x.StringProperty @>).Returns("Fock")         
+    let returnValue = stub.StringProperty
+    Assert.AreEqual(returnValue,"Fock")
+
+[<Test>]
 let ``an implemented interface property getter should return the specified computed value`` () =
     let counter = 1
     let stub = 
