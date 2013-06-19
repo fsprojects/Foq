@@ -160,9 +160,14 @@
  Specifies a method or property of the abstract type as a quotation
 </summary>
 </member>
+<member name="M:Foq.Mock`1.Property``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
+<summary>
+ Specifies a mock of a type with a given property
+</summary>
+</member>
 <member name="M:Foq.Mock`1.Method``2(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{Microsoft.FSharp.Core.FSharpFunc{``0,``1}}})">
 <summary>
- Specifies a mock of a type with a specified method
+ Specifies a mock of a type with a given method
 </summary>
 </member>
 <member name="M:Foq.Mock`1.ExpectSequence``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
@@ -173,6 +178,11 @@
 <member name="M:Foq.Mock`1.Create(System.Type)">
 <summary>
  Creates a boxed instance of the abstract type
+</summary>
+</member>
+<member name="M:Foq.Mock`1.Create(System.Object[])">
+<summary>
+ Creates a mocked instance of a class using the specified constructor arguments
 </summary>
 </member>
 <member name="M:Foq.Mock`1.Create">
@@ -260,6 +270,11 @@
 </member>
 <member name="">
 
+</member>
+<member name="M:Foq.ReturnBuilder`2.Returns``1(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,``0})">
+<summary>
+ Specifies a computed return value of a method or property
+</summary>
 </member>
 <member name="M:Foq.ReturnBuilder`2.Returns(`1)">
 <summary>
@@ -368,6 +383,9 @@
 <member name="">
 
 </member>
+<member name="">
+
+</member>
 <member name="T:Foq.Emit.Arg">
 <summary>
  Method argument type
@@ -388,7 +406,7 @@
  Boxed value
 </summary>
 </member>
-<member name="M:Foq.Emit.mock(System.Boolean,System.Type,Microsoft.FSharp.Collections.FSharpList{System.Tuple{System.Reflection.MethodInfo,System.Tuple{Foq.Emit.Arg[],Foq.Emit.Result}}})">
+<member name="M:Foq.Emit.mock(System.Boolean,System.Type,Microsoft.FSharp.Collections.FSharpList{System.Tuple{System.Reflection.MethodInfo,System.Tuple{Foq.Emit.Arg[],Foq.Emit.Result}}},System.Object[])">
 <summary>
  Builds a mock from the specified calls
 </summary>
@@ -731,6 +749,11 @@
  Specifies a member method of the abstact type
 </summary>
 </member>
+<member name="M:Foq.Linq.Mock`1.Create(System.Object[])">
+<summary>
+ Creates a mocked instance of the abstract type
+</summary>
+</member>
 <member name="M:Foq.Linq.Mock`1.Create">
 <summary>
  Creates a mocked instance of the abstract type
@@ -802,9 +825,23 @@
  Converts expression to a tuple of MethodInfo and Arg array
 </summary>
 </member>
-<member name="M:Foq.Linq.Reflection.toArgs(System.Collections.Generic.IEnumerable{System.Linq.Expressions.Expression})">
+<member name="">
+
+</member>
+<member name="M:Foq.Linq.Reflection.resolve(System.Linq.Expressions.Expression)">
 <summary>
- Converts argument expressions to Arg array
+ Resolves Expression to Arg
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="M:Foq.Linq.Reflection.hasAttribute(System.Type,System.Reflection.MethodInfo)">
+<summary>
+ Converts argument expressions to Arg array    
 </summary>
 </member>
 <member name="T:Foq.Linq.Reflection">
