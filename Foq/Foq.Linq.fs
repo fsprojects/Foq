@@ -129,7 +129,10 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
         FuncBuilder<'TAbstract,'TReturnValue>(mode,(mi,args),calls)
     /// Creates a mocked instance of the abstract type
     member this.Create() = 
-        mock(MockMode.Strict = mode,abstractType,calls) :?> 'TAbstract
+        mock(MockMode.Strict = mode,abstractType,calls,[||]) :?> 'TAbstract
+    /// Creates a mocked instance of the abstract type
+    member this.Create([<ParamArray>] args:obj[]) = 
+        mock(MockMode.Strict = mode,abstractType,calls,args) :?> 'TAbstract
 and ActionBuilder<'TAbstract when 'TAbstract : not struct>
     internal (mode,call,calls) =
     let mi, args = call
@@ -168,7 +171,7 @@ and EventBuilder<'TAbstract when 'TAbstract : not struct>
 type Mock =
     /// Creates a mocked instance of the abstract type
     static member Of<'TAbstractType>() = 
-        mock(false, typeof<'TAbstractType>, []) :?> 'TAbstractType
+        mock(false, typeof<'TAbstractType>, [], [||]) :?> 'TAbstractType
 
 module private Verification =
     open Foq.Verification

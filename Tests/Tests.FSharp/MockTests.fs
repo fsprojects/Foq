@@ -308,6 +308,20 @@ let ``an implemented abstract base class property setter should accept the speci
     stub.Area <- area
     Assert.AreEqual(Some(area), !specifiedValue)
 
+[<AbstractClass>]
+type AbstractBaseClassWithConstructorArgs (version:int, name:string) =
+    new (version:int) = AbstractBaseClassWithConstructorArgs(version,"")
+    member __.Version = version
+    member __.Name = name
+    abstract AbstractMethod : unit -> int
+
+[<Test>]
+let ``an abstract base class constructor should receive specified arguments`` () =
+    let mock = Mock<AbstractBaseClassWithConstructorArgs>().Create(7)
+    Assert.AreEqual(7, mock.Version)
+    let mock = Mock<AbstractBaseClassWithConstructorArgs>().Create(7, "seven")
+    Assert.AreEqual("seven", mock.Name)
+
 type BaseClass () =
     abstract AbstractMethod : unit -> bool
     default __.AbstractMethod() = false
