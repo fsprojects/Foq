@@ -41,9 +41,6 @@ module internal Emit =
     let generateConstructor (typeBuilder:TypeBuilder) ps (genBody:ILGenerator -> unit) =
         let cons = typeBuilder.DefineConstructor(MethodAttributes.Public,CallingConventions.Standard,ps)
         let il = cons.GetILGenerator()
-        // Call base constructor
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Call, typeof<obj>.GetConstructor(Type.EmptyTypes))
         // Generate body
         genBody il
         il.Emit(OpCodes.Ret)
@@ -221,7 +218,9 @@ module internal Emit =
         il.MarkLabel(unmatched)
 
     /// Builds a mock from the specified calls
-    let mock (isStrict, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list) =
+    let mock (isStrict, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list, args:obj[]) =
+        /// Constructor argument types
+        let argTypes = [|for arg in args -> arg.GetType()|]
         /// Stub name for abstract type
         let mockName = "Mock." + abstractType.Name.Replace("'", "!")
         /// Builder for assembly
@@ -252,8 +251,26 @@ module internal Emit =
         let verifiersField = typeBuilder.DefineField("_verifiers", typeof<Verifiers>, fields)
         // Generate default constructor
         generateConstructor typeBuilder [||] (fun il -> ())
-        // Set fields from constructor arguments
-        let setFields (il:ILGenerator) =
+        // Generates constructor body
+        let generateConstructorBody (il:ILGenerator) =
+            // Call base constructor
+            if args.Length = 0 then
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Call, typeof<obj>.GetConstructor(Type.EmptyTypes))
+            else
+                il.Emit(OpCodes.Ldarg_0)
+                let bindings = 
+                    BindingFlags.FlattenHierarchy ||| BindingFlags.Instance ||| 
+                    BindingFlags.Public ||| BindingFlags.NonPublic 
+                let ci = abstractType.GetConstructor(bindings, Type.DefaultBinder, argTypes, [||])
+                argTypes |> Array.iteri (fun i arg ->
+                    il.Emit(OpCodes.Ldarg, 4); 
+                    il.Emit(OpCodes.Ldc_I4, i); 
+                    il.Emit(OpCodes.Ldelem_Ref)
+                    il.Emit(OpCodes.Unbox_Any, arg)
+                )
+                il.Emit(OpCodes.Call, ci)
+            // Set fields
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Ldarg_1)
             il.Emit(OpCodes.Stfld, returnValuesField)
@@ -270,7 +287,8 @@ module internal Emit =
             il.Emit(OpCodes.Newobj, typeof<Verifiers>.GetConstructor([||]))
             il.Emit(OpCodes.Stfld, verifiersField)
         // Generate constructor overload
-        generateConstructor typeBuilder [|typeof<obj[]>;typeof<obj[][]>|] setFields
+        let constructorArgs = [|typeof<obj[]>;typeof<obj[][]>;typeof<Type[]>;typeof<obj[]>|]
+        generateConstructor typeBuilder constructorArgs generateConstructorBody
         /// Generates a property getter
         let generatePropertyGetter name (field:FieldBuilder) =
             let mi = (typeof<IMockObject>.GetProperty(name).GetGetMethod())
@@ -347,11 +365,9 @@ module internal Emit =
                 typeBuilder.DefineMethodOverride(methodBuilder, abstractMethod)
         /// Mock type
         let mockType = typeBuilder.CreateType()
-        /// Generated object instance
-        let generatedObject = 
-            Activator.CreateInstance(
-                mockType, [|box (returnValues.ToArray());box (argsLookup.ToArray())|])
-        generatedObject
+        // Generate object instance
+        let args = [|box (returnValues.ToArray());box (argsLookup.ToArray());box argTypes;box args|]
+        Activator.CreateInstance(mockType, args)
 
 /// Mock mode
 type MockMode = Strict = 0 | Loose = 1
@@ -527,9 +543,12 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
         let call = toCallOf abstractType (f default')
         ResultBuilder<'TAbstract,'TReturnValue>(mode,call,calls)
     /// Creates a mocked instance of the abstract type
-    member this.Create() = mock(MockMode.Strict = mode, typeof<'TAbstract>, calls) :?> 'TAbstract
+    member this.Create() = mock(MockMode.Strict = mode, typeof<'TAbstract>, calls, [||]) :?> 'TAbstract
+    /// Creates a mocked instance of a class using the specified constructor arguments
+    member this.Create([<ParamArray>] args:obj[]) = 
+        mock(MockMode.Strict = mode, typeof<'TAbstract>, calls, args) :?> 'TAbstract
     /// Creates a boxed instance of the abstract type
-    static member Create(abstractType:Type) = mock(false, abstractType, [])
+    static member Create(abstractType:Type) = mock(false, abstractType, [], [||])
     /// Creates a mocked instance of the abstract type
     static member With(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
@@ -554,10 +573,10 @@ and ReturnBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
         let result = 
             if typeof<'TReturnValue> = typeof<unit> then Unit 
             else ReturnValue(value,typeof<'TReturnValue>)
-        mock(false,typeof<'TAbstract>,[(mi, (args, result))]) :?> 'TAbstract
+        mock(false,typeof<'TAbstract>,[(mi, (args, result))],[||]) :?> 'TAbstract
     /// Specifies a computed return value of a method or property
     member this.Returns(f:unit -> 'TReturnVaue) =
-        mock(false,typeof<'TAbstract>,[(mi, (args, ReturnFunc(f)))]) :?> 'TAbstract
+        mock(false,typeof<'TAbstract>,[(mi, (args, ReturnFunc(f)))],[||]) :?> 'TAbstract
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (mode, call, calls) =
@@ -597,7 +616,7 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
 type Mock =
     /// Creates a mocked instance of the abstract type
     static member Of<'TAbstractType>() = 
-        mock(false, typeof<'TAbstractType>, []) :?> 'TAbstractType
+        mock(false, typeof<'TAbstractType>, [], [||]) :?> 'TAbstractType
 
 /// Specifies valid invocation count
 type Times internal (predicate:int -> bool) =
@@ -741,7 +760,7 @@ type Mock<'TAbstract> with
     static member ExpectSequence(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResultOf typeof<'TAbstract> (f default')
-        let mockObject = mock(false, typeof<'TAbstract>, calls) 
+        let mockObject = mock(false, typeof<'TAbstract>, calls, [||]) 
         let mock = mockObject :?> IMockObject
         let calls = calls |> List.map (fun (mi,(args,_)) -> mi,args)
         setup mock calls
