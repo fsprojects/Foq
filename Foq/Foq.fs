@@ -217,10 +217,8 @@ module internal Emit =
         generateReturn il (returnValues,returnValuesField) (mi,result)
         il.MarkLabel(unmatched)
 
-    /// Builds a mock from the specified calls
-    let mock (isStrict, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list, args:obj[]) =
-        /// Constructor argument types
-        let argTypes = [|for arg in args -> arg.GetType()|]
+    /// Defines a type builder for the specified abstract type
+    let defineType (abstractType:Type) =
         /// Stub name for abstract type
         let mockName = "Mock." + abstractType.Name.Replace("'", "!")
         /// Builder for assembly
@@ -228,15 +226,18 @@ module internal Emit =
             AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(mockName),AssemblyBuilderAccess.Run)
         /// Builder for module
         let moduleBuilder = assemblyBuilder.DefineDynamicModule(mockName+".dll")
+        let parent, interfaces = 
+            if abstractType.IsInterface
+            then typeof<obj>, [|abstractType|]
+            else abstractType, [||]
+        let attributes = TypeAttributes.Public ||| TypeAttributes.Class
+        let interfaces = [|yield typeof<IMockObject>; yield! interfaces|]
+        moduleBuilder.DefineType(mockName, attributes, parent, interfaces)
+
+    /// Builds a mock from the specified calls
+    let mock (isStrict, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list, args:obj[]) =
         /// Builder for abstract type
-        let typeBuilder = 
-            let parent, interfaces = 
-                if abstractType.IsInterface
-                then typeof<obj>, [|abstractType|]
-                else abstractType, [||]
-            let attributes = TypeAttributes.Public ||| TypeAttributes.Class
-            let interfaces = [|yield typeof<IMockObject>; yield! interfaces|]
-            moduleBuilder.DefineType(mockName, attributes, parent, interfaces)
+        let typeBuilder = defineType abstractType
         /// Field settings
         let fields = FieldAttributes.Private ||| FieldAttributes.InitOnly 
         /// Field for method return values
@@ -253,6 +254,8 @@ module internal Emit =
         generateConstructor typeBuilder [||] (fun il -> ())
         // Generates constructor body
         let generateConstructorBody (il:ILGenerator) =
+            /// Constructor argument types
+            let argTypes = [|for arg in args -> arg.GetType()|]
             // Call base constructor
             if args.Length = 0 then
                 il.Emit(OpCodes.Ldarg_0)
@@ -264,8 +267,8 @@ module internal Emit =
                     BindingFlags.Public ||| BindingFlags.NonPublic 
                 let ci = abstractType.GetConstructor(bindings, Type.DefaultBinder, argTypes, [||])
                 argTypes |> Array.iteri (fun i arg ->
-                    il.Emit(OpCodes.Ldarg, 4); 
-                    il.Emit(OpCodes.Ldc_I4, i); 
+                    il.Emit(OpCodes.Ldarg_3) 
+                    il.Emit(OpCodes.Ldc_I4, i) 
                     il.Emit(OpCodes.Ldelem_Ref)
                     il.Emit(OpCodes.Unbox_Any, arg)
                 )
@@ -287,7 +290,7 @@ module internal Emit =
             il.Emit(OpCodes.Newobj, typeof<Verifiers>.GetConstructor([||]))
             il.Emit(OpCodes.Stfld, verifiersField)
         // Generate constructor overload
-        let constructorArgs = [|typeof<obj[]>;typeof<obj[][]>;typeof<Type[]>;typeof<obj[]>|]
+        let constructorArgs = [|typeof<obj[]>;typeof<obj[][]>;typeof<obj[]>|]
         generateConstructor typeBuilder constructorArgs generateConstructorBody
         /// Generates a property getter
         let generatePropertyGetter name (field:FieldBuilder) =
@@ -366,7 +369,7 @@ module internal Emit =
         /// Mock type
         let mockType = typeBuilder.CreateType()
         // Generate object instance
-        let args = [|box (returnValues.ToArray());box (argsLookup.ToArray());box argTypes;box args|]
+        let args = [|box (returnValues.ToArray());box (argsLookup.ToArray()); box args|]
         Activator.CreateInstance(mockType, args)
 
 /// Mock mode
