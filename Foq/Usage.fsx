@@ -94,7 +94,7 @@ let [<Test>] ``setup a method to call a function`` () =
     // Act
     instance.Insert(6, "Six")
     // Assert
-    Assert.IsTrue(!called)
+    Assert.IsTrue(called.Value)
 
 let [<Test>] ``verify method is called the specified number of times`` () =
     // Arrange
