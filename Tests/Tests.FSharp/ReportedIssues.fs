@@ -109,4 +109,26 @@ let [<Test>] ``Can you set up recursive mocks in foq?`` () =
 
     Assert.AreEqual(!mockChannel, (!mockBus).OpenPublishChannel())
     Assert.AreEqual(!mockBus, (!mockChannel).Bus)
-        
+
+
+type Clock =
+        abstract Now: DateTime
+        abstract Foo : int -> int
+
+[<Test>]
+let ``can setup same property multiple times``() =
+    let time1 = DateTime(2013, 1, 1)
+    let time2 = DateTime(2013, 2, 2)
+ 
+    let clock = Mock<Clock>.With(fun x -> <@ x.Foo(1) --> 10
+                                             x.Foo(2) --> 20
+                                             x.Foo(any()) --> 30                 
+                                             x.Now --> time1
+                                             x.Now --> time2 @>)
+ 
+    Assert.That(clock.Now, Is.EqualTo time1)
+    //Assert.That(clock.Now, Is.EqualTo time2) // Fails: currently first matching member is used
+    
+    Assert.AreEqual(10, clock.Foo(1))
+    Assert.AreEqual(20, clock.Foo(2))
+    Assert.AreEqual(30, clock.Foo(3))
