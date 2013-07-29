@@ -506,7 +506,7 @@ module private Reflection =
         let calls = toCallResult expr
         [for (x,mi,(arg,result)) in calls -> 
             if x.Type = abstractType then mi,(arg,result)
-            else raise <| NotSupportedException(expr.ToString())]
+            else raise <| NotSupportedException(expr.ToString())]        
     /// Converts expression to corresponding event Add and Remove handlers
     let toHandlers abstractType = function
         | Call(None, mi, [Lambda(_,Call(Some(x),addHandler,_));
@@ -556,7 +556,7 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode,calls) =
     static member With(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResultOf typeof<'TAbstract> (f default')
-        Mock<'TAbstract>(MockMode.Loose, calls).Create()
+        Mock<'TAbstract>(MockMode.Loose, calls |> List.rev).Create()
     /// Specifies a mock of a type with a given method
     static member Method(f:'TAbstract -> Expr<'TArgs -> 'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
