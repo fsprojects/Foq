@@ -23,6 +23,18 @@ let ``test mock with multiple members`` () =
     ) |> ignore
 
 [<Test>]
+let ``test fallthrough when matching a specific member`` () =
+    let xs =
+        Mock<System.Collections.Generic.IList<char>>.With(fun xs ->
+            <@ xs.Item(0) --> '0'
+               xs.Item(1) --> '1'
+               xs.Item(any()) --> '2' @>
+        )
+    Assert.AreEqual('0', xs.Item(0))
+    Assert.AreEqual('1', xs.Item(1))
+    Assert.AreEqual('2', xs.Item(2))
+
+[<Test>]
 let ``test mock with exception on member`` () =
     let xs =
         Mock<System.Collections.Generic.IList<char>>.With(fun xs ->

@@ -321,18 +321,18 @@ module internal Emit =
         generateEventHandler (invoked.GetAddMethod()) "AddHandler"
         generateEventHandler (invoked.GetRemoveMethod()) "RemoveHandler"
         /// Method overloads grouped by type
-        let groupedMethods = calls |> Seq.groupBy fst
+        let groupedMethods = calls |> Seq.groupBy fst |> Seq.toArray
         /// Method argument lookup
         let argsLookup = ResizeArray<obj[]>()
         /// Method return values
         let returnValues = ResizeArray<obj>()
         /// Abstract type's methods including interfaces
-        let abstractMethods = seq {
+        let abstractMethods = [|
             let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
             yield! abstractType.GetMethods(attr) |> Seq.filter (fun mi -> not mi.IsFinal)
             for interfaceType in abstractType.GetInterfaces() do
                 yield! interfaceType.GetMethods()
-            }
+            |]
         /// Generates a default value
         let generateDefaultValueReturn (il:ILGenerator) (returnType:Type) =
             let x = il.DeclareLocal(returnType)
@@ -352,10 +352,20 @@ module internal Emit =
             generateTrigger il invokedField
             let definition (m:MethodInfo) =
                 if m.IsGenericMethod then m.GetGenericMethodDefinition() else m
+            /// Structural method comparison
+            let structurallyEqual (mi:MethodInfo) =
+                mi.Name = abstractMethod.Name &&
+                mi.Attributes = abstractMethod.Attributes &&
+                mi.ReturnType = abstractMethod.ReturnType &&
+                mi.GetParameters().Length = abstractMethod.GetParameters().Length &&
+                Array.zip (mi.GetParameters()) (abstractMethod.GetParameters()) 
+                |> Array.forall(fun (a,b) -> a.Attributes = b.Attributes && a.ParameterType = b.ParameterType)
+            /// Method matches abstract method
+            let matches (mi:MethodInfo) = mi = abstractMethod || structurallyEqual mi
             /// Method overloads defined for current method
-            let overloads = groupedMethods |> Seq.tryFind (fst >> definition >> (=) abstractMethod)
+            let overloads = groupedMethods |> Seq.tryFind (fst >> definition >> matches)
             match overloads with
-            | Some (_, overloads) ->
+            | Some (_, overloads) ->    
                 let toOverload = generateOverload il (argsLookup,argsField) (returnValues,returnValuesField)
                 overloads |> Seq.toList |> List.rev |> Seq.iter toOverload
             | None -> ()
