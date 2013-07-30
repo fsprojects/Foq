@@ -48,6 +48,7 @@
     <Compile Include="DynamicTests.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="InterfaceTests.cs" />
     <Compile Include="LinqTests.cs">
       <SubType>Code</SubType>
     </Compile>
