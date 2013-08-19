@@ -26,7 +26,7 @@ module internal Emit =
     /// Boxed event
     type PublishedEvent = obj
     /// Method argument type
-    type Arg = Any | Arg of Value | OutArg of Value | Pred of Func | PredUntyped of Func
+    type Arg = Any | Arg of Value | ArgArray of Value[] | OutArg of Value | Pred of Func | PredUntyped of Func
     /// Method result type
     type Result = 
         | Unit
@@ -64,7 +64,7 @@ module internal Emit =
         let argsLookupIndex = argsLookup.Count
         // Add arguments to lookup
         args 
-        |> Array.map (function Any -> null | Arg(value) -> value | OutArg(value) -> value | Pred(f) -> f | PredUntyped(f) -> f) 
+        |> Array.map (function Any -> null | Arg(value) -> value | ArgArray(values) -> box values | OutArg(value) -> value | Pred(f) -> f | PredUntyped(f) -> f) 
         |> argsLookup.Add
         // Emit argument matching
         args |> Seq.iteri (fun argIndex arg ->
@@ -86,6 +86,15 @@ module internal Emit =
                 emitArgLookup ()
                 // Emit Object.Equals(box args.[argIndex+1], _args.[argsLookupIndex].[argIndex])
                 il.EmitCall(OpCodes.Call, typeof<obj>.GetMethod("Equals",[|typeof<obj>;typeof<obj>|]), null) 
+                il.Emit(OpCodes.Brfalse_S, unmatched)
+            | ArgArray(values) ->
+                emitArgBox ()
+                emitArgLookup ()              
+                let mi = 
+                    typeof<System.Linq.Enumerable>.GetMethods() 
+                    |> Seq.find (fun mi -> mi.Name = "SequenceEqual" && mi.GetParameters().Length = 2)
+                let sequenceEqual = mi.MakeGenericMethod([|typeof<obj>|])
+                il.EmitCall(OpCodes.Call, sequenceEqual, null) 
                 il.Emit(OpCodes.Brfalse_S, unmatched)
             | OutArg(value) ->               
                 il.Emit(OpCodes.Ldarg, argIndex+1)
@@ -465,12 +474,14 @@ module private Reflection =
     /// Returns true if method has specified attribute
     let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
     /// Converts expression to a tuple of MethodInfo and Arg array
-    let toArgs args =
-        [|for arg in args ->
-            match arg with
-            | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
-            | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
-            | expr -> eval expr |> Arg |]
+    let toArg (pi:ParameterInfo,arg) =
+        match pi, arg with
+        | _, Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
+        | _, Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
+        | pi, array when pi <> null && pi.GetCustomAttributes(typeof<ParamArrayAttribute>, true).Length > 0 ->
+           ArgArray (eval array :?> obj[])
+        | _, expr -> eval expr |> Arg 
+    let toArgs ps args = [|for arg in Seq.zip ps args -> toArg arg |]
     /// Active pattern matches method call expressions
     let (|MethodCall|_|) expr =
         let areEqual args vars =
@@ -485,11 +496,15 @@ module private Reflection =
     /// Converts expression to a tuple of Expression, MethodInfo and Arg array
     let toCall = function
         | Lambda(unitVar,Call(Some(x),mi,[])) -> x, mi, [||]
+        | Lambda(unitVar,Call(Some(x),mi,[NewArray(_)])) -> x, mi, [|Any|]
         | Lambda(a,Call(Some(x),mi,[Var(a')])) when a=a' -> x, mi, [|Any|]
         | Lambda(_,MethodCall(x,mi,args)) -> x, mi, args
-        | Call(Some(x), mi, args) -> x, mi, toArgs args
-        | PropertyGet(Some(x), pi, args) -> x, pi.GetGetMethod(), toArgs args
-        | PropertySet(Some(x), pi, args, value) -> x, pi.GetSetMethod(), toArgs [yield! args;yield value]
+        | Call(Some(x), mi, args) -> 
+            x, mi, toArgs (mi.GetParameters()) args
+        | PropertyGet(Some(x), pi, args) -> 
+            x, pi.GetGetMethod(), toArgs (pi.GetIndexParameters()) args
+        | PropertySet(Some(x), pi, args, value) -> 
+            x, pi.GetSetMethod(), toArgs [yield! pi.GetIndexParameters();yield null] [yield! args;yield value]
         | expr -> raise <| NotSupportedException(expr.ToString())
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toCallOf abstractType expr =
@@ -509,9 +524,9 @@ module private Reflection =
             let raises = RaiseValue(eval rhs :?> exn)
             [x, mi,(args,raises)]
         | Call(Some(x), mi, args) when mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> ->
-            [x, mi,(toArgs args,Unit)]
+            [x, mi,(toArgs (mi.GetParameters()) args,Unit)]
         | PropertySet(Some(x), pi, args, value) ->
-            [x, pi.GetSetMethod(),(toArgs [yield! args; yield value], Unit)]
+            [x, pi.GetSetMethod(),(toArgs [|yield! pi.GetIndexParameters(); yield null|] [yield! args; yield value], Unit)]
         | expr -> invalidOp(expr.ToString())
     let rec toCallResultOf abstractType expr =
         let calls = toCallResult expr
@@ -661,10 +676,12 @@ module internal Verification =
         Array.zip (a.GetParameters()) (b.GetParameters())
         |> Array.forall (fun (a,b) -> a.ParameterType = b.ParameterType)
     /// Returns true if arguments match
-    let argsMatch argType expectedArg actualValue =
+    let argsMatch argType expectedArg (actualValue:obj) =
         match expectedArg with
         | Any -> true
         | Arg(expected) -> obj.Equals(expected,actualValue)
+        | ArgArray(expected) -> 
+            System.Linq.Enumerable.SequenceEqual(expected, actualValue :?> obj[])
         | OutArg(_) -> true
         | Pred(p) ->
             let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")

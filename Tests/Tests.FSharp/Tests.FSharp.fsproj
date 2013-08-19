@@ -42,6 +42,7 @@
     <Compile Include="MethodTests.fs" />
     <Compile Include="GenericsTests.fs" />
     <Compile Include="AbstractClassTests.fs" />
+    <Compile Include="ParamArrayTests.fs" />
     <Compile Include="EvalTests.fs" />
     <Compile Include="ReportedIssues.fs" />
     <None Include="packages.config" />
