@@ -47,5 +47,23 @@ let ``can mock an inherited abstract class method`` () =
             .Method(fun x -> <@ x.MyMethod @>).Returns(true)
     Assert.IsTrue(mock.MyMethod(1))
 
+[<AbstractClass>]
+type MyAbstractClassWithInterface () =
+    abstract MyMethod : int -> bool
+    interface IDisposable with
+        member this.Dispose() = ()
 
+[<AbstractClass>]
+type MyInheritedAbstractClassWithInterface () =
+    inherit MyAbstractClassWithInterface ()
+    member __.MyMethod(_) = false
+    member __.Dispose() = ()
+    member __.Foo() = 1
+
+[<Test>]
+let ``can mock an abstract class that implements an interface`` () =
+    let mock = 
+        Mock<MyInheritedAbstractClassWithInterface>
+            .Method(fun x -> <@ x.MyMethod @>).Returns(true)
+    Assert.IsTrue(mock.MyMethod(1))
 
