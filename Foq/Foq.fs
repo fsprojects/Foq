@@ -478,8 +478,8 @@ module private Reflection =
         match pi, arg with
         | _, Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
         | _, Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
-        | pi, array when pi <> null && pi.GetCustomAttributes(typeof<ParamArrayAttribute>, true).Length > 0 ->
-           ArgArray (eval array :?> obj[])
+        | pi, NewArray(_,args) when pi <> null && pi.GetCustomAttributes(typeof<ParamArrayAttribute>, true).Length > 0 ->
+           ArgArray [|for arg in args -> eval arg|]
         | _, expr -> eval expr |> Arg 
     let toArgs ps args = [|for arg in Seq.zip ps args -> toArg arg |]
     /// Active pattern matches method call expressions
