@@ -38,6 +38,14 @@ let ``should support method with specific param array args`` () =
     Assert.IsFalse(mock.Foo(1,2,3,4))
 
 [<Test>]
+let ``should support method with specific and any param array args`` () =
+    let mock =
+        Mock<MyInterface>()
+            .Setup(fun x -> <@ x.Foo(1,any(),any()) @>).Returns(true)
+            .Create()    
+    Assert.That(mock.Foo(1,2,3))
+
+[<Test>]
 let ``can verify method with specific param array args`` () =
     let mock =
         Mock<MyInterface>()
@@ -45,6 +53,15 @@ let ``can verify method with specific param array args`` () =
             .Create()
     mock.Foo(1,2,3) |> ignore
     verify <@ mock.Foo(1,2,3) @> once
+
+[<Test>]
+let ``can verify method with specific and any param array args`` () =
+    let mock =
+        Mock<MyInterface>()
+            .Setup(fun x -> <@ x.Foo(any()) @>).Returns(true)
+            .Create()
+    mock.Foo(1,2,3) |> ignore
+    verify <@ mock.Foo(1,2,any()) @> once
 
 [<Test>]
 let ``can quick setup method with param array args`` () =
