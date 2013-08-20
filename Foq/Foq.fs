@@ -26,7 +26,7 @@ module internal Emit =
     /// Boxed event
     type PublishedEvent = obj
     /// Method argument type
-    type Arg = Any | Arg of Value | ArgArray of Value[] | OutArg of Value | Pred of Func | PredUntyped of Func
+    type Arg = Any | Arg of Value | ArgArray of Arg[] | OutArg of Value | Pred of Func | PredUntyped of Func
     /// Method result type
     type Result = 
         | Unit
@@ -62,13 +62,23 @@ module internal Emit =
         (mi:MethodInfo,args) (unmatched:Label) =
         /// Index of argument values for current method overload
         let argsLookupIndex = argsLookup.Count
+        let rec toValue = function 
+            | Any -> null 
+            | Arg(value) -> value 
+            | ArgArray(args) -> box [|for arg in args -> toValue arg|] 
+            | OutArg(value) -> value 
+            | Pred(f) -> f | PredUntyped(f) -> f
         // Add arguments to lookup
-        args 
-        |> Array.map (function Any -> null | Arg(value) -> value | ArgArray(values) -> box values | OutArg(value) -> value | Pred(f) -> f | PredUntyped(f) -> f) 
-        |> argsLookup.Add
+        args |> Array.map toValue |> argsLookup.Add
         // Emit argument matching
-        args |> Seq.iteri (fun argIndex arg ->
-            let emitArgBox () =
+        let rec emitArg arrayIndex argIndex arg =          
+            let atIndex () =
+                match arrayIndex with
+                | Some(i:int) ->  
+                    il.Emit(OpCodes.Ldc_I4, i)
+                    il.Emit(OpCodes.Ldelem_Ref)
+                | None -> ()
+            let emitLdargBox () =
                 il.Emit(OpCodes.Ldarg, argIndex+1)
                 let pi = mi.GetParameters().[argIndex]
                 il.Emit(OpCodes.Box, pi.ParameterType)
@@ -82,43 +92,48 @@ module internal Emit =
             match arg with
             | Any -> ()
             | Arg(value) ->
-                emitArgBox ()
+                emitLdargBox ()
+                atIndex ()       
                 emitArgLookup ()
-                // Emit Object.Equals(box args.[argIndex+1], _args.[argsLookupIndex].[argIndex])
+                atIndex ()
                 il.EmitCall(OpCodes.Call, typeof<obj>.GetMethod("Equals",[|typeof<obj>;typeof<obj>|]), null) 
                 il.Emit(OpCodes.Brfalse_S, unmatched)
-            | ArgArray(values) ->
-                emitArgBox ()
-                emitArgLookup ()              
-                let mi = 
-                    typeof<System.Linq.Enumerable>.GetMethods() 
-                    |> Seq.find (fun mi -> mi.Name = "SequenceEqual" && mi.GetParameters().Length = 2)
-                let sequenceEqual = mi.MakeGenericMethod([|typeof<obj>|])
-                il.EmitCall(OpCodes.Call, sequenceEqual, null) 
-                il.Emit(OpCodes.Brfalse_S, unmatched)
+            | ArgArray(args) ->
+                emitLdargBox ()
+                il.Emit(OpCodes.Ldlen)
+                emitArgLookup ()
+                il.Emit(OpCodes.Ldlen)
+                il.Emit(OpCodes.Ceq)
+                il.Emit(OpCodes.Brfalse, unmatched)
+                args |> Array.iteri (fun i arg -> emitArg (Some i) argIndex arg)
             | OutArg(value) ->               
-                il.Emit(OpCodes.Ldarg, argIndex+1)
-                emitArgLookup ()             
+                il.Emit(OpCodes.Ldarg, argIndex+1)              
+                emitArgLookup ()                             
                 let pi = mi.GetParameters().[argIndex]
                 let t = pi.ParameterType.GetElementType()
                 il.Emit(OpCodes.Unbox_Any, t)
                 il.Emit(OpCodes.Stobj, t)
             | Pred(f) ->
                 emitArgLookup ()
+                atIndex()
                 il.Emit(OpCodes.Ldarg, argIndex+1)
+                atIndex()
                 let argType = mi.GetParameters().[argIndex].ParameterType
                 let invoke = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
                 il.Emit(OpCodes.Callvirt, invoke)
                 il.Emit(OpCodes.Brfalse_S, unmatched)
             | PredUntyped(f) ->
                 emitArgLookup ()
+                atIndex()
                 il.Emit(OpCodes.Ldarg, argIndex+1)
+                atIndex()
                 let argType = mi.GetParameters().[argIndex].ParameterType
                 il.Emit(OpCodes.Box, argType)
                 let invoke = FSharpType.MakeFunctionType(typeof<obj>,typeof<bool>).GetMethod("Invoke")
                 il.Emit(OpCodes.Callvirt, invoke)
                 il.Emit(OpCodes.Brfalse_S, unmatched)
-        )
+
+        args |> Seq.iteri (emitArg None)
 
     /// Generates method return
     let generateReturn
@@ -474,12 +489,12 @@ module private Reflection =
     /// Returns true if method has specified attribute
     let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
     /// Converts expression to a tuple of MethodInfo and Arg array
-    let toArg (pi:ParameterInfo,arg) =
+    let rec toArg (pi:ParameterInfo,arg) =
         match pi, arg with
         | _, Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
         | _, Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
         | pi, NewArray(_,args) when pi <> null && pi.GetCustomAttributes(typeof<ParamArrayAttribute>, true).Length > 0 ->
-           ArgArray [|for arg in args -> eval arg|]
+           ArgArray [|for arg in args -> toArg(null, arg)|]
         | _, expr -> eval expr |> Arg 
     let toArgs ps args = [|for arg in Seq.zip ps args -> toArg arg |]
     /// Active pattern matches method call expressions
@@ -676,12 +691,13 @@ module internal Verification =
         Array.zip (a.GetParameters()) (b.GetParameters())
         |> Array.forall (fun (a,b) -> a.ParameterType = b.ParameterType)
     /// Returns true if arguments match
-    let argsMatch argType expectedArg (actualValue:obj) =
+    let rec argsMatch argType expectedArg (actualValue:obj) =
         match expectedArg with
         | Any -> true
         | Arg(expected) -> obj.Equals(expected,actualValue)
-        | ArgArray(expected) -> 
-            System.Linq.Enumerable.SequenceEqual(expected, actualValue :?> obj[])
+        | ArgArray(expected) ->
+            Array.zip expected (actualValue :?> obj[])
+            |> Array.forall (fun (arg,value) -> argsMatch typeof<obj> arg value)
         | OutArg(_) -> true
         | Pred(p) ->
             let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
