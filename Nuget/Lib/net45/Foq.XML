@@ -5,6 +5,14 @@
 <member name="">
 
 </member>
+<member name="T:Foq.CallsAttribute">
+<summary>
+ Calls attribute
+</summary>
+</member>
+<member name="">
+
+</member>
 <member name="">
 
 </member>
@@ -386,6 +394,9 @@
 <member name="">
 
 </member>
+<member name="">
+
+</member>
 <member name="T:Foq.Emit.Arg">
 <summary>
  Method argument type
@@ -409,6 +420,11 @@
 <member name="M:Foq.Emit.mock(System.Boolean,System.Type,Microsoft.FSharp.Collections.FSharpList{System.Tuple{System.Reflection.MethodInfo,System.Tuple{Foq.Emit.Arg[],Foq.Emit.Result}}},System.Object[])">
 <summary>
  Builds a mock from the specified calls
+</summary>
+</member>
+<member name="M:Foq.Emit.defineType(System.Type)">
+<summary>
+ Defines a type builder for the specified abstract type
 </summary>
 </member>
 <member name="M:Foq.Emit.generateOverload(System.Reflection.Emit.ILGenerator,System.Collections.Generic.List{System.Object[]},System.Reflection.Emit.FieldBuilder,System.Collections.Generic.List{System.Object},System.Reflection.Emit.FieldBuilder,System.Reflection.MethodInfo,System.Tuple{Foq.Emit.Arg[],Foq.Emit.Result})">
@@ -882,6 +898,11 @@
  Signifies source expression raises specified exception
 </summary>
 </member>
+<member name="M:Foq.Operators.op_MinusMinusMinusGreater``1(``0,Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,``0})">
+<summary>
+ Signifies source expression returns specified value
+</summary>
+</member>
 <member name="M:Foq.Operators.op_MinusMinusGreater``1(``0,``0)">
 <summary>
  Signifies source expression returns specified value
@@ -927,7 +948,10 @@
  Active pattern matches method call expressions
 </summary>
 </member>
-<member name="M:Foq.Reflection.toArgs``1(System.Collections.Generic.IEnumerable{``0})">
+<member name="">
+
+</member>
+<member name="M:Foq.Reflection.toArg(System.Reflection.ParameterInfo,Microsoft.FSharp.Quotations.FSharpExpr)">
 <summary>
  Converts expression to a tuple of MethodInfo and Arg array
 </summary>
@@ -975,7 +999,7 @@
 <member name="">
 
 </member>
-<member name="M:Foq.Verification.argsMatch``1(System.Type,Foq.Emit.Arg,``0)">
+<member name="M:Foq.Verification.argsMatch(System.Type,Foq.Emit.Arg,System.Object)">
 <summary>
  Returns true if arguments match
 </summary>
