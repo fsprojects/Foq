@@ -132,3 +132,15 @@ let ``can setup same property multiple times``() =
     Assert.AreEqual(10, clock.Foo(1))
     Assert.AreEqual(20, clock.Foo(2))
     Assert.AreEqual(30, clock.Foo(3))
+
+
+// From http://pastebin.com/gVnTwws0
+
+type IFoo' = abstract member TryFoo : int byref -> bool
+
+let [<Test>] ``should handle byref arguments`` () =
+    (fun () ->
+        let foo = Mock<IFoo'>().SetupByName("TryFoo").Returns(true).Create()
+        let mutable i = 0
+        let x = foo.TryFoo(&i)
+        asrt <| x)()
