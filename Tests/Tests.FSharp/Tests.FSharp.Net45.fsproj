@@ -39,12 +39,15 @@
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition="(!Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')) And (Exists('$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets'))" />
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="(!Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')) And (!Exists('$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets')) And (Exists('$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets'))" />
   <ItemGroup>
-    <Compile Include="WithTests.fs" />
     <Compile Include="MockTests.fs" />
-    <Compile Include="EvalTests.fs" />
-    <Compile Include="GenericsTests.fs" />
-    <Compile Include="ReportedIssues.fs" />
     <Compile Include="VerifyTests.fs" />
+    <Compile Include="WithTests.fs" />
+    <Compile Include="MethodTests.fs" />
+    <Compile Include="GenericsTests.fs" />
+    <Compile Include="AbstractClassTests.fs" />
+    <Compile Include="ParamArrayTests.fs" />
+    <Compile Include="EvalTests.fs" />
+    <Compile Include="ReportedIssues.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
