@@ -106,3 +106,11 @@ let ``test with reference property`` () =
 let ``test with array property`` () =    
     let foo = Mock<IFoo>.With(fun foo -> <@ foo.ArrayProperty --> [|1;2;3|] @>)
     Assert.AreEqual([|1;2;3|], foo.ArrayProperty)
+
+[<Test>]
+let ``test with property via function`` () =
+    let xs = ref [|1;2;3|]
+    let foo = Mock<IFoo>.With(fun foo -> <@ foo.ArrayProperty ---> fun () -> xs.Value @>)
+    Assert.AreEqual([|1;2;3|], foo.ArrayProperty)
+    xs := [|1|]
+    Assert.AreEqual([|1|], foo.ArrayProperty)

@@ -422,6 +422,10 @@ type PredicateAttribute() = inherit Attribute()
 [<AttributeUsage(AttributeTargets.Method)>]
 type ReturnsAttribute() = inherit Attribute()
 
+/// Calls attribute
+[<AttributeUsage(AttributeTargets.Method)>]
+type CallsAttribute() = inherit Attribute()
+
 /// Raises attribute
 [<AttributeUsage(AttributeTargets.Method)>]
 type RaisesAttribute() = inherit Attribute()
@@ -533,6 +537,10 @@ module private Reflection =
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<ReturnsAttribute> mi -> 
             let x, mi, args = toCall lhs
             let returns = ReturnValue(eval rhs, mi.ReturnType)
+            [x, mi,(args,returns)]
+        | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<CallsAttribute> mi -> 
+            let x, mi, args = toCall lhs
+            let returns = ReturnFunc(eval rhs)
             [x, mi,(args,returns)]
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<RaisesAttribute> mi -> 
             let x, mi, args = toCall lhs
@@ -830,6 +838,8 @@ module It =
 module Operators =
     /// Signifies source expression returns specified value
     let [<Returns>] (-->) (source:'T) (value:'T) = ()
+    /// Signifies source expression returns specified value
+    let [<Calls>] (--->) (source:'T) (value:unit->'T) = ()
     /// Signifies source expression raises specified exception
     let [<Raises>] (==>) (source:'T) (value:exn) = ()
     /// Returns a mock of the required type
