@@ -134,13 +134,45 @@ let ``can setup same property multiple times``() =
     Assert.AreEqual(30, clock.Foo(3))
 
 
-// From http://pastebin.com/gVnTwws0
+// http://stackoverflow.com/questions/19093585/using-foq-verify-methodsmatch-fails-on-interface-with-type-parameter
 
-type IFoo' = abstract member TryFoo : int byref -> bool
+open System.Threading.Tasks
 
-let [<Test>] ``should handle byref arguments`` () =
-    (fun () ->
-        let foo = Mock<IFoo'>().SetupByName("TryFoo").Returns(true).Create()
-        let mutable i = 0
-        let x = foo.TryFoo(&i)
-        asrt <| x)()
+type IAppDatabase = 
+    abstract Get<'T> : seq<Guid> -> Task<seq<'T>>
+    abstract Set<'T> : seq<'T> -> Task<bool>
+    abstract GetIds<'T> : unit -> Task<seq<Guid>>
+
+module DT =
+    type Result () = do ()
+    let Results results = results
+
+let results = seq [DT.Result (); DT.Result (); DT.Result ()]
+let resultInfos = DT.Results results
+let guids = seq [Guid.NewGuid(); Guid.NewGuid(); Guid.NewGuid()]
+
+let taskGetIds = Task.Factory.StartNew<seq<Guid>>(fun () -> guids)
+let taskSet = Task.Factory.StartNew<bool>(fun () -> true )
+let taskGet = Task.Factory.StartNew<seq<DT.Result>>(fun () -> results)
+
+let db = Mock<IAppDatabase>.With(fun x -> 
+            <@  
+               x.GetIds () --> taskGetIds
+               x.Get guids --> taskGet
+               x.Set results --> taskSet @>)
+
+type IApp =
+    abstract Create : infos:DT.Result seq -> Async<bool>
+
+type App (db:IAppDatabase) =
+    interface IApp with 
+        member __.Create (infos) = 
+            db.Set infos |> Async.AwaitTask
+
+let [<Test>] ``Set the resultInfos in de app database`` () =
+    let app = App (db) :> IApp
+    let res = app.Create resultInfos |> Async.RunSynchronously 
+    let x = db :?> Foq.IMockObject
+    let xs = x.Invocations
+    verify <@ db.Set results @> once    
+    Assert.IsTrue(res)
