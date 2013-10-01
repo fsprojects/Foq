@@ -692,16 +692,23 @@ module Times =
     let once = Times.Once
 
 module internal Verification =
-    /// Returns true if method params match
-    let paramsMatch (a:MethodBase) (b:MethodBase) =
-        if b.ContainsGenericParameters then true
-        else Array.zip (a.GetParameters()) (b.GetParameters())
-             |> Array.forall (fun (a,b) -> a.ParameterType = b.ParameterType)
+    /// Returns true if method parameter types match
+    let paramTypesMatch (a:MethodBase) (b:MethodBase) =
+        let b = 
+            if b.ContainsGenericParameters &&
+               b.IsGenericMethod &&
+               a.GetGenericArguments().Length = b.GetGenericArguments().Length 
+            then            
+                let mi = b :?> MethodInfo
+                mi.MakeGenericMethod(a.GetGenericArguments()) :> MethodBase
+            else b
+        Array.zip (a.GetParameters()) (b.GetParameters())
+        |> Array.forall (fun (a,b) -> a.ParameterType = b.ParameterType)
     /// Return true if methods match
     let methodsMatch (a:MethodBase) (b:MethodBase) =
         a.Name = b.Name &&
         a.GetParameters().Length = b.GetParameters().Length &&
-        paramsMatch a b
+        paramTypesMatch a b
     /// Returns true if arguments match
     let rec argsMatch argType expectedArg (actualValue:obj) =
         match expectedArg with
