@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Foq</id>
-    <version>1.1</version>
+    <version>1.2</version>
     <title>Foq</title>
     <authors>Phillip Trelford</authors>
     <owners>Phillip Treford</owners>
@@ -11,7 +11,7 @@
     <iconUrl>http://trelford.com/Foq.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Foq is a lightweight thread-safe mocking library for F#, C#, and VB with a similar API to Moq.</description>
-    <releaseNotes>Foq 1.1 provides improved abstract class support</releaseNotes>
+    <releaseNotes>Foq 1.2 supports verify over generic interface methods</releaseNotes>
     <copyright>Copyright 2012-2013</copyright>
     <tags>F# C# VB testing unittest unittesting TDD stubs stubbing fakes faking mocks mocking moq</tags>
     <dependencies/>
