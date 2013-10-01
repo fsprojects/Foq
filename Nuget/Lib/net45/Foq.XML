@@ -1009,6 +1009,11 @@
  Return true if methods match
 </summary>
 </member>
+<member name="M:Foq.Verification.paramTypesMatch(System.Reflection.MethodBase,System.Reflection.MethodBase)">
+<summary>
+ Returns true if method parameter types match
+</summary>
+</member>
 <member name="T:Foq.Verification">
 
 </member>
