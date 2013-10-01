@@ -161,3 +161,21 @@ let ``verify repeat sequence`` () =
                 xs.RemoveAt(0)
             xs.Count --> any()
         @>
+
+type IFoo =
+    abstract Bar<'T> : 'T -> bool
+
+[<Test>]
+let ``verify generic method`` () =
+    let foo = Mock<IFoo>().Setup(fun x -> <@ x.Bar(1) @>).Returns(true).Create()
+    foo.Bar(1) |> ignore
+    verify <@ foo.Bar(1) @> once
+
+type IFoo<'T> =
+    abstract Bar : 'T -> bool
+
+[<Test>]
+let ``verify generic interface's method`` () =
+    let foo = Mock<IFoo<int>>().Setup(fun x -> <@ x.Bar(1) @>).Returns(true).Create()
+    foo.Bar(1) |> ignore
+    verify <@ foo.Bar(1) @> once
