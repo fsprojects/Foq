@@ -45,8 +45,8 @@
     <Compile Include="ParamArrayTests.fs" />
     <Compile Include="EvalTests.fs" />
     <Compile Include="ReportedIssues.fs" />
-    <None Include="packages.config" />
     <Compile Include="PartialApplicationTests.fs" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
