@@ -26,7 +26,14 @@ module internal Emit =
     /// Boxed event
     type PublishedEvent = obj
     /// Method argument type
-    type Arg = Any | Arg of Value | ArgArray of Arg[] | OutArg of Value | Pred of Func | PredUntyped of Func
+    type Arg = 
+        | Any 
+        | Arg of Value 
+        | ArgArray of Arg[] 
+        | OutArg of Value 
+        | Pred of Func 
+        | PredUntyped of Func
+
     /// Method result type
     type Result = 
         | Unit
@@ -493,10 +500,16 @@ module private Reflection =
     /// Returns true if method has specified attribute
     let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
     /// Converts expression to a tuple of MethodInfo and Arg array
+
+    let toCallArg arg = 
+        match arg with
+        | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
+        | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
+        | _ -> raise (NotSupportedException ())
+
     let rec toArg (pi:ParameterInfo,arg) =
         match pi, arg with
-        | _, Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
-        | _, Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
+        | _, Call _ -> toCallArg arg
         | pi, NewArray(_,args) when pi <> null && pi.GetCustomAttributes(typeof<ParamArrayAttribute>, true).Length > 0 ->
            ArgArray [|for arg in args -> toArg(null, arg)|]
         | _, expr -> eval expr |> Arg 
@@ -512,19 +525,48 @@ module private Reflection =
                 Some(x,mi,[|for arg in args -> Any|])
             | _ -> None
         traverse [] expr
+
     /// Converts expression to a tuple of Expression, MethodInfo and Arg array
-    let toCall = function
-        | Lambda(unitVar,Call(Some(x),mi,[])) -> x, mi, [||]
-        | Lambda(unitVar,Call(Some(x),mi,[NewArray(_)])) -> x, mi, [|Any|]
-        | Lambda(a,Call(Some(x),mi,[Var(a')])) when a=a' -> x, mi, [|Any|]
-        | Lambda(_,MethodCall(x,mi,args)) -> x, mi, args
-        | Call(Some(x), mi, args) -> 
-            x, mi, toArgs (mi.GetParameters()) args
-        | PropertyGet(Some(x), pi, args) -> 
-            x, pi.GetGetMethod(), toArgs (pi.GetIndexParameters()) args
-        | PropertySet(Some(x), pi, args, value) -> 
-            x, pi.GetSetMethod(), toArgs [yield! pi.GetIndexParameters();yield null] [yield! args;yield value]
-        | expr -> raise <| NotSupportedException(expr.ToString())
+    let toCall quote = 
+
+        let unwrapApplication = 
+        
+            let toArgs' = 
+                List.map (fun expr ->
+                    match expr with
+                    | Value (value, _) -> Arg value
+                    | Call _ -> toCallArg expr
+                    | _ -> raise (NotSupportedException ())
+                )
+                >> List.toArray
+
+            let rec unwrap values quote = 
+                match quote with                
+                | Application (inner, value) -> unwrap (value :: values) inner   //Normal application
+                | Lambda (_, body) -> unwrap values body
+                | Call (Some expr, info, _) -> (expr, info, toArgs' values) 
+                | _ -> raise (NotSupportedException ())
+
+            unwrap []
+
+        let unwrapStandard quote = 
+            match quote with
+            | Lambda(unitVar,Call(Some(x),mi,[])) -> x, mi, [||]
+            | Lambda(unitVar,Call(Some(x),mi,[NewArray(_)])) -> x, mi, [|Any|]
+            | Lambda(a,Call(Some(x),mi,[Var(a')])) when a=a' -> x, mi, [|Any|]
+            | Lambda(_,MethodCall(x,mi,args)) -> x, mi, args
+            | Call(Some(x), mi, args) -> 
+                x, mi, toArgs (mi.GetParameters()) args
+            | PropertyGet(Some(x), pi, args) -> 
+                x, pi.GetGetMethod(), toArgs (pi.GetIndexParameters()) args
+            | PropertySet(Some(x), pi, args, value) -> 
+                x, pi.GetSetMethod(), toArgs [yield! pi.GetIndexParameters();yield null] [yield! args;yield value]
+            | expr -> raise <| NotSupportedException(expr.ToString())
+
+        match quote with
+        | Application (_, _) -> unwrapApplication quote
+        | _ -> unwrapStandard quote
+
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toCallOf abstractType expr =
         match toCall expr with
