@@ -48,6 +48,7 @@
     <Compile Include="ParamArrayTests.fs" />
     <Compile Include="EvalTests.fs" />
     <Compile Include="ReportedIssues.fs" />
+    <Compile Include="PartialApplicationTests.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
