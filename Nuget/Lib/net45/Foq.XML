@@ -951,7 +951,10 @@
 <member name="">
 
 </member>
-<member name="M:Foq.Reflection.toArg(System.Reflection.ParameterInfo,Microsoft.FSharp.Quotations.FSharpExpr)">
+<member name="">
+
+</member>
+<member name="M:Foq.Reflection.toCallArg(Microsoft.FSharp.Quotations.FSharpExpr)">
 <summary>
  Converts expression to a tuple of MethodInfo and Arg array
 </summary>
