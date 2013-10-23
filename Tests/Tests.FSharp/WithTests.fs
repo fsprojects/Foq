@@ -1,12 +1,13 @@
 ﻿module Foq.WithTests
 
+open System.Collections.Generic
 open Foq
 open NUnit.Framework
 
 [<Test>]
 let ``test mock with multiple members`` () =
     let xs =
-        Mock<System.Collections.Generic.IList<char>>.With(fun xs ->
+        Mock<IList<char>>.With(fun xs ->
             <@ xs.Count --> 2 
                xs.Item(0) --> '0'
                xs.Item(1) --> '1'
@@ -21,6 +22,20 @@ let ``test mock with multiple members`` () =
     Assert.Throws<System.ArgumentOutOfRangeException>(fun () ->
         xs.RemoveAt(2)
     ) |> ignore
+
+let membersSetup (xs:IList<char>) =
+    <@ xs.Count --> 2 
+       xs.Item(0) --> '0'
+       xs.Item(1) --> '1'
+       xs.Contains(any()) --> true
+     @>
+
+let ``test mock with multiple members via setup function`` () =
+    let xs = Mock.With(membersSetup)           
+    Assert.AreEqual(2, xs.Count)
+    Assert.AreEqual('0', xs.Item(0))
+    Assert.AreEqual('1', xs.Item(1))
+    Assert.AreEqual(true, xs.Contains('0'))
 
 [<Test>]
 let ``test fallthrough when matching a specific member`` () =
