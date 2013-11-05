@@ -248,22 +248,27 @@ module internal Emit =
         generateReturn il (returnValues,returnValuesField) (mi,result)
         il.MarkLabel(unmatched)
 
+    /// Module builder
+    let moduleBuilder = lazy (
+        let name = "Foq.Dynamic"
+        /// Builder for assembly
+        let assemblyBuilder =
+            AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(name),AssemblyBuilderAccess.Run)
+        /// Builder for module
+        assemblyBuilder.DefineDynamicModule(name+".dll")
+        )
+
     /// Defines a type builder for the specified abstract type
     let defineType (abstractType:Type) =
         /// Stub name for abstract type
-        let mockName = "Mock." + abstractType.Name.Replace("'", "!")
-        /// Builder for assembly
-        let assemblyBuilder =
-            AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(mockName),AssemblyBuilderAccess.Run)
-        /// Builder for module
-        let moduleBuilder = assemblyBuilder.DefineDynamicModule(mockName+".dll")
+        let mockName = "Mock." + abstractType.Name.Replace("'", "!") + Guid.NewGuid().ToString()
         let parent, interfaces = 
             if abstractType.IsInterface
             then typeof<obj>, [|abstractType|]
             else abstractType, [||]
         let attributes = TypeAttributes.Public ||| TypeAttributes.Class
         let interfaces = [|yield typeof<IMockObject>; yield! interfaces|]
-        moduleBuilder.DefineType(mockName, attributes, parent, interfaces)
+        moduleBuilder.Value.DefineType(mockName, attributes, parent, interfaces)
 
     /// Builds a mock from the specified calls
     let mock (isStrict, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list, args:obj[]) =
@@ -499,20 +504,19 @@ module private Reflection =
     open Eval
     /// Returns true if method has specified attribute
     let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
-    /// Converts expression to a tuple of MethodInfo and Arg array
-
-    let toCallArg arg = 
-        match arg with
-        | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Any
-        | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Pred(eval pred)
-        | _ -> raise (NotSupportedException ())
-
+    /// Matches attributed calls
+    let (|AttributedArg|_|) = function       
+        | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Some Any
+        | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Some (Pred(eval pred))
+        | _ -> None
+    /// Converts parameter to arguments
     let rec toArg (pi:ParameterInfo,arg) =
         match pi, arg with
-        | _, Call _ -> toCallArg arg
+        | _, AttributedArg arg -> arg
         | pi, NewArray(_,args) when pi <> null && pi.GetCustomAttributes(typeof<ParamArrayAttribute>, true).Length > 0 ->
            ArgArray [|for arg in args -> toArg(null, arg)|]
-        | _, expr -> eval expr |> Arg 
+        | _, expr -> eval expr |> Arg
+    /// Converts parameters to arguments
     let toArgs ps args = [|for arg in Seq.zip ps args -> toArg arg |]
     /// Active pattern matches method call expressions
     let (|MethodCall|_|) expr =
@@ -525,30 +529,28 @@ module private Reflection =
                 Some(x,mi,[|for arg in args -> Any|])
             | _ -> None
         traverse [] expr
-
-    /// Converts expression to a tuple of Expression, MethodInfo and Arg array
+    /// Converts member invocation expression to call information
     let toCall quote = 
-
-        let unwrapApplication = 
-        
+        /// Unwrap applications of functions
+        let unwrapApplication =
+            /// Convert expression to arguments
             let toArgs' = 
                 List.map (fun expr ->
                     match expr with
                     | Value (value, _) -> Arg value
-                    | Call _ -> toCallArg expr
+                    | AttributedArg arg -> arg
                     | _ -> raise (NotSupportedException ())
                 )
                 >> List.toArray
-
+            /// Unwrap quotation accumulating argument values
             let rec unwrap values quote = 
                 match quote with                
-                | Application (inner, value) -> unwrap (value :: values) inner   //Normal application
+                | Application (inner, value) -> unwrap (value :: values) inner  // Normal application
                 | Lambda (_, body) -> unwrap values body
                 | Call (Some expr, info, _) -> (expr, info, toArgs' values) 
-                | _ -> raise (NotSupportedException ())
-
+                | _ -> raise (NotSupportedException (quote.ToString()))
             unwrap []
-
+        /// Unwrap standard quotation of member value
         let unwrapStandard quote = 
             match quote with
             | Lambda(unitVar,Call(Some(x),mi,[])) -> x, mi, [||]
@@ -562,17 +564,16 @@ module private Reflection =
             | PropertySet(Some(x), pi, args, value) -> 
                 x, pi.GetSetMethod(), toArgs [yield! pi.GetIndexParameters();yield null] [yield! args;yield value]
             | expr -> raise <| NotSupportedException(expr.ToString())
-
+        // Handle applications of functions and standard functions
         match quote with
         | Application (_, _) -> unwrapApplication quote
         | _ -> unwrapStandard quote
-
-    /// Converts expression to a tuple of MethodInfo and Arg array
+    /// Converts expression to call checking expected type
     let toCallOf abstractType expr =
         match toCall expr with
         | x, mi, args when x.Type = abstractType -> mi, args
         | _ -> raise <| NotSupportedException(expr.ToString())   
-    /// Converts expression to a tuple of MethodInfo, Arg array and Result
+    /// Converts Mock.With expressions to calls with expected results list
     let rec toCallResult = function
         | ForIntegerRangeLoop(v,a,b,y) -> [for i = eval a :?> int to eval b :?> int do yield! toCallResult y]
         | Sequential(x,y) -> toCallResult x @ toCallResult y
@@ -593,6 +594,7 @@ module private Reflection =
         | PropertySet(Some(x), pi, args, value) ->
             [x, pi.GetSetMethod(),(toArgs [|yield! pi.GetIndexParameters(); yield null|] [yield! args; yield value], Unit)]
         | expr -> invalidOp(expr.ToString())
+    /// Converts Mock.With expressions to call/result list checking expected type
     let rec toCallResultOf abstractType expr =
         let calls = toCallResult expr
         [for (x,mi,(arg,result)) in calls -> 
