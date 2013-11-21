@@ -420,3 +420,15 @@ let ``test specify out arg member by name'`` () =
             .Create()
     let success = mock.TryGetValue("x",x)
     Assert.IsTrue(success)
+
+[<Test>]
+let ``test return strategy is not implemented`` () =
+    Assert.Throws<System.NotImplementedException>(fun () ->
+        Mock.Of<IInterface>(returnStrategy=fun t -> null) |> ignore
+    ) |> ignore
+    Assert.Throws<System.NotImplementedException>(fun () ->
+        Mock<IInterface>(returnStrategy=fun t -> null).Create() |> ignore
+    ) |> ignore
+    Assert.Throws<System.NotImplementedException>(fun () ->
+        Mock<IInterface>.Create(typeof<IInterface>, returnStrategy=fun t -> null) |> ignore
+    ) |> ignore
