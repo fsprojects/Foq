@@ -286,6 +286,8 @@ module internal Emit =
         let invokedField = typeBuilder.DefineField("_invoked", typeof<Event<EventHandler,EventArgs>>, fields)
         /// Field for verifiers
         let verifiersField = typeBuilder.DefineField("_verifiers", typeof<Verifiers>, fields)
+        /// Return strategy field
+        let returnField = typeBuilder.DefineField("_returnStrategy", typeof<Type->unit>, fields)
         // Generate default constructor
         generateConstructor typeBuilder [||] (fun il -> ())
         // Generates constructor body
@@ -303,7 +305,7 @@ module internal Emit =
                     BindingFlags.Public ||| BindingFlags.NonPublic 
                 let ci = abstractType.GetConstructor(bindings, Type.DefaultBinder, argTypes, [||])
                 argTypes |> Array.iteri (fun i arg ->
-                    il.Emit(OpCodes.Ldarg_3) 
+                    il.Emit(OpCodes.Ldarg, 4) 
                     il.Emit(OpCodes.Ldc_I4, i) 
                     il.Emit(OpCodes.Ldelem_Ref)
                     il.Emit(OpCodes.Unbox_Any, arg)
@@ -317,6 +319,9 @@ module internal Emit =
             il.Emit(OpCodes.Ldarg_2)
             il.Emit(OpCodes.Stfld, argsField)
             il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldarg_3)
+            il.Emit(OpCodes.Stfld, returnField)
+            il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Newobj, typeof<Invocations>.GetConstructor([||]))
             il.Emit(OpCodes.Stfld, invocationsField)
             il.Emit(OpCodes.Ldarg_0)
@@ -326,7 +331,7 @@ module internal Emit =
             il.Emit(OpCodes.Newobj, typeof<Verifiers>.GetConstructor([||]))
             il.Emit(OpCodes.Stfld, verifiersField)
         // Generate constructor overload
-        let constructorArgs = [|typeof<obj[]>;typeof<obj[][]>;typeof<obj[]>|]
+        let constructorArgs = [|typeof<obj[]>;typeof<obj[][]>;typeof<Type->obj>;typeof<obj[]>|]
         generateConstructor typeBuilder constructorArgs generateConstructorBody
         /// Generates a property getter
         let generatePropertyGetter name (field:FieldBuilder) =
@@ -419,7 +424,9 @@ module internal Emit =
         /// Mock type
         let mockType = typeBuilder.CreateType()
         // Generate object instance
-        let args = [|box (returnValues.ToArray());box (argsLookup.ToArray()); box args|]
+        let returnStrategy : Type -> obj = 
+            match returnStrategy with Some f -> f | None -> fun t -> invalidOp "Expecting return strategy"
+        let args = [|box (returnValues.ToArray());box (argsLookup.ToArray()); box (returnStrategy);box args;|]
         Activator.CreateInstance(mockType, args)
 
 /// Mock mode
