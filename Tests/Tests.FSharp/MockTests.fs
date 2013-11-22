@@ -422,13 +422,25 @@ let ``test specify out arg member by name'`` () =
     Assert.IsTrue(success)
 
 [<Test>]
-let ``test return strategy is not implemented`` () =
-    Assert.Throws<System.NotImplementedException>(fun () ->
-        Mock.Of<IInterface>(returnStrategy=fun t -> null) |> ignore
-    ) |> ignore
-    Assert.Throws<System.NotImplementedException>(fun () ->
-        Mock<IInterface>(returnStrategy=fun t -> null).Create() |> ignore
-    ) |> ignore
-    Assert.Throws<System.NotImplementedException>(fun () ->
-        Mock<IInterface>.Create(typeof<IInterface>, returnStrategy=fun t -> null) |> ignore
-    ) |> ignore
+let ``test return strategy is used on mock of`` () =
+    let mock = Mock.Of<IInterface>(returnStrategy=fun t -> box 1) 
+    Assert.AreEqual(1, mock.MethodReturnsSomething())
+  
+[<Test>]
+let ``test a default return strategy can be used`` () =
+    let defaultStrategy (t:System.Type) =
+        if t.IsValueType then System.Activator.CreateInstance(t)
+        else null
+    let mock = Mock.Of<IInterface>(returnStrategy=defaultStrategy) 
+    Assert.AreEqual(false, mock.Arity1Method(1))
+    Assert.AreEqual(null, mock.MethodReturnsOption())
+    
+[<Test>]
+let ``test return strategy is used on mock create`` () =
+    let mock = Mock<IInterface>(returnStrategy=fun t -> box "String").Create()
+    Assert.AreEqual("String", mock.StringProperty)
+
+[<Test>]
+let ``test return strategy is used on untyped mock create`` () =
+    let mock = Mock<IInterface>.Create(typeof<IInterface>, returnStrategy=fun t -> box (Some 1))
+    Assert.AreEqual(Some 1, (mock :?> IInterface).MethodReturnsOption())
