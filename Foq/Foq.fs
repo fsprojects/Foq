@@ -429,7 +429,11 @@ module internal Emit =
             else
                 match returnStrategy with
                 | Some _ -> generateReturnStrategyCall il abstractMethod.ReturnType
-                | None -> generateDefaultValueReturn il abstractMethod.ReturnType
+                | None -> 
+                    let t = abstractMethod.ReturnType                    
+                    if FSharpType.IsRecord t || FSharpType.IsTuple t || FSharpType.IsUnion t
+                    then il.ThrowException(typeof<NotImplementedException>)
+                    else generateDefaultValueReturn il abstractMethod.ReturnType
             if abstractType.IsInterface then
                 typeBuilder.DefineMethodOverride(methodBuilder, abstractMethod)
         /// Setup return strategy
