@@ -392,6 +392,17 @@ module internal Emit =
             il.Emit(OpCodes.Initobj, returnType)
             il.Emit(OpCodes.Ldloc, x.LocalIndex)
             il.Emit(OpCodes.Ret)
+        /// Generates a call to returnStrategy
+        let generateReturnStrategyCall (il:ILGenerator) (returnType:Type) =
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldfld, returnField)
+            il.Emit(OpCodes.Ldtoken, returnType)
+            let t = typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|])
+            il.Emit(OpCodes.Call, t)
+            let invoke = FSharpType.MakeFunctionType(typeof<Type>,typeof<obj>).GetMethod("Invoke")
+            il.Emit(OpCodes.Callvirt, invoke)
+            il.Emit(OpCodes.Unbox_Any, returnType)
+            il.Emit(OpCodes.Ret)
         // Implement abstract type's methods
         for abstractMethod in abstractMethods do
             /// Method builder
@@ -417,15 +428,16 @@ module internal Emit =
             then il.ThrowException(typeof<NotImplementedException>)
             else
                 match returnStrategy with
-                | Some f -> raise <| NotImplementedException() 
+                | Some _ -> generateReturnStrategyCall il abstractMethod.ReturnType
                 | None -> generateDefaultValueReturn il abstractMethod.ReturnType
             if abstractType.IsInterface then
                 typeBuilder.DefineMethodOverride(methodBuilder, abstractMethod)
+        /// Setup return strategy
+        let returnStrategy : Type -> obj = 
+            match returnStrategy with Some f -> f | None -> fun t -> invalidOp "Expecting return strategy"
         /// Mock type
         let mockType = typeBuilder.CreateType()
         // Generate object instance
-        let returnStrategy : Type -> obj = 
-            match returnStrategy with Some f -> f | None -> fun t -> invalidOp "Expecting return strategy"
         let args = [|box (returnValues.ToArray());box (argsLookup.ToArray()); box (returnStrategy);box args;|]
         Activator.CreateInstance(mockType, args)
 
