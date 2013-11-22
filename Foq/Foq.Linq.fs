@@ -67,6 +67,18 @@ module private Reflection =
 /// Mock mode
 type MockMode = Strict = 0 | Loose = 1
 
+[<AutoOpen;CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module private MockMode =
+    let convert = function 
+        | MockMode.Strict -> Foq.MockMode.Strict 
+        | MockMode.Loose -> Foq.MockMode.Loose 
+        | _ -> invalidOp ""
+
+type Mock =
+    /// Creates a mocked instance of the abstract type
+    static member Of<'TAbstractType>() = 
+        mock(Foq.MockMode.Loose, typeof<'TAbstractType>, [], [||], None) :?> 'TAbstractType
+        
 open Reflection
 
 /// Generic stub type over abstract types and interfaces
@@ -129,10 +141,10 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
         FuncBuilder<'TAbstract,'TReturnValue>(mode,(mi,args),calls)
     /// Creates a mocked instance of the abstract type
     member this.Create() = 
-        mock(MockMode.Strict = mode,abstractType,calls,[||],None) :?> 'TAbstract
+        mock(convert mode,abstractType,calls,[||],None) :?> 'TAbstract
     /// Creates a mocked instance of the abstract type
     member this.Create([<ParamArray>] args:obj[]) = 
-        mock(MockMode.Strict = mode,abstractType,calls,args,None) :?> 'TAbstract
+        mock(convert mode,abstractType,calls,args,None) :?> 'TAbstract
 and ActionBuilder<'TAbstract when 'TAbstract : not struct>
     internal (mode,call,calls) =
     let mi, args = call
@@ -167,11 +179,6 @@ and EventBuilder<'TAbstract when 'TAbstract : not struct>
                          (add, ([|Any|], Handler("AddHandler",value)))::
                          (remove, ([|Any|], Handler("RemoveHandler",value)))::
                          calls)
-
-type Mock =
-    /// Creates a mocked instance of the abstract type
-    static member Of<'TAbstractType>() = 
-        mock(false, typeof<'TAbstractType>, [], [||], None) :?> 'TAbstractType
 
 module private Verification =
     open Foq.Verification

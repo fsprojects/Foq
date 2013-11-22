@@ -17,6 +17,14 @@ and Invocations = System.Collections.Generic.List<Invocation>
 /// List of verifiers
 and Verifiers = System.Collections.Generic.List<Action>
 
+/// Mock mode
+type MockMode = Strict = 0 | Loose = 1
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module MockMode =
+    /// Default mock mode
+    let mutable Default = MockMode.Loose
+
 module internal Emit =
     open System.Reflection.Emit
     /// Boxed value
@@ -271,7 +279,8 @@ module internal Emit =
         moduleBuilder.Value.DefineType(mockName, attributes, parent, interfaces)
 
     /// Builds a mock from the specified calls
-    let mock (isStrict, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list, args:obj[], returnStrategy) =
+    let mock (mode, abstractType:Type, calls:(MethodInfo * (Arg[] * Result)) list, args:obj[], returnStrategy) =
+        let isStrict = mode = MockMode.Strict
         /// Builder for abstract type
         let typeBuilder = defineType abstractType
         /// Field settings
@@ -444,9 +453,6 @@ module internal Emit =
         // Generate object instance
         let args = [|box (returnValues.ToArray());box (argsLookup.ToArray()); box (returnStrategy);box args;|]
         Activator.CreateInstance(mockType, args)
-
-/// Mock mode
-type MockMode = Strict = 0 | Loose = 1
 
 /// Wildcard attribute
 [<AttributeUsage(AttributeTargets.Method ||| AttributeTargets.Property)>]
@@ -636,13 +642,18 @@ module private Reflection =
 
 open Reflection
 
+type Mock =
+    /// Creates a mocked instance of the abstract type
+    static member Of<'TAbstractType>(?returnStrategy) = 
+        mock(MockMode.Default, typeof<'TAbstractType>, [], [||], returnStrategy) :?> 'TAbstractType
+
 /// Generic mock type over abstract types and interfaces
 type Mock<'TAbstract when 'TAbstract : not struct> 
     internal (mode,calls,returnStrategy:(Type->obj)option) =
     /// Abstract type
     let abstractType = typeof<'TAbstract>
     /// Constructs mock builder
-    new (?returnStrategy) = Mock(MockMode.Loose,[],returnStrategy)
+    new (?returnStrategy) = Mock(MockMode.Default,[],returnStrategy)
     new (mode,?returnStrategy) = Mock(mode,[],returnStrategy)
     /// Specifies a method or property of the abstract type as a quotation
     member this.Setup(f:'TAbstract -> Expr<'TReturnValue>) =
@@ -666,18 +677,18 @@ type Mock<'TAbstract when 'TAbstract : not struct>
         let call = toCallOf abstractType (f default')
         ResultBuilder<'TAbstract,'TReturnValue>(mode,call,calls,returnStrategy)
     /// Creates a mocked instance of the abstract type
-    member this.Create() = mock(MockMode.Strict = mode, typeof<'TAbstract>, calls, [||], returnStrategy) :?> 'TAbstract
+    member this.Create() = mock(mode, typeof<'TAbstract>, calls, [||], returnStrategy) :?> 'TAbstract
     /// Creates a mocked instance of a class using the specified constructor arguments
     member this.Create([<ParamArray>] args:obj[]) = 
-        mock(MockMode.Strict = mode, typeof<'TAbstract>, calls, args, returnStrategy) :?> 'TAbstract
+        mock(mode, typeof<'TAbstract>, calls, args, returnStrategy) :?> 'TAbstract
     /// Creates a boxed instance of the abstract type
     static member Create(abstractType:Type, ?returnStrategy) = 
-        mock(false, abstractType, [], [||], returnStrategy)
+        mock(MockMode.Default, abstractType, [], [||], returnStrategy)
     /// Creates a mocked instance of the abstract type
     static member With(f:'TAbstract -> Expr<_>, ?returnStrategy) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResultOf typeof<'TAbstract> (f default')
-        Mock<'TAbstract>(MockMode.Loose, calls |> List.rev, returnStrategy).Create()
+        Mock<'TAbstract>(MockMode.Default, calls |> List.rev, returnStrategy).Create()
     /// Specifies a mock of a type with a given method
     static member Method(f:'TAbstract -> Expr<'TArgs -> 'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
@@ -697,10 +708,10 @@ and ReturnBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
         let result = 
             if typeof<'TReturnValue> = typeof<unit> then Unit 
             else ReturnValue(value,typeof<'TReturnValue>)
-        mock(false,typeof<'TAbstract>,[(mi, (args, result))],[||], None) :?> 'TAbstract
+        mock(MockMode.Default,typeof<'TAbstract>,[(mi, (args, result))],[||], None) :?> 'TAbstract
     /// Specifies a computed return value of a method or property
     member this.Returns(f:unit -> 'TReturnVaue) =
-        mock(false,typeof<'TAbstract>,[(mi, (args, ReturnFunc(f)))],[||], None) :?> 'TAbstract
+        mock(MockMode.Default,typeof<'TAbstract>,[(mi, (args, ReturnFunc(f)))],[||], None) :?> 'TAbstract
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (mode, call, calls, returnStrategy) =
@@ -740,11 +751,6 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
         let add = add, ([|Any|], Handler("AddHandler",value))
         let remove = remove, ([|Any|], Handler("RemoveHandler",value))
         Mock<'TAbstract>(mode,add::remove::calls,returnStrategy)
-
-type Mock =
-    /// Creates a mocked instance of the abstract type
-    static member Of<'TAbstractType>(?returnStrategy) = 
-        mock(false, typeof<'TAbstractType>, [], [||], returnStrategy) :?> 'TAbstractType
 
 /// Specifies valid invocation count
 type Times internal (predicate:int -> bool) =
@@ -902,7 +908,7 @@ type Mock<'TAbstract> with
     static member ExpectSequence(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResultOf typeof<'TAbstract> (f default')
-        let mockObject = mock(false, typeof<'TAbstract>, calls, [||], None) 
+        let mockObject = mock(MockMode.Default, typeof<'TAbstract>, calls, [||], None) 
         let mock = mockObject :?> IMockObject
         let calls = calls |> List.map (fun (mi,(args,_)) -> mi,args)
         setup mock calls
