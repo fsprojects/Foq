@@ -9,7 +9,7 @@ type IUserRepository =
     abstract Read : userId:int -> User
     abstract Create : userId:int -> unit
  
- type SomeController(users:IUserRepository) =
+type SomeController(users:IUserRepository) =
     member this.GetUser(userId:int) = 
         let user = users.Read(userId)
         if user.Id = 0 then users.Create(1234)
