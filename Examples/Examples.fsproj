@@ -57,6 +57,7 @@
     <Compile Include="UserExample.fs" />
     <Compile Include="AccountExample.fs" />
     <Compile Include="BalanceExample.fs" />
+    <Compile Include="CarInsuranceExample.fs" />
     <Compile Include="StoreSample.fs" />
     <Compile Include="AtmExample.fs" />
     <Compile Include="ShoppingExample.fs" />
