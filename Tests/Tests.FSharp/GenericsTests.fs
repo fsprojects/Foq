@@ -69,21 +69,38 @@ let [<Test>] ``generic return value`` () =
     |> ignore
 
 type ISettings =
-    abstract Get : name:string * fallback:'a -> 'a
-        
+    abstract Get : key:string -> 'b
+    abstract Get : key:string * fallback:'a -> 'a 
+
 let [<Test>] ``generic argument and return value`` () =
     let mock =
         Mock<ISettings>()
             .Setup(fun mock -> <@ mock.Get(any(),any()) @>).Calls<string*int>(fun (_,x) -> x)
             .Create()
     let expected = 1
-    Assert.AreEqual(expected, mock.Get("", expected))
+    Assert.AreEqual(expected, mock.Get("Key", expected))
 
-let [<Test>] ``generic argument and return value multiple members`` () =
+let [<Test>] ``generic argument and return value setup over multiple members`` () =
     let expected = 1.0
     let mock =
         Mock<ISettings>()
             .Setup(fun mock -> <@ mock.Get(any(),any()) @>).Returns(2)
             .Setup(fun mock -> <@ mock.Get(any(),any()) @>).Returns(expected)   
             .Create()    
-    Assert.AreEqual(expected, mock.Get("", expected))
+    Assert.AreEqual(expected, mock.Get("Key", expected))
+
+let [<Test>] ``generic argument and return value with multiple members`` () =
+    let expected = 1.0
+    let mock =
+        Mock<ISettings>.With(fun mock ->
+         <@ mock.Get(any(),any()) --> 2
+            mock.Get(any(),any()) --> expected @>)    
+    Assert.AreEqual(expected, mock.Get("Key", expected))
+
+let [<Test>] ``generic method with multiple members`` () =
+    let expected = 1.0
+    let mock =
+        Mock<ISettings>.With(fun mock ->
+         <@ mock.Get(any()) --> 2
+            mock.Get(any()) --> expected @>)    
+    Assert.AreEqual(expected, mock.Get<float>("Key"))
