@@ -74,7 +74,7 @@ module internal Emit =
     /// Generates method overload args match
     let generateArgs 
         (il:ILGenerator) (argsLookup:ResizeArray<Value[]>,argsField:FieldBuilder) 
-        (mi:MethodInfo,args) (unmatched:Label) =
+        (mi:MethodInfo,args) (unmatched:Label) =       
         /// Index of argument values for current method overload
         let argsLookupIndex = argsLookup.Count
         let rec toValue = function 
@@ -105,18 +105,7 @@ module internal Emit =
                 il.Emit(OpCodes.Ldc_I4, argIndex)
                 il.Emit(OpCodes.Ldelem_Ref)
             match arg with
-            | Any ->
-                if mi.IsGenericMethod && 
-                   mi.GetGenericMethodDefinition().GetParameters().[argIndex].ParameterType.IsGenericParameter then
-                    let typeFromHandle = typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|])
-                    let argType = mi.GetParameters().[argIndex].ParameterType
-                    il.Emit(OpCodes.Ldtoken, argType)
-                    il.Emit(OpCodes.Call, typeFromHandle)
-                    il.Emit(OpCodes.Ldtoken, mi.GetGenericMethodDefinition().GetParameters().[argIndex].ParameterType)
-                    il.Emit(OpCodes.Call, typeFromHandle)          
-                    let opEq = typeof<Type>.GetMethod("op_Equality",[|typeof<Type>;typeof<Type>|])                            
-                    il.Emit(OpCodes.Call, opEq)
-                    il.Emit(OpCodes.Brfalse_S, unmatched)
+            | Any -> ()
             | Arg(value) ->
                 emitLdargBox ()
                 atIndex ()       
@@ -158,7 +147,22 @@ module internal Emit =
                 let invoke = FSharpType.MakeFunctionType(typeof<obj>,typeof<bool>).GetMethod("Invoke")
                 il.Emit(OpCodes.Callvirt, invoke)
                 il.Emit(OpCodes.Brfalse_S, unmatched)
-
+        
+        if mi.IsGenericMethod then
+            let concreteArgs = mi.GetGenericArguments()
+            let genericArgs = mi.GetGenericMethodDefinition().GetGenericArguments()
+            Array.zip concreteArgs genericArgs
+            |> Array.iter (fun (arg,arg') ->
+                let typeFromHandle = typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|])                
+                il.Emit(OpCodes.Ldtoken, arg)
+                il.Emit(OpCodes.Call, typeFromHandle)
+                il.Emit(OpCodes.Ldtoken, arg')
+                il.Emit(OpCodes.Call, typeFromHandle)          
+                let opEq = typeof<Type>.GetMethod("op_Equality",[|typeof<Type>;typeof<Type>|])                            
+                il.Emit(OpCodes.Call, opEq)
+                il.Emit(OpCodes.Brfalse_S, unmatched)
+            )           
+        
         args |> Seq.iteri (emitArg None)
 
     /// Generates method return
