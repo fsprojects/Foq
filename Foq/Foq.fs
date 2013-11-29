@@ -105,7 +105,18 @@ module internal Emit =
                 il.Emit(OpCodes.Ldc_I4, argIndex)
                 il.Emit(OpCodes.Ldelem_Ref)
             match arg with
-            | Any -> ()
+            | Any ->
+                if mi.IsGenericMethod && 
+                   mi.GetGenericMethodDefinition().GetParameters().[argIndex].ParameterType.IsGenericParameter then
+                    let typeFromHandle = typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|])
+                    let argType = mi.GetParameters().[argIndex].ParameterType
+                    il.Emit(OpCodes.Ldtoken, argType)
+                    il.Emit(OpCodes.Call, typeFromHandle)
+                    il.Emit(OpCodes.Ldtoken, mi.GetGenericMethodDefinition().GetParameters().[argIndex].ParameterType)
+                    il.Emit(OpCodes.Call, typeFromHandle)          
+                    let opEq = typeof<Type>.GetMethod("op_Equality",[|typeof<Type>;typeof<Type>|])                            
+                    il.Emit(OpCodes.Call, opEq)
+                    il.Emit(OpCodes.Brfalse_S, unmatched)
             | Arg(value) ->
                 emitLdargBox ()
                 atIndex ()       
@@ -370,8 +381,10 @@ module internal Emit =
         let invoked = typeof<IMockObject>.GetEvent("Invoked")
         generateEventHandler (invoked.GetAddMethod()) "AddHandler"
         generateEventHandler (invoked.GetRemoveMethod()) "RemoveHandler"
+        /// Promotes generic methods to their generic method definition
+        let definition (m:MethodInfo) = if m.IsGenericMethod then m.GetGenericMethodDefinition() else m
         /// Method overloads grouped by type
-        let groupedMethods = calls |> Seq.groupBy fst |> Seq.toArray
+        let groupedMethods = calls |> Seq.groupBy (fst >> definition) |> Seq.toArray
         /// Method argument lookup
         let argsLookup = ResizeArray<obj[]>()
         /// Method return values
@@ -422,8 +435,6 @@ module internal Emit =
             generateAddInvocation il invocationsField abstractMethod
             // Trigger invoked event
             generateTrigger il invokedField
-            let definition (m:MethodInfo) =
-                if m.IsGenericMethod then m.GetGenericMethodDefinition() else m
             /// Method overloads defined for current method
             let overloads = groupedMethods |> Seq.tryFind (fst >> definition >> matches abstractMethod)
             match overloads with
