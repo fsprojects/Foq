@@ -67,3 +67,23 @@ let [<Test>] ``generic return value`` () =
         .Create()
         .Arity0()
     |> ignore
+
+type ISettings =
+    abstract Get : name:string * fallback:'a -> 'a
+        
+let [<Test>] ``generic argument and return value`` () =
+    let mock =
+        Mock<ISettings>()
+            .Setup(fun mock -> <@ mock.Get(any(),any()) @>).Calls<string*int>(fun (_,x) -> x)
+            .Create()
+    let expected = 1
+    Assert.AreEqual(expected, mock.Get("", expected))
+
+let [<Test>] ``generic argument and return value multiple members`` () =
+    let expected = 1.0
+    let mock =
+        Mock<ISettings>()
+            .Setup(fun mock -> <@ mock.Get(any(),any()) @>).Returns(2)
+            .Setup(fun mock -> <@ mock.Get(any(),any()) @>).Returns(expected)   
+            .Create()    
+    Assert.AreEqual(expected, mock.Get("", expected))
