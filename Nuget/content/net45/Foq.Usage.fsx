@@ -1,5 +1,5 @@
 ﻿#if INTERACTIVE // Emulate minimal NUnit in F# Interactive
-#r @"..\packages\Foq.1.3\Lib\net45\Foq.dll"
+#r @"..\packages\Foq.1.4\Lib\net45\Foq.dll"
 
 type TestAttribute() = inherit System.Attribute()
 
