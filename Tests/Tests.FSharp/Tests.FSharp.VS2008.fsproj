@@ -46,10 +46,12 @@
     <Compile Include="GenericsTests.fs" />
     <Compile Include="VerifyTests.fs" />
     <Compile Include="WithTests.fs" />
-    <Compile Include="ReportedIssues.fs" />
-    <Compile Include="AbstractClassTests.fs" />
     <Compile Include="MethodTests.fs" />
+    <Compile Include="AbstractClassTests.fs" />
     <Compile Include="ParamArrayTests.fs" />
+    <Compile Include="PartialApplicationTests.fs" />
+    <Compile Include="ValueTypeTests.fs" />
+    <Compile Include="ReportedIssues.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Foq\Foq.VS2008.fsproj">

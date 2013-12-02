@@ -44,9 +44,10 @@
     <Compile Include="AbstractClassTests.fs" />
     <Compile Include="ParamArrayTests.fs" />
     <Compile Include="EvalTests.fs" />
-    <Compile Include="ReportedIssues.fs" />
     <Compile Include="PartialApplicationTests.fs" />
     <Compile Include="ValueTypeTests.fs" />
+    <Compile Include="ReportedIssues.fs" />
+    <Compile Include="TaskTests.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
