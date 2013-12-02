@@ -158,8 +158,7 @@ module internal Emit =
                 il.Emit(OpCodes.Call, typeFromHandle)
                 il.Emit(OpCodes.Ldtoken, arg')
                 il.Emit(OpCodes.Call, typeFromHandle)          
-                let opEq = typeof<Type>.GetMethod("op_Equality",[|typeof<Type>;typeof<Type>|])                            
-                il.Emit(OpCodes.Call, opEq)
+                il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse_S, unmatched)
             )           
         

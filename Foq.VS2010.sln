@@ -1,5 +1,5 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foq.VS2010", "Foq\Foq.VS2010.fsproj", "{B01AD807-6BCB-46C7-B2E8-C5BF9E0F1786}"
 EndProject
