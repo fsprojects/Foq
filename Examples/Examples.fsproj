@@ -71,6 +71,7 @@
     <Compile Include="BookExample.fs" />
     <Compile Include="TurtleExample.fs" />
     <Compile Include="CandyShop.fs" />
+    <Compile Include="TeaExample.fs" />
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
