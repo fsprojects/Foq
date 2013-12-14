@@ -55,6 +55,7 @@
     <Compile Include="ShoppingCartExample.fs" />
     <Compile Include="WarehouseExample.fs" />
     <Compile Include="UserExample.fs" />
+    <Compile Include="LoginExample.fs" />
     <Compile Include="AccountExample.fs" />
     <Compile Include="BalanceExample.fs" />
     <Compile Include="CarInsuranceExample.fs" />
