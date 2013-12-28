@@ -685,6 +685,21 @@ type Mock<'TAbstract when 'TAbstract : not struct>
         let default' = Unchecked.defaultof<'TAbstract>
         let handlers = toHandlers abstractType (f default')
         EventBuilder<'TAbstract,'TEvent>(mode,handlers,calls,returnStrategy)
+    /// Specifies an event of the abstract type by name
+    member this.SetupEventByName<'TEvent>(name) =
+        let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance        
+        let ts = [|yield abstractType; yield! abstractType.GetInterfaces()|]
+        let ev = 
+            ts |> Array.tryPick(fun t -> 
+                match t.GetEvent(name, attr) with
+                | null -> None
+                | e -> Some e
+            )        
+        match ev with
+        | Some ev ->        
+            let handlers = ev.GetAddMethod(), ev.GetRemoveMethod()
+            EventBuilder<'TAbstract,'TEvent>(mode,handlers,calls,returnStrategy)
+        | None -> raise (System.ArgumentException("Event not found", "name"))
     /// Specifies an event of the abstract type as a quotation
     member this.SetupMethod(f:'TAbstract -> Expr<'TArgs -> 'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
