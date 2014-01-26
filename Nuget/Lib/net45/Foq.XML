@@ -64,6 +64,17 @@
 <member name="">
 
 </member>
+<member name="T:Foq.IMockRecorder">
+<summary>
+ Mock recorder interface
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
 <member name="T:Foq.Invocation">
 <summary>
  Member invocation record
@@ -159,6 +170,11 @@
  Specifies an event of the abstract type as a quotation
 </summary>
 </member>
+<member name="M:Foq.Mock`1.SetupEventByName``1(System.String)">
+<summary>
+ Specifies an event of the abstract type by name
+</summary>
+</member>
 <member name="M:Foq.Mock`1.SetupEvent``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
 <summary>
  Specifies an event of the abstract type as a quotation
@@ -251,7 +267,7 @@
 <member name="">
 
 </member>
-<member name="M:Foq.ResultBuilder`2.Returns``1(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,``0})">
+<member name="M:Foq.ResultBuilder`2.Returns(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,`1})">
 <summary>
  Specifies a computed return value of a method or property
 </summary>
@@ -452,9 +468,19 @@
  Generates trigger
 </summary>
 </member>
-<member name="M:Foq.Emit.generateAddInvocation(System.Reflection.Emit.ILGenerator,System.Reflection.Emit.FieldBuilder,System.Reflection.MethodInfo)">
+<member name="M:Foq.Emit.generateAddInvocation(System.Reflection.Emit.ILGenerator,System.Reflection.Emit.FieldBuilder)">
 <summary>
  Generates invocation add
+</summary>
+</member>
+<member name="M:Foq.Emit.generateLock(System.Reflection.Emit.ILGenerator,Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,Microsoft.FSharp.Core.Unit})">
+<summary>
+ Generate lock
+</summary>
+</member>
+<member name="M:Foq.Emit.generateNewInvocation(System.Reflection.Emit.ILGenerator,System.Reflection.Emit.FieldBuilder,System.Reflection.MethodInfo)">
+<summary>
+ Generates new invocation from current method on stack
 </summary>
 </member>
 <member name="M:Foq.Emit.generateReturn(System.Reflection.Emit.ILGenerator,System.Collections.Generic.List{System.Object},System.Reflection.Emit.FieldBuilder,System.Reflection.MethodInfo,Foq.Emit.Result)">
@@ -742,7 +768,7 @@
  Verifies specified function is called at least once on specified mock
 </summary>
 </member>
-<member name="M:Foq.Linq.Mock.VerifyAll``2(``0)">
+<member name="M:Foq.Linq.Mock.VerifyAll``1(``0)">
 <summary>
  Verify all expectations
 </summary>
@@ -878,7 +904,7 @@
 </member>
 <member name="M:Foq.Linq.Reflection.hasAttribute(System.Type,System.Reflection.MethodInfo)">
 <summary>
- Converts argument expressions to Arg array    
+ Converts argument expressions to Arg array
 </summary>
 </member>
 <member name="T:Foq.Linq.Reflection">

@@ -63,7 +63,7 @@ type IInterface' =
 
 let [<Test>] ``generic return value`` () =
     Mock<IInterface'>()
-        .Setup(fun mock -> <@ mock.Arity0() @>).Returns(any())
+        .Setup(fun mock -> <@ mock.Arity0() @>).Returns(1)
         .Create()
         .Arity0()
     |> ignore
