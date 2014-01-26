@@ -83,3 +83,16 @@ let ``test strict mode`` () =
 let ``test loose mode`` () =
     let mock = Mock<IList<int>>(MockMode.Loose).Create()
     Assert.AreEqual(Unchecked.defaultof<int>, mock.Count)
+
+[<Test>]
+let ``test recorded expectations`` () =
+    let mock = Mock.Of<IList<int>>()
+    using 
+        (Mock.RecordExpectations(mock))
+        (fun _ ->
+            mock.Clear()
+            mock.Add(1)
+        )
+    mock.Clear()
+    mock.Add(1)
+    Mock.VerifyAll(mock)

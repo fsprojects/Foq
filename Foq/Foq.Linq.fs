@@ -6,13 +6,13 @@ open System.Reflection
 open Foq.Emit
 
 module private Reflection =
-    /// Converts argument expressions to Arg array    
+    /// Converts argument expressions to Arg array
     let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
     let isWildcard mi = hasAttribute typeof<Foq.WildcardAttribute> mi
     let isPredicate mi = hasAttribute typeof<Foq.PredicateAttribute> mi
     /// Resolves Expression to Arg
     let rec resolve : Expression -> Arg = function
-        | :? ConstantExpression as constant ->          
+        | :? ConstantExpression as constant ->
             Arg(constant.Value)
         | :? UnaryExpression as unary ->
             unary.Operand |> resolve
@@ -42,15 +42,15 @@ module private Reflection =
     /// Converts expression to a tuple of MethodInfo and Arg array
     let toMethodInfo (expr:Expression) =
         match expr with
-        | :? MethodCallExpression as call ->           
-            call.Method,            
+        | :? MethodCallExpression as call ->
+            call.Method,
             Array.zip (call.Method.GetParameters()) [|for arg in call.Arguments -> arg|]
-            |> Array.map (fun (pi,arg) -> 
+            |> Array.map (fun (pi,arg) ->
                 if pi.IsOut || pi.ParameterType.IsByRef 
-                then resolve arg |> function Arg(value) -> OutArg(value) | any -> any 
+                then resolve arg |> function Arg(value) -> OutArg(value) | any -> any
                 else resolve arg
             )
-        | _ -> raise <| NotSupportedException(expr.GetType().ToString())    
+        | _ -> raise <| NotSupportedException(expr.GetType().ToString())
     /// Converts expression to a tuple of PropertyInfo and Arg array
     let toPropertyInfo (expr:Expression) =
         match expr with
@@ -194,7 +194,7 @@ module private Verification =
     let getMethod (expr:LambdaExpression) =
         match expr.Body with
         | :? MethodCallExpression as call -> 
-            getInstance call.Object, call.Method, toArgs call.Arguments    
+            getInstance call.Object, call.Method, toArgs call.Arguments
         | _ -> raise <| NotSupportedException(expr.ToString())
     // Gets property from lambda expression
     let getProperty (expr:LambdaExpression) = 
@@ -218,7 +218,7 @@ module private Verification =
     let expect (times:Foq.Times) (instance:obj, mi, args) =
         let mock = getMock instance
         mock.Invoked.Subscribe(fun _ ->
-            let last = mock.Invocations.[mock.Invocations.Count-1]
+            let last = mock.Invocations |> List.head
             if invokeMatch mi args last then
                 let actualCalls = countInvocations mock mi args
                 if not <| times.Match(actualCalls) then
@@ -281,20 +281,21 @@ type Mock with
     /// Records expectations in scope of IDisposable (e.g. C# using block)
     static member RecordExpectations(mock:obj) =
         let mock = mock :?> Foq.IMockObject
-        let past = mock.Invocations |> Seq.toArray
-        mock.Invocations.Clear()
+        let past = mock.Invocations
+        let recorder = mock :?> Foq.IMockRecorder
+        recorder.Reset()
         let recorded () =
             let anyArgs = Array.map (fun _ -> Foq.Emit.Any)
             mock.Invocations
-            |> Seq.map (fun i -> i.Method, i.Args |> anyArgs)
-            |> Seq.toList
+            |> List.rev
+            |> List.map (fun i -> i.Method, i.Args |> anyArgs)
         let setup calls =
-            mock.Invocations.Clear()
-            for invoke in past do mock.Invocations.Add invoke
+            recorder.Reset()
+            for invoke in past do recorder.Add invoke
             Foq.Expectations.setup mock calls 
         { new IDisposable with member x.Dispose() = recorded () |> setup }
     /// Verify all expectations
-    static member VerifyAll(mock) = Mock.VerifyAll mock 
+    static member VerifyAll(mock) = Foq.Mock.VerifyAll mock 
 
 type [<Sealed>] It private () =
     /// Marks argument as matching any value

@@ -9,7 +9,7 @@ type ITeaBag =
     abstract CupOfTea: CupOfTea with get, set
     abstract Brew: unit -> unit
 
-let Provide(teabag:ITeaBag) =
+let ProvideTea(teabag:ITeaBag) =
   let cupOfTea = CupOfTea()
   teabag.CupOfTea <- cupOfTea
   teabag.Brew()
@@ -20,7 +20,7 @@ open NUnit.Framework
 
 let [<Test>] Provide_TeaBagIsBrewed() =
   let teabag = Mock.Of<ITeaBag>()
-  let cuppa = Provide(teabag)
+  let cuppa = ProvideTea(teabag)
   verify <@ teabag.Brew() @> once
 
 
