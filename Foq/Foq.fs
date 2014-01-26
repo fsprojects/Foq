@@ -165,7 +165,7 @@ module internal Emit =
                 il.Emit(OpCodes.Call, typeFromHandle)
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse_S, unmatched)
-            )           
+            )
         
         args |> Seq.iteri (emitArg None)
 
@@ -485,7 +485,7 @@ module internal Emit =
             /// Method overloads defined for current method
             let overloads = groupedMethods |> Seq.tryFind (fst >> definition >> matches abstractMethod)
             match overloads with
-            | Some (_, overloads) ->    
+            | Some (_, overloads) ->
                 let toOverload = generateOverload il (argsLookup,argsField) (returnValues,returnValuesField)
                 overloads |> Seq.toList |> List.rev |> Seq.iter toOverload
             | None -> ()
@@ -595,7 +595,7 @@ module private Reflection =
     /// Returns true if method has specified attribute
     let hasAttribute a (mi:MethodInfo) = mi.GetCustomAttributes(a, true).Length > 0
     /// Matches attributed calls
-    let (|AttributedArg|_|) = function       
+    let (|AttributedArg|_|) = function
         | Call(_, mi, _) when hasAttribute typeof<WildcardAttribute> mi -> Some Any
         | Call(_, mi, [pred]) when hasAttribute typeof<PredicateAttribute> mi -> Some (Pred(eval pred))
         | _ -> None
@@ -634,7 +634,7 @@ module private Reflection =
                 >> List.toArray
             /// Unwrap quotation accumulating argument values
             let rec unwrap values quote = 
-                match quote with                
+                match quote with
                 | Application (inner, value) -> unwrap (value :: values) inner  // Normal application
                 | Lambda (_, body) -> unwrap values body
                 | Call (Some expr, info, _) -> (expr, info, toArgs' values) 
@@ -689,7 +689,7 @@ module private Reflection =
         let calls = toCallResult expr
         [for (x,mi,(arg,result)) in calls -> 
             if x.Type = abstractType then mi,(arg,result)
-            else raise <| NotSupportedException(expr.ToString())]        
+            else raise <| NotSupportedException(expr.ToString())]
     /// Converts expression to corresponding event Add and Remove handlers
     let toHandlers abstractType = function
         | Call(None, mi, [Lambda(_,Call(Some(x),addHandler,_));
@@ -731,16 +731,16 @@ type Mock<'TAbstract when 'TAbstract : not struct>
         EventBuilder<'TAbstract,'TEvent>(mode,handlers,calls,returnStrategy)
     /// Specifies an event of the abstract type by name
     member this.SetupEventByName<'TEvent>(name) =
-        let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance        
+        let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
         let ts = [|yield abstractType; yield! abstractType.GetInterfaces()|]
         let ev = 
             ts |> Array.tryPick(fun t -> 
                 match t.GetEvent(name, attr) with
                 | null -> None
                 | e -> Some e
-            )        
+            )
         match ev with
-        | Some ev ->        
+        | Some ev ->
             let handlers = ev.GetAddMethod(), ev.GetRemoveMethod()
             EventBuilder<'TAbstract,'TEvent>(mode,handlers,calls,returnStrategy)
         | None -> raise (System.ArgumentException("Event not found", "name"))
