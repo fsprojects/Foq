@@ -797,7 +797,7 @@ and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
         let call = mi, (args, result)
         Mock<'TAbstract>(mode,call::calls,returnStrategy)
     /// Specifies a computed return value of a method or property
-    member this.Returns(f:unit -> 'TReturnVaue) =
+    member this.Returns(f:unit -> 'TReturnValue) =
         let call = mi, (args, ReturnFunc(f))
         Mock<'TAbstract>(mode,call::calls,returnStrategy)
     /// Calls the specified function to compute the return value
