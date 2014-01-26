@@ -13,9 +13,14 @@ type IMockObject =
 /// Member invocation record
 and Invocation = { Method : MethodBase; Args : obj[] }
 /// List of invocations
-and Invocations = System.Collections.Generic.List<Invocation>
+and Invocations = Invocation list
 /// List of verifiers
 and Verifiers = System.Collections.Generic.List<Action>
+
+/// Mock recorder interface
+type IMockRecorder =
+    abstract Reset : unit -> unit
+    abstract Add : Invocation -> unit
 
 /// Mock mode
 type MockMode = Strict = 0 | Loose = 1
@@ -74,7 +79,7 @@ module internal Emit =
     /// Generates method overload args match
     let generateArgs 
         (il:ILGenerator) (argsLookup:ResizeArray<Value[]>,argsField:FieldBuilder) 
-        (mi:MethodInfo,args) (unmatched:Label) =       
+        (mi:MethodInfo,args) (unmatched:Label) =
         /// Index of argument values for current method overload
         let argsLookupIndex = argsLookup.Count
         let rec toValue = function 
@@ -86,7 +91,7 @@ module internal Emit =
         // Add arguments to lookup
         args |> Array.map toValue |> argsLookup.Add
         // Emit argument matching
-        let rec emitArg arrayIndex argIndex arg =          
+        let rec emitArg arrayIndex argIndex arg =
             let atIndex () =
                 match arrayIndex with
                 | Some(i:int) ->  
@@ -121,9 +126,9 @@ module internal Emit =
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse, unmatched)
                 args |> Array.iteri (fun i arg -> emitArg (Some i) argIndex arg)
-            | OutArg(value) ->               
-                il.Emit(OpCodes.Ldarg, argIndex+1)              
-                emitArgLookup ()                             
+            | OutArg(value) ->
+                il.Emit(OpCodes.Ldarg, argIndex+1)
+                emitArgLookup ()
                 let pi = mi.GetParameters().[argIndex]
                 let t = pi.ParameterType.GetElementType()
                 il.Emit(OpCodes.Unbox_Any, t)
@@ -153,11 +158,11 @@ module internal Emit =
             let genericArgs = mi.GetGenericMethodDefinition().GetGenericArguments()
             Array.zip concreteArgs genericArgs
             |> Array.iter (fun (arg,arg') ->
-                let typeFromHandle = typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|])                
+                let typeFromHandle = typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|])
                 il.Emit(OpCodes.Ldtoken, arg)
                 il.Emit(OpCodes.Call, typeFromHandle)
                 il.Emit(OpCodes.Ldtoken, arg')
-                il.Emit(OpCodes.Call, typeFromHandle)          
+                il.Emit(OpCodes.Call, typeFromHandle)
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse_S, unmatched)
             )           
@@ -223,31 +228,50 @@ module internal Emit =
             emitReturnValueLookup exnValue
             il.Emit(OpCodes.Throw)
 
-    /// Generates invocation add
-    let generateAddInvocation
+    /// Generates new invocation from current method on stack
+    let generateNewInvocation 
         (il:ILGenerator) (invocationsField:FieldBuilder) (abstractMethod:MethodInfo) =
         let ps = abstractMethod.GetParameters()
         // Create local array to store arguments
-        let local0 = il.DeclareLocal(typeof<obj[]>).LocalIndex
+        let localArray = il.DeclareLocal(typeof<obj[]>).LocalIndex
         il.Emit(OpCodes.Ldc_I4, ps.Length)
         il.Emit(OpCodes.Newarr, typeof<obj>)
-        il.Emit(OpCodes.Stloc,local0)
+        il.Emit(OpCodes.Stloc,localArray)
         // Store arguments
         for argIndex = 0 to ps.Length - 1 do
-            il.Emit(OpCodes.Ldloc, local0)
+            il.Emit(OpCodes.Ldloc, localArray)
             il.Emit(OpCodes.Ldc_I4, argIndex)
             il.Emit(OpCodes.Ldarg, argIndex + 1)
-            let t = ps.[argIndex].ParameterType            
+            let t = ps.[argIndex].ParameterType
             if not t.IsByRef then il.Emit(OpCodes.Box, t)
             il.Emit(OpCodes.Stelem_Ref)
-        // Add invocation to invocations list
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldfld, invocationsField)
         il.Emit(OpCodes.Call, typeof<MethodBase>.GetMethod("GetCurrentMethod"))
-        il.Emit(OpCodes.Ldloc, local0)
+        il.Emit(OpCodes.Ldloc, localArray)
         il.Emit(OpCodes.Newobj, typeof<Invocation>.GetConstructor([|typeof<MethodBase>;typeof<obj[]>|]))
-        let invoke = typeof<System.Collections.Generic.List<obj[]>>.GetMethod("Add")
-        il.Emit(OpCodes.Callvirt, invoke)
+
+    /// Generate lock
+    let generateLock (il:ILGenerator) emitFun =
+        il.Emit(OpCodes.Ldarg_0)
+        let mi = typeof<System.Threading.Monitor>.GetMethod("Enter", [|typeof<obj>|])
+        il.Emit(OpCodes.Call, mi)
+        emitFun ()
+        il.Emit(OpCodes.Ldarg_0)
+        let mi = typeof<System.Threading.Monitor>.GetMethod("Exit", [|typeof<obj>|])
+        il.Emit(OpCodes.Call, mi)
+
+    /// Generates invocation add
+    let generateAddInvocation
+        (il:ILGenerator) (invocationsField:FieldBuilder) =
+        // Cons
+        let cons () =
+            il.Emit(OpCodes.Ldarg_1)
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldfld, invocationsField)
+            let mi = typeof<Invocations>.GetMethod("Cons")
+            il.Emit(OpCodes.Call, mi)
+        il.Emit(OpCodes.Ldarg_0)
+        cons ()
+        il.Emit(OpCodes.Stfld, invocationsField)
 
     /// Generates trigger
     let generateTrigger (il:ILGenerator) (invokedField:FieldBuilder) =
@@ -289,7 +313,7 @@ module internal Emit =
             then typeof<obj>, [|abstractType|]
             else abstractType, [||]
         let attributes = TypeAttributes.Public ||| TypeAttributes.Class
-        let interfaces = [|yield typeof<IMockObject>; yield! interfaces|]
+        let interfaces = [|yield typeof<IMockObject>; yield typeof<IMockRecorder>; yield! interfaces|]
         moduleBuilder.Value.DefineType(mockName, attributes, parent, interfaces)
 
     /// Builds a mock from the specified calls
@@ -345,7 +369,8 @@ module internal Emit =
             il.Emit(OpCodes.Ldarg_3)
             il.Emit(OpCodes.Stfld, returnField)
             il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Newobj, typeof<Invocations>.GetConstructor([||]))
+            let mi = typeof<Invocations>.GetMethod("get_Empty")
+            il.Emit(OpCodes.Call, mi)
             il.Emit(OpCodes.Stfld, invocationsField)
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Newobj, typeof<Event<EventHandler,EventArgs>>.GetConstructor([||]))
@@ -356,6 +381,23 @@ module internal Emit =
         // Generate constructor overload
         let constructorArgs = [|typeof<obj[]>;typeof<obj[][]>;typeof<Type->obj>;typeof<obj[]>|]
         generateConstructor typeBuilder constructorArgs generateConstructorBody
+        // Generate Add method
+        let mi = typeof<IMockRecorder>.GetMethod("Add")
+        let addInvocation = defineMethod typeBuilder mi
+        let il = addInvocation.GetILGenerator()
+        generateLock il (fun () -> generateAddInvocation il invocationsField)
+        il.Emit(OpCodes.Ret)
+        // Generate Reset method
+        let mi = typeof<IMockRecorder>.GetMethod("Reset")
+        let reset = defineMethod typeBuilder mi
+        let il = reset.GetILGenerator()
+        let setEmpty () =
+            il.Emit(OpCodes.Ldarg_0)
+            let mi = typeof<Invocations>.GetMethod("get_Empty")
+            il.Emit(OpCodes.Call, mi)
+            il.Emit(OpCodes.Stfld, invocationsField)
+        generateLock il setEmpty
+        il.Emit(OpCodes.Ret)
         /// Generates a property getter
         let generatePropertyGetter name (field:FieldBuilder) =
             let mi = (typeof<IMockObject>.GetProperty(name).GetGetMethod())
@@ -402,7 +444,7 @@ module internal Emit =
         /// Method matches abstract method
         let matches (abstractMethod:MethodInfo) (mi:MethodInfo) = mi = abstractMethod || structurallyEqual abstractMethod mi
         /// Abstract type's methods including interfaces
-        let abstractMethods = [|     
+        let abstractMethods = [|
             let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
             let allMethods = abstractType.GetMethods(attr)
             let hasMethod mi = allMethods |> Seq.exists (matches mi)
@@ -435,7 +477,9 @@ module internal Emit =
             /// IL generator
             let il = methodBuilder.GetILGenerator()
             // Add invocation
-            generateAddInvocation il invocationsField abstractMethod
+            il.Emit(OpCodes.Ldarg_0)
+            generateNewInvocation il invocationsField abstractMethod
+            il.Emit(OpCodes.Callvirt, addInvocation)
             // Trigger invoked event
             generateTrigger il invokedField
             /// Method overloads defined for current method
@@ -453,7 +497,7 @@ module internal Emit =
                 match returnStrategy with
                 | Some _ -> generateReturnStrategyCall il abstractMethod.ReturnType
                 | None -> 
-                    let t = abstractMethod.ReturnType                    
+                    let t = abstractMethod.ReturnType
                     if FSharpType.IsRecord t || FSharpType.IsTuple t || FSharpType.IsUnion t
                     then il.ThrowException(typeof<NotImplementedException>)
                     else generateDefaultValueReturn il abstractMethod.ReturnType
@@ -842,8 +886,8 @@ module internal Verification =
     /// Returns invocation count matching specificed expression
     let countInvocations (mock:IMockObject) (expectedMethod) (expectedArgs) =
         mock.Invocations
-        |> Seq.filter (invokeMatch expectedMethod expectedArgs)
-        |> Seq.length
+        |> List.filter (invokeMatch expectedMethod expectedArgs)
+        |> List.length
     let getMock (x:obj) =
         match x with
         | :? IMockObject as mock -> mock
@@ -883,8 +927,8 @@ type Mock with
             let actualCalls = countInvocations mock expectedMethod expectedArgs
             if not <| expectedTimes.Match(actualCalls) then 
                 failwith <| expected(expectedMethod,expectedArgs)
-        mock.Invoked.Subscribe(fun _ -> 
-            let last = mock.Invocations.[mock.Invocations.Count-1]
+        mock.Invoked.Subscribe(fun _ ->
+            let last = mock.Invocations |> List.head
             if invokeMatch expectedMethod expectedArgs last then verify()
             ) |> ignore
         mock.Verifiers.Add(Action(verify))
@@ -894,18 +938,20 @@ type Mock with
         let mocks = System.Collections.Generic.Dictionary()
         for target, expectedMethod,(expectedArgs,result) in calls do
             let mock = eval target |> getMock
+            let invocations = mock.Invocations |> List.rev
             if not <| mocks.ContainsKey mock then mocks.Add(mock,0)
             let n = mocks.[mock]
-            if mock.Invocations.Count = n then
+            if invocations.Length = n then
                 failwith <| "Missing expected member invocation: " + expected(expectedMethod,expectedArgs)
-            let actual = mock.Invocations.[n]
+            let actual = invocations.[n]
             if not <| invokeMatch expectedMethod expectedArgs actual then
                 failwith  <| unexpected(expectedMethod,expectedArgs,actual)
             mocks.[mock] <- n + 1
         for pair in mocks do
             let mock, n = pair.Key, pair.Value 
-            if mock.Invocations.Count > n then 
-                let last = mock.Invocations.[n]
+            let invocations = mock.Invocations |> List.rev
+            if invocations.Length > n then 
+                let last = invocations.[n]
                 failwith <| "Unexpected member invocation: " + invoke(last.Method, last.Args)
     /// Verifies all expectations
     static member VerifyAll(mock:obj) =
@@ -917,7 +963,7 @@ module internal Expectations =
     let setup (mock:IMockObject) (calls:(#MethodBase * Arg[]) list) =
         let index = ref 0
         mock.Invoked.Subscribe (fun _ ->
-            let last = mock.Invocations.[mock.Invocations.Count-1]
+            let last = mock.Invocations |> List.head
             if !index = calls.Length then 
                 failwith <| "Unexpected member invocation: " + invoke(last.Method, last.Args)
             let expected = calls.[!index]

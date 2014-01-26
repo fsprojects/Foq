@@ -142,6 +142,20 @@ public class LinqTests
     }
 
     [Test]
+    public void TestRecordedExpectations()
+    {
+        var list = Mock.Of<IList<int>>();
+        using (Mock.RecordExpectations(list))
+        {
+            list.Clear();
+            list.Add(1);
+        }
+        list.Clear();
+        list.Add(1);
+        Mock.VerifyAll(list);
+    }
+
+    [Test]
     public void TestVerifyAction()
     {
         var list = Mock.Of<IList<int>>();
