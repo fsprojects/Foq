@@ -711,6 +711,7 @@ type Mock<'TAbstract when 'TAbstract : not struct>
     /// Abstract type
     let abstractType = typeof<'TAbstract>
     /// Constructs mock builder
+    new () = Mock(MockMode.Default,[],None)
     new (?returnStrategy) = Mock(MockMode.Default,[],returnStrategy)
     new (mode,?returnStrategy) = Mock(mode,[],returnStrategy)
     /// Specifies a method or property of the abstract type as a quotation

@@ -223,7 +223,10 @@
 <member name="">
 
 </member>
-<member name="M:Foq.Mock`1.#ctor(Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
+<member name="">
+
+</member>
+<member name="M:Foq.Mock`1.#ctor">
 <summary>
  Constructs mock builder
 </summary>
