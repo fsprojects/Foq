@@ -15,6 +15,21 @@ let ``expect method call with any argument value`` () =
     // Assert
     Mock.VerifyAll(xs)
 
+let [<Test>] ``expect method is called the specified number of times`` () =
+    // Arrange
+    let xs = Mock.Of<System.Collections.Generic.IList<int>>()
+    // Assert (setup)
+    Mock.Expect(<@ xs.Contains(0) @>, never)
+    Mock.Expect(<@ xs.Contains(1) @>, once)
+    Mock.Expect(<@ xs.Contains(2) @>, atmost 2)
+    // Act
+    xs.Contains(1) |> ignore
+    xs.Contains(2) |> ignore
+    xs.Contains(2) |> ignore
+    // Assert
+    Mock.Verify(<@ xs.Contains(2) @>, exactly 2)
+    verifyAll xs
+
 [<Test>]
 let ``verify method call with any argument value`` () =
     // Arrange 
