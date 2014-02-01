@@ -212,7 +212,7 @@ module private Verification =
     let verify (times:Foq.Times) (instance:obj, mi, args) =
         let mock = getMock instance
         let actualCalls = countInvocations mock mi args
-        if not <| times.Match(actualCalls) then
+        if not <| times.Met(actualCalls) then
             failwith "Expected invocations on the mock not met"
     /// Expects method call on instance the specified number of times
     let expect (times:Foq.Times) (instance:obj, mi, args) =
@@ -221,7 +221,7 @@ module private Verification =
             let last = mock.Invocations |> List.head
             if invokeMatch mi args last then
                 let actualCalls = countInvocations mock mi args
-                if not <| times.Match(actualCalls) then
+                if not <| times.Met(actualCalls) then
                     failwith "Expected invocations on the mock not met"
         ) |> ignore
 

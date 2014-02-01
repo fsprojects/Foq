@@ -537,6 +537,7 @@ open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 
 module private QuotationEvaluation =
+    /// Evaluates specified quotation
     let rec eval (env:(string * obj) list) = function
         | Value(v,t) -> v
         | Var(x) -> (env |> List.find (fst >> (=) x.Name)) |> snd
@@ -826,16 +827,30 @@ and EventBuilder<'TAbstract,'TEvent when 'TAbstract : not struct>
         let remove = remove, ([|Any|], Handler("RemoveHandler",value))
         Mock<'TAbstract>(mode,add::remove::calls,returnStrategy)
 
+type internal ExpectedTimes =
+    | Exactly of int
+    | AtLeast of int
+    | AtMost of int
+
 /// Specifies valid invocation count
-type Times internal (predicate:int -> bool) =
-    member __.Match(n) = predicate(n)
-    static member Exactly(n:int) = Times((=) n)
-    static member AtLeast(n:int) = Times((<=) n)
+type Times internal (expected:ExpectedTimes) =     
+    member internal times.Met(actual) =
+        match expected with
+        | Exactly expected -> actual = expected
+        | AtLeast expected -> actual >= expected
+        | AtMost expected -> actual <= expected
+    member internal times.IsValid(actual) =
+        match expected with
+        | Exactly expected -> actual <= expected
+        | AtLeast expected -> true
+        | AtMost expected -> actual <= expected
+    static member Exactly(n:int) = Times(Exactly(n))
+    static member AtLeast(n:int) = Times(AtLeast(n))
     static member AtLeastOnce = Times.AtLeast(1)
-    static member AtMost(n:int) = Times((>=) n)
+    static member AtMost(n:int) = Times(AtMost(n))
     static member AtMostOnce = Times.AtMost(1)
-    static member Never = Times((=) 0)
-    static member Once = Times((=) 1)
+    static member Never = Times.Exactly(0)
+    static member Once = Times.Exactly(1)
 
 [<AutoOpen;CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Times =
@@ -916,7 +931,7 @@ type Mock with
         let target,expectedMethod,expectedArgs = toCall expr
         let mock = target |> eval |> getMock
         let actualCalls = countInvocations mock expectedMethod expectedArgs
-        if not <| expectedTimes.Match(actualCalls) then 
+        if not <| expectedTimes.Met(actualCalls) then 
             failwith <| expected(expectedMethod,expectedArgs)
     /// Verifies expression was invoked at least once
     static member Verify(expr:Expr) = Mock.Verify(expr, atleastonce)
@@ -924,15 +939,15 @@ type Mock with
     static member Expect(expr:Expr, expectedTimes:Times) =
         let target,expectedMethod,expectedArgs = toCall expr
         let mock = target |> eval |> getMock
-        let verify () =
+        let expect f =
             let actualCalls = countInvocations mock expectedMethod expectedArgs
-            if not <| expectedTimes.Match(actualCalls) then 
+            if not <| f actualCalls then 
                 failwith <| expected(expectedMethod,expectedArgs)
         mock.Invoked.Subscribe(fun _ ->
             let last = mock.Invocations |> List.head
-            if invokeMatch expectedMethod expectedArgs last then verify()
+            if invokeMatch expectedMethod expectedArgs last then expect (expectedTimes.IsValid)
             ) |> ignore
-        mock.Verifiers.Add(Action(verify))
+        mock.Verifiers.Add(Action(fun () -> expect (expectedTimes.Met)))
     // Verify call sequence in order
     static member VerifySequence(expr:Expr) =
         let calls = toCallResult expr
