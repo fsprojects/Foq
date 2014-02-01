@@ -21,13 +21,12 @@ let [<Test>] ``expect method is called the specified number of times`` () =
     // Assert (setup)
     Mock.Expect(<@ xs.Contains(0) @>, never)
     Mock.Expect(<@ xs.Contains(1) @>, once)
-    Mock.Expect(<@ xs.Contains(2) @>, atmost 2)
+    Mock.Expect(<@ xs.Contains(2) @>, exactly 2)
     // Act
     xs.Contains(1) |> ignore
     xs.Contains(2) |> ignore
     xs.Contains(2) |> ignore
     // Assert
-    Mock.Verify(<@ xs.Contains(2) @>, exactly 2)
     verifyAll xs
 
 [<Test>]
