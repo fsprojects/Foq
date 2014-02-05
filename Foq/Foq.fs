@@ -189,22 +189,38 @@ module internal Emit =
             let invoke = t.GetMethod(handlerName)
             il.Emit(OpCodes.Callvirt, invoke)
             il.Emit(OpCodes.Ret)
+        /// Emits return value with out arguments
+        let emitReturnWithOutArgs value returnType =
+            let ps = mi.GetParameters()
+            if FSharpType.IsTuple returnType then
+                let emitGetItem x =
+                    emitReturnValueLookup value
+                    let name = sprintf "Item%d" (x+1)
+                    let item = returnType.GetProperty(name).GetGetMethod()
+                    il.Emit(OpCodes.Callvirt, item)
+                let isVoid = mi.ReturnType = typeof<Void>
+                let startIndex = if isVoid then 0 else 1
+                let items = FSharpType.GetTupleElements returnType
+                for index = startIndex to items.Length - 1 do
+                    let paramIndex = ps.Length - items.Length + index
+                    il.Emit(OpCodes.Ldarg, paramIndex + 1)
+                    emitGetItem index
+                    let t = ps.[paramIndex].ParameterType.GetElementType()
+                    il.Emit(OpCodes.Stobj, t)
+                if not isVoid then
+                    emitGetItem 0
+            else
+                il.Emit(OpCodes.Ldarg, ps.Length-1+1)
+                emitReturnValueLookup value
+                let t = ps.[ps.Length-1].ParameterType.GetElementType()
+                il.Emit(OpCodes.Unbox_Any, t)
+                il.Emit(OpCodes.Stobj, t)
         // Emit result
         match result with
         | Unit -> il.Emit(OpCodes.Ret)
         | ReturnValue(value, returnType) ->
-            if returnType <> mi.ReturnType && FSharpType.IsTuple returnType then
-                let ps = mi.GetParameters()
-                let xs = FSharpType.GetTupleElements(returnType)
-                if ps.Length > 0 && ps.[ps.Length-1].IsOut then
-                    il.Emit(OpCodes.Ldarg, ps.Length-1+1)
-                    emitReturnValueLookup value
-                    let item2 = returnType.GetProperty("Item2").GetGetMethod()
-                    il.Emit(OpCodes.Callvirt, item2)
-                    il.Emit(OpCodes.Stobj, xs.[1])
-                emitReturnValueLookup value
-                let item1 = returnType.GetProperty("Item1").GetGetMethod()
-                il.Emit(OpCodes.Callvirt, item1)
+            if returnType <> mi.ReturnType then
+                emitReturnWithOutArgs value returnType
             else
                 emitReturnValueLookup value
                 il.Emit(OpCodes.Unbox_Any, returnType)
