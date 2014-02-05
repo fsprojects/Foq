@@ -416,9 +416,10 @@ let ``test specify out arg member by name'`` () =
     let x = ref 0
     let mock = 
         Mock<IDictionary<string,int>>()
-            .SetupByName("TryGetValue").Returns(true)
+            .SetupByName("TryGetValue").Returns((true, 1))
             .Create()
     let success = mock.TryGetValue("x",x)
+    Assert.AreEqual(1, !x)
     Assert.IsTrue(success)
 
 [<Test>]
