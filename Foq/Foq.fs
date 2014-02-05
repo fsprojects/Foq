@@ -193,8 +193,21 @@ module internal Emit =
         match result with
         | Unit -> il.Emit(OpCodes.Ret)
         | ReturnValue(value, returnType) ->
-            emitReturnValueLookup value
-            il.Emit(OpCodes.Unbox_Any, returnType)
+            if returnType <> mi.ReturnType && FSharpType.IsTuple returnType then
+                let ps = mi.GetParameters()
+                let xs = FSharpType.GetTupleElements(returnType)
+                if ps.Length > 0 && ps.[ps.Length-1].IsOut then
+                    il.Emit(OpCodes.Ldarg, ps.Length-1+1)
+                    emitReturnValueLookup value
+                    let item2 = returnType.GetProperty("Item2").GetGetMethod()
+                    il.Emit(OpCodes.Callvirt, item2)
+                    il.Emit(OpCodes.Stobj, xs.[1])
+                emitReturnValueLookup value
+                let item1 = returnType.GetProperty("Item1").GetGetMethod()
+                il.Emit(OpCodes.Callvirt, item1)
+            else
+                emitReturnValueLookup value
+                il.Emit(OpCodes.Unbox_Any, returnType)
             il.Emit(OpCodes.Ret)
         | ReturnFunc(f) ->
             emitReturnValueLookup f
