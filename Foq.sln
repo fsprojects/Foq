@@ -15,6 +15,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests.FSharp.Linq", "Tests\
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests.FSharp", "Tests\Tests.FSharp\Tests.FSharp.fsproj", "{E37CED83-57F4-41E7-85C2-D40D0259DAA3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Types.CSharp", "Tests\Types.CSharp\Types.CSharp.csproj", "{929B79CD-D385-4913-ABEA-D3303363AA30}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +87,16 @@ Global
 		{E37CED83-57F4-41E7-85C2-D40D0259DAA3}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{E37CED83-57F4-41E7-85C2-D40D0259DAA3}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{E37CED83-57F4-41E7-85C2-D40D0259DAA3}.Release|x86.ActiveCfg = Release|Any CPU
+		{929B79CD-D385-4913-ABEA-D3303363AA30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{929B79CD-D385-4913-ABEA-D3303363AA30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{929B79CD-D385-4913-ABEA-D3303363AA30}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{929B79CD-D385-4913-ABEA-D3303363AA30}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{929B79CD-D385-4913-ABEA-D3303363AA30}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{929B79CD-D385-4913-ABEA-D3303363AA30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{929B79CD-D385-4913-ABEA-D3303363AA30}.Release|Any CPU.Build.0 = Release|Any CPU
+		{929B79CD-D385-4913-ABEA-D3303363AA30}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{929B79CD-D385-4913-ABEA-D3303363AA30}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{929B79CD-D385-4913-ABEA-D3303363AA30}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -94,6 +106,7 @@ Global
 		{7E3A87BA-B72C-4AB6-A946-21E8E6FB9438} = {9E999D87-767A-49DC-A4B3-8DAB59D3AA30}
 		{98EC705E-F1D0-4977-9CCC-DC8ECD70B0F5} = {9E999D87-767A-49DC-A4B3-8DAB59D3AA30}
 		{E37CED83-57F4-41E7-85C2-D40D0259DAA3} = {9E999D87-767A-49DC-A4B3-8DAB59D3AA30}
+		{929B79CD-D385-4913-ABEA-D3303363AA30} = {9E999D87-767A-49DC-A4B3-8DAB59D3AA30}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = Tests\Tests.CSharp\Tests.CSharp.csproj
