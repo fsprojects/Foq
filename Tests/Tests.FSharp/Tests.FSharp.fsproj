@@ -42,6 +42,7 @@
     <Compile Include="MethodTests.fs" />
     <Compile Include="GenericsTests.fs" />
     <Compile Include="AbstractClassTests.fs" />
+    <Compile Include="OutArgTests.fs" />
     <Compile Include="ParamArrayTests.fs" />
     <Compile Include="EvalTests.fs" />
     <Compile Include="PartialApplicationTests.fs" />
@@ -51,6 +52,11 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Types.CSharp\Types.CSharp.csproj">
+      <Name>Types.CSharp</Name>
+      <Project>{929b79cd-d385-4913-abea-d3303363aa30}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core, Version=4.3.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
