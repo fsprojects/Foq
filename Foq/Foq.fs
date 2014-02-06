@@ -51,7 +51,7 @@ module internal Emit =
     type Result = 
         | Unit
         | ReturnValue of Value * Type
-        | ReturnFunc of Func
+        | ReturnFunc of Func * Type
         | Handler of string * PublishedEvent
         | Call of Func
         | Raise of Type
@@ -190,11 +190,14 @@ module internal Emit =
             il.Emit(OpCodes.Callvirt, invoke)
             il.Emit(OpCodes.Ret)
         /// Emits return value with out arguments
-        let emitReturnWithOutArgs value returnType =
+        let emitReturnWithOutArgs emitGetValue returnType =
             let ps = mi.GetParameters()
             if FSharpType.IsTuple returnType then
+                let local = il.DeclareLocal(returnType).LocalIndex
+                emitGetValue ()
+                il.Emit(OpCodes.Stloc, local)
                 let emitGetItem x =
-                    emitReturnValueLookup value
+                    il.Emit(OpCodes.Ldloc, local)
                     let name = sprintf "Item%d" (x+1)
                     let item = returnType.GetProperty(name).GetGetMethod()
                     il.Emit(OpCodes.Callvirt, item)
@@ -211,28 +214,35 @@ module internal Emit =
                     emitGetItem 0
             else
                 il.Emit(OpCodes.Ldarg, ps.Length-1+1)
-                emitReturnValueLookup value
+                emitGetValue ()
                 let t = ps.[ps.Length-1].ParameterType.GetElementType()
-                il.Emit(OpCodes.Unbox_Any, t)
                 il.Emit(OpCodes.Stobj, t)
         // Emit result
         match result with
         | Unit -> il.Emit(OpCodes.Ret)
         | ReturnValue(value, returnType) ->
             if returnType <> mi.ReturnType then
-                emitReturnWithOutArgs value returnType
+                let emitGetValue () = 
+                    emitReturnValueLookup value
+                    il.Emit(OpCodes.Unbox_Any, returnType)
+                emitReturnWithOutArgs emitGetValue returnType
             else
                 emitReturnValueLookup value
                 il.Emit(OpCodes.Unbox_Any, returnType)
             il.Emit(OpCodes.Ret)
-        | ReturnFunc(f) ->
-            emitReturnValueLookup f
-            // Emit Invoke
-            il.Emit(OpCodes.Ldnull)
-            let invoke = typeof<FSharpFunc<unit,obj>>.GetMethod("Invoke")
-            il.Emit(OpCodes.Callvirt, invoke)
-            if mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> then 
-                il.Emit(OpCodes.Pop)
+        | ReturnFunc(f, returnType) ->
+            let emitGetValue () =
+                emitReturnValueLookup f
+                // Emit Invoke
+                il.Emit(OpCodes.Ldnull)
+                let invoke = typeof<FSharpFunc<unit,obj>>.GetMethod("Invoke")
+                il.Emit(OpCodes.Callvirt, invoke)
+            if returnType <> mi.ReturnType then
+                emitReturnWithOutArgs emitGetValue returnType
+            else
+                emitGetValue ()
+                if mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> then 
+                    il.Emit(OpCodes.Pop)
             il.Emit(OpCodes.Ret)
         | Handler(handlerName, e) -> emitEventHandler handlerName e
         | Call(f) ->
@@ -703,7 +713,7 @@ module private Reflection =
             [x, mi,(args,returns)]
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<CallsAttribute> mi -> 
             let x, mi, args = toCall lhs
-            let returns = ReturnFunc(eval rhs)
+            let returns = ReturnFunc(eval rhs, mi.ReturnType)
             [x, mi,(args,returns)]
         | Call(None, mi, [lhs;rhs]) when hasAttribute typeof<RaisesAttribute> mi -> 
             let x, mi, args = toCall lhs
@@ -815,7 +825,8 @@ and ReturnBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
         mock(MockMode.Default,typeof<'TAbstract>,[(mi, (args, result))],[||], None) :?> 'TAbstract
     /// Specifies a computed return value of a method or property
     member this.Returns(f:unit -> 'TReturnVaue) =
-        mock(MockMode.Default,typeof<'TAbstract>,[(mi, (args, ReturnFunc(f)))],[||], None) :?> 'TAbstract
+        let result = ReturnFunc(f, typeof<'TReturnValue>)
+        mock(MockMode.Default,typeof<'TAbstract>,[(mi, (args, result))],[||], None) :?> 'TAbstract
 /// Generic builder for specifying method or property results
 and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (mode, call, calls, returnStrategy) =
@@ -829,7 +840,11 @@ and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
         Mock<'TAbstract>(mode,call::calls,returnStrategy)
     /// Specifies a computed return value of a method or property
     member this.Returns(f:unit -> 'TReturnValue) =
-        let call = mi, (args, ReturnFunc(f))
+        let call = mi, (args, ReturnFunc(f, typeof<'TReturnValue>))
+        Mock<'TAbstract>(mode,call::calls,returnStrategy)
+    /// Specifies a computed return value of a method or property
+    member this.ReturnsFunc(f:unit -> 'TReturnValue) =
+        let call = mi, (args, ReturnFunc(f, typeof<'TReturnValue>))
         Mock<'TAbstract>(mode,call::calls,returnStrategy)
     /// Calls the specified function to compute the return value
     [<RequiresExplicitTypeArguments>]

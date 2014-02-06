@@ -168,7 +168,8 @@ and FuncBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
         Mock<'TAbstract>(mode,(mi, (args, result))::calls)
     /// Specifies a computed return value of a method or property
     member this.Returns(f:Func<'TReturnValue>) =
-        Mock<'TAbstract>(mode,(mi, (args, ReturnFunc(fun () -> f.Invoke())))::calls)
+        let result = ReturnFunc((fun () -> f.Invoke()), typeof<'TReturnValue>)
+        Mock<'TAbstract>(mode,(mi, (args, result))::calls)
 /// Generic builder for specifying event values
 and EventBuilder<'TAbstract when 'TAbstract : not struct> 
     internal (mode,handlers,calls) =
