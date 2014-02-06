@@ -53,6 +53,18 @@
 <member name="">
 
 </member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
 <member name="T:Foq.IMockObject">
 <summary>
  Mock object interface for verification
@@ -270,6 +282,11 @@
 <member name="">
 
 </member>
+<member name="M:Foq.ResultBuilder`2.ReturnsFunc(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,`1})">
+<summary>
+ Specifies a computed return value of a method or property
+</summary>
+</member>
 <member name="M:Foq.ResultBuilder`2.Returns(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,`1})">
 <summary>
  Specifies a computed return value of a method or property
@@ -332,6 +349,9 @@
 <summary>
  Returns attribute
 </summary>
+</member>
+<member name="">
+
 </member>
 <member name="">
 
@@ -972,8 +992,10 @@
 <member name="">
 
 </member>
-<member name="">
-
+<member name="M:Foq.QuotationEvaluation.eval(Microsoft.FSharp.Collections.FSharpList{System.Tuple{System.String,System.Object}},Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Evaluates specified quotation
+</summary>
 </member>
 <member name="T:Foq.QuotationEvaluation">
 
