@@ -53,7 +53,7 @@ module internal Emit =
         | ReturnValue of Value * Type
         | ReturnFunc of Func * Type
         | Handler of string * PublishedEvent
-        | Call of Func
+        | Call of Func * Type * Type
         | Raise of Type
         | RaiseValue of exn
 
@@ -245,22 +245,31 @@ module internal Emit =
                     il.Emit(OpCodes.Pop)
             il.Emit(OpCodes.Ret)
         | Handler(handlerName, e) -> emitEventHandler handlerName e
-        | Call(f) ->
+        | Call(f, argsType, returnType) ->
             emitReturnValueLookup f
-            // Emit Invoke
-            let args = mi.GetParameters() |> Array.map (fun arg -> arg.ParameterType)
-            let returnType = if mi.ReturnType = typeof<Void> then typeof<unit> else mi.ReturnType
-            let argsType =
-                if args.Length = 1 then 
-                    il.Emit(OpCodes.Ldarg_1)
-                    args.[0]
-                else
-                    for i = 1 to args.Length do il.Emit(OpCodes.Ldarg, i)
-                    il.Emit(OpCodes.Newobj, FSharpType.MakeTupleType(args).GetConstructor(args))
-                    typeof<obj>
+            // Emit args
+            let ps = mi.GetParameters()
+            let args =
+               if FSharpType.IsTuple argsType then FSharpType.GetTupleElements(argsType)
+               else [|argsType|]
+            // Load args converting out or byref args to value
+            for i = 0 to args.Length-1 do
+               il.Emit(OpCodes.Ldarg, i+1)
+               let pi = ps.[i]
+               if pi.IsOut || pi.ParameterType.IsByRef then
+                  il.Emit(OpCodes.Ldobj, args.[i])
+            // Construct args tuple
+            if FSharpType.IsTuple argsType then
+               let ci = FSharpType.MakeTupleType(args).GetConstructor(args)
+               il.Emit(OpCodes.Newobj, ci)
+            // Function call
             let invoke = FSharpType.MakeFunctionType(argsType, returnType).GetMethod("Invoke")
             il.Emit(OpCodes.Callvirt, invoke)
-            if mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> then il.Emit(OpCodes.Pop)
+            // Handle return value
+            if mi.ReturnType = typeof<unit> || mi.ReturnType = typeof<Void> then 
+                il.Emit(OpCodes.Pop)
+            elif returnType <> mi.ReturnType then
+                emitReturnWithOutArgs ignore returnType            
             il.Emit(OpCodes.Ret)
         | Raise(exnType) -> il.ThrowException(exnType)
         | RaiseValue(exnValue) ->
@@ -849,7 +858,7 @@ and ResultBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
     /// Calls the specified function to compute the return value
     [<RequiresExplicitTypeArguments>]
     member this.Calls<'TArgs>(f:'TArgs -> 'TReturnValue) =
-        let call = mi, (args, Call(f))
+        let call = mi, (args, Call(f,typeof<'TArgs>,typeof<'TReturnValue>))
         Mock<'TAbstract>(mode,call::calls,returnStrategy)
     /// Specifies the exception a method or property raises
     [<RequiresExplicitTypeArguments>]

@@ -423,6 +423,18 @@ let ``test specify out arg member by name'`` () =
     Assert.IsTrue(success)
 
 [<Test>]
+let ``test specify out arg member by name with calls'`` () =
+    let x = ref 0
+    let mock = 
+        Mock<IDictionary<string,int>>()
+            .SetupByName("TryGetValue")
+            .Calls<string * int>(fun (s,x) -> true, 1)
+            .Create()
+    let success = mock.TryGetValue("x",x)
+    Assert.AreEqual(1, !x)
+    Assert.IsTrue(success)
+
+[<Test>]
 let ``test return strategy is used on mock of`` () =
     let mock = Mock.Of<IInterface>(returnStrategy=fun t -> box 1) 
     Assert.AreEqual(1, mock.MethodReturnsSomething())
