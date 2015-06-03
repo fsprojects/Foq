@@ -8,6 +8,9 @@ A unit testing framework for F# [![NuGet Status](http://img.shields.io/nuget/v/F
 
 See http://www.slideshare.net/ptrelford/foq-17062247
 
+![Image of Beavis & Butthead](http://trelford.com/FoqLogo.png)
+<p align="center"><i>Did he just say ...</i></p>
+
 ### Maintainer(s)
 
 - [@ptrelford](https://github.com/ptrelford)
