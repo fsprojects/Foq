@@ -46,6 +46,7 @@
     <Compile Include="ValueTypeTests.fs" />
     <Compile Include="ReportedIssues.fs" />
     <Compile Include="TaskTests.fs" />
+    <Compile Include="AsTests.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

@@ -25,6 +25,9 @@
 <member name="">
 
 </member>
+<member name="">
+
+</member>
 <member name="M:Foq.EventBuilder`2.Publishes(`1)">
 <summary>
  Specifies the published event value
@@ -172,6 +175,9 @@
 <member name="">
 
 </member>
+<member name="">
+
+</member>
 <member name="M:Foq.Mock`1.With``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}},Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
 <summary>
  Creates a mocked instance of the abstract type
@@ -232,6 +238,11 @@
  Creates a mocked instance of the abstract type
 </summary>
 </member>
+<member name="M:Foq.Mock`1.As``1">
+<summary>
+ Mocks as another type 
+</summary>
+</member>
 <member name="">
 
 </member>
@@ -266,6 +277,9 @@
 <summary>
  Raises attribute
 </summary>
+</member>
+<member name="">
+
 </member>
 <member name="">
 
@@ -465,12 +479,12 @@
  Boxed value
 </summary>
 </member>
-<member name="M:Foq.Emit.mock(Foq.MockMode,System.Type,Microsoft.FSharp.Collections.FSharpList{System.Tuple{System.Reflection.MethodInfo,System.Tuple{Foq.Emit.Arg[],Foq.Emit.Result}}},System.Object[],Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
+<member name="M:Foq.Emit.mock(Foq.MockMode,System.Type,Microsoft.FSharp.Collections.FSharpList{System.Type},Microsoft.FSharp.Collections.FSharpList{System.Tuple{System.Reflection.MethodInfo,System.Tuple{Foq.Emit.Arg[],Foq.Emit.Result}}},System.Object[],Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
 <summary>
  Builds a mock from the specified calls
 </summary>
 </member>
-<member name="M:Foq.Emit.defineType(System.Type)">
+<member name="M:Foq.Emit.defineType(System.Type,Microsoft.FSharp.Collections.FSharpList{System.Type})">
 <summary>
  Builder for module
  Defines a type builder for the specified abstract type
@@ -616,6 +630,9 @@
 <member name="">
 
 </member>
+<member name="">
+
+</member>
 <member name="M:Foq.Linq.EventBuilder`1.Publishes``1(Microsoft.FSharp.Control.IDelegateEvent{``0})">
 <summary>
  Specifies the published event value
@@ -628,6 +645,9 @@
 <summary>
  Generic builder for specifying event values
 </summary>
+</member>
+<member name="">
+
 </member>
 <member name="">
 
@@ -669,6 +689,9 @@
 <member name="">
 
 </member>
+<member name="">
+
+</member>
 <member name="M:Foq.Linq.ActionBuilder`1.Raises(System.Exception)">
 <summary>
  Specifies the exception value a method or property raises
@@ -687,6 +710,9 @@
 <summary>
  Abstract type
 </summary>
+</member>
+<member name="">
+
 </member>
 <member name="">
 
@@ -753,6 +779,11 @@
 <member name="M:Foq.Linq.Mock`1.Create">
 <summary>
  Creates a mocked instance of the abstract type
+</summary>
+</member>
+<member name="M:Foq.Linq.Mock`1.As``1">
+<summary>
+ Mocks as other type
 </summary>
 </member>
 <member name="">

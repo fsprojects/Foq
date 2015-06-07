@@ -96,3 +96,18 @@ let ``test recorded expectations`` () =
     mock.Clear()
     mock.Add(1)
     Mock.VerifyAll(mock)
+
+type IFoo =
+    abstract Foo : unit -> int
+
+type IBar =
+    abstract Bar : unit -> int
+
+[<Test>]
+let ``test as other type`` () =
+    let mock = 
+        Mock<IFoo>()
+            .As<IBar>().SetupFunc(fun x -> x.Bar()).Returns(1)
+            .Create()
+    Assert.AreEqual(1, mock.Bar())
+    Assert.AreEqual(0, (mock :?> IFoo).Foo())
