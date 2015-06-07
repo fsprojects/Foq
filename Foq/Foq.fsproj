@@ -51,10 +51,18 @@
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
-  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')" />
-  <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetDir)$(TargetName).dll" ..\..\..\Nuget\Lib\net40
-copy "$(TargetDir)$(TargetName).xml" ..\..\..\Nuget\Lib\net40</PostBuildEvent>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '11.0'">
+    <FSharpTargetsPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets</FSharpTargetsPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' != '11.0'">
+    <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
+  </PropertyGroup>
+  <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />  <PropertyGroup>
+    <!-- <PostBuildEvent Condition=" '$(OS)' == 'Unix' ">cp "$(TargetDir)$(TargetName).dll" ..\..\..\Nuget\Lib\net40
+cp "$(TargetDir)$(TargetName).xml" ..\..\..\Nuget\Lib\net40</PostBuildEvent> -->
+    <PostBuildEvent Condition=" '$(OS)' != 'Unix' ">copy "$(TargetDir)$(TargetName).dll" ..\..\..\Nuget\Lib\net40
+copy "$(TargetDir)$(TargetName).xml" ..\..\..\Nuget\Lib\net40
+    </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -77,44 +77,48 @@ module private MockMode =
 type Mock =
     /// Creates a mocked instance of the abstract type
     static member Of<'TAbstractType>() = 
-        mock(Foq.MockMode.Loose, typeof<'TAbstractType>, [], [||], None) :?> 'TAbstractType
+        mock(Foq.MockMode.Loose, typeof<'TAbstractType>, [], [], [||], None) :?> 'TAbstractType
         
 open Reflection
 
 /// Generic stub type over abstract types and interfaces
-type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
+type Mock<'TAbstract when 'TAbstract : not struct> 
+        internal (mode:MockMode, others:Type list, calls:(MethodInfo * (Arg[] * Result)) list) =
     /// Abstract type
     let abstractType = typeof<'TAbstract>
     /// Constructs mock builder
-    new () = Mock(MockMode.Loose,[])
-    new (mode) = Mock(mode,[])
+    new () = Mock(MockMode.Loose,[],[])
+    new (mode) = Mock(mode,[],[])
+    /// Mocks as other type
+    member this.As<'TOther when 'TOther : not struct>() =
+        Mock<'TOther>(mode,abstractType::others,calls)
     /// Specifies a member method of the abstact type
     member this.Setup(expr:Expression<Func<'TAbstract,'TReturnValue>>) = this.SetupFunc(expr)
     member this.Setup(expr:Expression<Action<'TAbstract>>) = this.SetupAction(expr)
     member this.Setup(name:string) = this.SetupByName(name)
     /// Specifies a member function of the abstract type
     member this.SetupFunc(expr:Expression<Func<'TAbstract,'TReturnValue>>) =
-        FuncBuilder<'TAbstract,'TReturnValue>(mode,toMethodInfo expr.Body,calls)
+        FuncBuilder<'TAbstract,'TReturnValue>(mode,others,toMethodInfo expr.Body,calls)
     /// Specifies a member action of the abstract type
     member this.SetupAction(expr:Expression<Action<'TAbstract>>) =
-        ActionBuilder<'TAbstract>(mode,toMethodInfo expr.Body,calls)
+        ActionBuilder<'TAbstract>(mode,others,toMethodInfo expr.Body,calls)
     /// Specifies a member subroutine of the abstract type
     member this.SetupSub(expr:Expression<Action<'TAbstract>>) = this.SetupAction(expr)
     /// Specifies a property getter of the abstract type
     member this.SetupPropertyGet(expr:Expression<Func<'TAbstract,'TReturnValue>>) =
         let pi, args = toPropertyInfo expr.Body
         let call = pi.GetGetMethod(), args 
-        FuncBuilder<'TAbstract, 'TReturnValue>(mode,call,calls)
+        FuncBuilder<'TAbstract, 'TReturnValue>(mode,others,call,calls)
     /// Specifies a property setter of the abstract type
     member this.SetupPropertySet(expr:Expression<Func<'TAbstract,'TReturnValue>>) =
         let pi, args = toPropertyInfo expr.Body
         let call = pi.GetSetMethod(), args
-        ActionBuilder<'TAbstract>(mode,call,calls)
+        ActionBuilder<'TAbstract>(mode,others,call,calls)
     /// Specifies an event of the abstract type
     member this.SetupEvent(name:string) =
         let e = abstractType.GetEvent(name)
         let handlers = e.GetAddMethod(), e.GetRemoveMethod()
-        EventBuilder<'TAbstract>(mode,handlers,calls)
+        EventBuilder<'TAbstract>(mode,others,handlers,calls)
     /// Specifies properties of the abstract type
     member this.SetupProperties(anonymousObject:obj) =
         let ps = anonymousObject.GetType().GetProperties()
@@ -132,51 +136,51 @@ type Mock<'TAbstract when 'TAbstract : not struct> internal (mode, calls) =
                     let value = p.GetValue(anonymousObject, [||])
                     yield mi, ([||],ReturnValue(value, pi.PropertyType))
                 | None -> ()]
-        Mock<'TAbstract>(mode, properties @ calls)
+        Mock<'TAbstract>(mode, others, properties @ calls)
     /// Setup member by name
     member this.SetupByName<'TReturnValue>(name:string) =
         let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
         let mi = typeof<'TAbstract>.GetMethod(name, attr)
         let args = [|for arg in mi.GetParameters() -> Any|] 
-        FuncBuilder<'TAbstract,'TReturnValue>(mode,(mi,args),calls)
+        FuncBuilder<'TAbstract,'TReturnValue>(mode,others,(mi,args),calls)
     /// Creates a mocked instance of the abstract type
     member this.Create() = 
-        mock(convert mode,abstractType,calls,[||],None) :?> 'TAbstract
+        mock(convert mode,abstractType,others,calls,[||],None) :?> 'TAbstract
     /// Creates a mocked instance of the abstract type
     member this.Create([<ParamArray>] args:obj[]) = 
-        mock(convert mode,abstractType,calls,args,None) :?> 'TAbstract
+        mock(convert mode,abstractType,others,calls,args,None) :?> 'TAbstract
 and ActionBuilder<'TAbstract when 'TAbstract : not struct>
-    internal (mode,call,calls) =
+    internal (mode,others,call,calls) =
     let mi, args = call
     /// Specifies the exception a method or property raises
     [<RequiresExplicitTypeArguments>]
     member this.Raises<'TException when 'TException : (new : unit -> 'TException) 
                                    and  'TException :> exn>() =
-        Mock<'TAbstract>(mode,(mi, (args, Raise(typeof<'TException>)))::calls)
+        Mock<'TAbstract>(mode,others,(mi, (args, Raise(typeof<'TException>)))::calls)
     /// Specifies the exception value a method or property raises
     member this.Raises(exnValue:exn) =
-        Mock<'TAbstract>(mode,(mi, (args, RaiseValue(exnValue)))::calls)
+        Mock<'TAbstract>(mode,others,(mi, (args, RaiseValue(exnValue)))::calls)
 and FuncBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct>
-    internal (mode,call,calls) =
-    inherit ActionBuilder<'TAbstract>(mode,call,calls)
+    internal (mode,others,call,calls) =
+    inherit ActionBuilder<'TAbstract>(mode,others,call,calls)
     let mi, args = call    
     /// Specifies the return value of a method or property
     member this.Returns(value:'TReturnValue) =
         let result = 
             if typeof<'TReturnValue> = typeof<unit> then Unit 
             else ReturnValue(value,typeof<'TReturnValue>)
-        Mock<'TAbstract>(mode,(mi, (args, result))::calls)
+        Mock<'TAbstract>(mode, others, (mi, (args, result))::calls)
     /// Specifies a computed return value of a method or property
     member this.Returns(f:Func<'TReturnValue>) =
         let result = ReturnFunc((fun () -> f.Invoke()), typeof<'TReturnValue>)
-        Mock<'TAbstract>(mode,(mi, (args, result))::calls)
+        Mock<'TAbstract>(mode, others, (mi, (args, result))::calls)
 /// Generic builder for specifying event values
 and EventBuilder<'TAbstract when 'TAbstract : not struct> 
-    internal (mode,handlers,calls) =
+    internal (mode,others,handlers,calls) =
     let add, remove = handlers
     /// Specifies the published event value
     member this.Publishes(value:IDelegateEvent<'TDelegate>) =
-        Mock<'TAbstract>(mode,
+        Mock<'TAbstract>(mode, others,
                          (add, ([|Any|], Handler("AddHandler",value)))::
                          (remove, ([|Any|], Handler("RemoveHandler",value)))::
                          calls)
