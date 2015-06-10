@@ -72,3 +72,68 @@ let [<Test>] ``f(...)`` () =
     Assert.IsTrue(x.F6(1,2,3,4,5,6))
     Assert.IsTrue(x.F7(1,2,3,4,5,6,7))
     Assert.IsTrue(x.F8(1,2,3,4,5,6,7,8))
+
+let [<Test>] ``Calls f(1)`` () =
+    let arg = 1
+    let x =
+        Mock<IFoo>()
+            .SetupMethod(fun x -> <@ x.F1 @>)
+            .Calls<int>((=) arg)
+            .Create()
+    Assert.IsTrue(x.F1 arg)
+
+let [<Test>] ``Calls f(1,2,3,4,5,6,7)`` () =
+    let args = (1,2,3,4,5,6,7)
+    let x =
+        Mock<IFoo>()
+            .SetupMethod(fun x -> <@ x.F7 @>)
+            .Calls<int * int * int * int * int * int * int>((=) args)
+            .Create()
+    Assert.IsTrue(x.F7 args)
+
+let [<Test>] ``Calls f(1,2,3,4,5,6,7,8)`` () =
+    let args = (1,2,3,4,5,6,7,8)
+    let x =
+        Mock<IFoo>()
+            .SetupMethod(fun x -> <@ x.F8 @>)
+            .Calls<int * int * int * int * int * int * int * int>((=) args)
+            .Create()
+    Assert.IsTrue(x.F8 args)
+
+type IBar =
+    abstract G0 : unit -> bool
+    abstract G1 : string -> bool
+    abstract G2 : string * string -> bool
+    abstract G3 : string * string * string -> bool
+    abstract G4 : string * string * string * string -> bool
+    abstract G5 : string * string * string * string * string -> bool
+    abstract G6 : string * string * string * string * string * string -> bool
+    abstract G7 : string * string * string * string * string * string * string -> bool
+    abstract G8 : string * string * string * string * string * string * string * string -> bool
+
+let [<Test>] ``Calls g("1")`` () =
+    let arg = "1"
+    let x =
+        Mock<IBar>()
+            .SetupMethod(fun x -> <@ x.G1 @>)
+            .Calls<string>((=) arg)
+            .Create()
+    Assert.IsTrue(x.G1 arg)
+
+let [<Test>] ``Calls g("1","2","3","4","5","6","7")`` () =
+    let args = ("1","2","3","4","5","6","7")
+    let x =
+        Mock<IBar>()
+            .SetupMethod(fun x -> <@ x.G7 @>)
+            .Calls<string * string * string * string * string * string * string>((=) args)
+            .Create()
+    Assert.IsTrue(x.G7 args)
+
+let [<Test>] ``Calls g("1","2","3","4","5","6","7","8")`` () =
+    let args = ("1","2","3","4","5","6","7","8")
+    let x =
+        Mock<IBar>()
+            .SetupMethod(fun x -> <@ x.G8 @>)
+            .Calls<string * string * string * string * string * string * string * string>((=) args)
+            .Create()
+    Assert.IsTrue(x.G8 args)
