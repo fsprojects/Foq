@@ -117,7 +117,7 @@ module internal Emit =
                 emitArgLookup ()
                 atIndex ()
                 il.EmitCall(OpCodes.Call, typeof<obj>.GetMethod("Equals",[|typeof<obj>;typeof<obj>|]), null) 
-                il.Emit(OpCodes.Brfalse_S, unmatched)
+                il.Emit(OpCodes.Brfalse, unmatched)
             | ArgArray(args) ->
                 emitLdargBox ()
                 il.Emit(OpCodes.Ldlen)
@@ -141,7 +141,7 @@ module internal Emit =
                 let argType = mi.GetParameters().[argIndex].ParameterType
                 let invoke = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
                 il.Emit(OpCodes.Callvirt, invoke)
-                il.Emit(OpCodes.Brfalse_S, unmatched)
+                il.Emit(OpCodes.Brfalse, unmatched)
             | PredUntyped(f) ->
                 emitArgLookup ()
                 atIndex()
@@ -151,7 +151,7 @@ module internal Emit =
                 il.Emit(OpCodes.Box, argType)
                 let invoke = FSharpType.MakeFunctionType(typeof<obj>,typeof<bool>).GetMethod("Invoke")
                 il.Emit(OpCodes.Callvirt, invoke)
-                il.Emit(OpCodes.Brfalse_S, unmatched)
+                il.Emit(OpCodes.Brfalse, unmatched)
         
         if mi.IsGenericMethod then
             let concreteArgs = mi.GetGenericArguments()
@@ -164,7 +164,7 @@ module internal Emit =
                 il.Emit(OpCodes.Ldtoken, arg')
                 il.Emit(OpCodes.Call, typeFromHandle)
                 il.Emit(OpCodes.Ceq)
-                il.Emit(OpCodes.Brfalse_S, unmatched)
+                il.Emit(OpCodes.Brfalse, unmatched)
             )
         
         args |> Seq.iteri (emitArg None)

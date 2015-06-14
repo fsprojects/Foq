@@ -110,6 +110,9 @@ type IBar =
     abstract G6 : string * string * string * string * string * string -> bool
     abstract G7 : string * string * string * string * string * string * string -> bool
     abstract G8 : string * string * string * string * string * string * string * string -> bool
+    abstract G9 : string * string * string * string * string * string * string * string * string -> bool
+    abstract GA : string * string * string * string * string * string * string * string * string * string -> bool
+
 
 let [<Test>] ``Calls g("1")`` () =
     let arg = "1"
@@ -137,3 +140,46 @@ let [<Test>] ``Calls g("1","2","3","4","5","6","7","8")`` () =
             .Calls<string * string * string * string * string * string * string * string>((=) args)
             .Create()
     Assert.IsTrue(x.G8 args)
+
+let [<Test>] ``Calls g(_,_,_,_,_,_,_,_,_)`` () =
+    let args = ("1","2","3","4","5","6","7","8","9")
+    let x =
+        Mock<IBar>()
+            .Setup(fun x -> <@ x.G9(any(),any(),any(),any(),any(),any(),any(),any(),any()) @>)
+            .Calls<string * string * string * string * string * string * string * string * string>((=) args)
+            .Create()
+    Assert.IsTrue(x.G9 args)
+
+let [<Test>] ``Calls g("1","2","3","4","5","6","7","8","9")`` () =
+    let args = ("1","2","3","4","5","6","7","8","9")
+    let x =
+        Mock<IBar>()
+            .Setup(fun x -> <@ x.G9("1","2","3","4","5","6","7","8","9") @>)
+            .Calls<string * string * string * string * string * string * string * string * string>((=) args)
+            .Create()
+    Assert.IsTrue(x.G9 args)
+
+let [<Test>] ``Calls g("1","2","3","4","5","6","7","8","9","A")`` () =
+    let args = ("1","2","3","4","5","6","7","8","9","A")
+    let x =
+        Mock<IBar>()
+            .Setup(fun x -> <@ x.GA("1","2","3","4","5","6","7","8","9","A") @>)
+            .Calls<string * string * string * string * string * string * string * string * string * string>((=) args)
+            .Create()
+    Assert.IsTrue(x.GA args)
+
+let [<Test>] ``Calls g(*,*,*,*,*,*,*,*,*,*)`` () =
+    let ne = not << System.String.IsNullOrEmpty
+    let args = ("1","2","3","4","5","6","7","8","9","A")
+    let x =
+        Mock<IBar>()
+            .Setup(fun x -> <@ x.GA(is ne,is ne,is ne,is ne,is ne,is ne,is ne,is ne,is ne,is ne) @>)
+            .Calls<string * string * string * string * string * string * string * string * string * string>((=) args)
+            .Create()
+    Assert.IsTrue(x.GA args)
+    Assert.IsFalse(x.GA ("","2","3","4","5","6","7","8","9","A"))
+    Assert.IsFalse(x.GA (null,"2","3","4","5","6","7","8","9","A"))
+    Assert.IsFalse(x.GA ("1","","3","4","5","6","7","8","9","A"))
+    Assert.IsFalse(x.GA ("1",null,"3","4","5","6","7","8","9","A"))
+    Assert.IsFalse(x.GA ("1","2","3","4","5","6","7","8","9",""))
+    Assert.IsFalse(x.GA ("1","2","3","4","5","6","7","8","9",null))
