@@ -640,6 +640,10 @@ module private QuotationEvaluation =
             let case, _ = FSharpValue.GetUnionFields(target, info.DeclaringType)
             case.Tag = info.Tag |> box
         | TypeTest(v,t) -> t.IsAssignableFrom((eval env v).GetType()) |> box
+        | DefaultValue(t) -> 
+            match t.IsValueType with
+            | true -> Activator.CreateInstance(t)
+            | false -> Convert.ChangeType(null, t)
         | arg -> raise <| NotSupportedException(arg.ToString())
     and evalAll env args = [|for arg in args -> eval env arg|]
 
