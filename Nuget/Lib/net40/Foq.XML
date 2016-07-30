@@ -2,93 +2,30 @@
 <doc>
 <assembly><name>Foq</name></assembly>
 <members>
-<member name="">
-
-</member>
 <member name="T:Foq.CallsAttribute">
 <summary>
  Calls attribute
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="M:Foq.EventBuilder`2.Publishes(`1)">
 <summary>
  Specifies the published event value
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="T:Foq.EventBuilder`2">
 <summary>
  Generic builder for specifying event values
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="T:Foq.IMockObject">
 <summary>
  Mock object interface for verification
 </summary>
 </member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
 <member name="T:Foq.IMockRecorder">
 <summary>
  Mock recorder interface
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="T:Foq.Invocation">
 <summary>
@@ -109,15 +46,6 @@
 <summary>
  Marks argument as matching specific values
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="M:Foq.Mock.VerifyAll(System.Object)">
 <summary>
@@ -144,39 +72,15 @@
  Verifies expected expression call count on invocation
 </summary>
 </member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
 <member name="T:Foq.MockMode">
 <summary>
  Mock mode
 </summary>
 </member>
-<member name="F:Foq.Foq.Mock`1.abstractType">
+<member name="F:Foq.Mock`1.abstractType">
 <summary>
  Abstract type
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="M:Foq.Mock`1.With``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}},Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
 <summary>
@@ -243,58 +147,25 @@
  Mocks as another type 
 </summary>
 </member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
 <member name="M:Foq.Mock`1.#ctor">
 <summary>
  Constructs mock builder
 </summary>
-</member>
-<member name="">
-
 </member>
 <member name="T:Foq.Mock`1">
 <summary>
  Generic mock type over abstract types and interfaces
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="T:Foq.PredicateAttribute">
 <summary>
  Predicate attribute
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="T:Foq.RaisesAttribute">
 <summary>
  Raises attribute
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="M:Foq.ResultBuilder`2.ReturnsFunc(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,`1})">
 <summary>
@@ -316,27 +187,15 @@
  Specifies the exception value a method or property raises
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="M:Foq.ResultBuilder`2.Calls``1(Microsoft.FSharp.Core.FSharpFunc{``0,`1})">
 <summary>
  Calls the specified function to compute the return value
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="T:Foq.ResultBuilder`2">
 <summary>
  Generic builder for specifying method or property results
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="M:Foq.ReturnBuilder`2.Returns``1(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,``0})">
 <summary>
@@ -348,54 +207,15 @@
  Specifies the return value of a method or property
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="T:Foq.ReturnBuilder`2">
 <summary>
  Generic builder for specifying method result
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="T:Foq.ReturnsAttribute">
 <summary>
  Returns attribute
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="T:Foq.Times">
 <summary>
@@ -407,57 +227,15 @@
  List of verifiers
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="T:Foq.WildcardAttribute">
 <summary>
  Wildcard attribute
 </summary>
 </member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
 <member name="T:Foq.Emit.Result">
 <summary>
  Method result type
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="T:Foq.Emit.Arg">
 <summary>
@@ -540,33 +318,6 @@
  Generates constructor
 </summary>
 </member>
-<member name="T:Foq.Emit">
-
-</member>
-<member name="">
-
-</member>
-<member name="T:Foq.Eval">
-
-</member>
-<member name="">
-
-</member>
-<member name="T:Foq.Expectations">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="T:Foq.Format">
-
-</member>
 <member name="M:Foq.ItModule.is``1(Microsoft.FSharp.Core.FSharpFunc{``0,System.Boolean})">
 <summary>
  Marks argument as matching specific values
@@ -576,9 +327,6 @@
 <summary>
  Marks argument as matching any value
 </summary>
-</member>
-<member name="T:Foq.ItModule">
-
 </member>
 <member name="P:Foq.Linq.A`1.Ignored">
 <summary>
@@ -590,12 +338,6 @@
  Marks argument as matching specific values
 </summary>
 </member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
 <member name="M:Foq.Linq.It.IsAny``1">
 <summary>
  Marks argument as matching any value
@@ -606,60 +348,15 @@
  Marks argument as matching specific values
 </summary>
 </member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
 <member name="M:Foq.Linq.EventBuilder`1.Publishes``1(Microsoft.FSharp.Control.IDelegateEvent{``0})">
 <summary>
  Specifies the published event value
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="T:Foq.Linq.EventBuilder`1">
 <summary>
  Generic builder for specifying event values
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="M:Foq.Linq.FuncBuilder`2.Returns(System.Func{`1})">
 <summary>
@@ -671,54 +368,15 @@
  Specifies the return value of a method or property
 </summary>
 </member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
 <member name="M:Foq.Linq.ActionBuilder`1.Raises(System.Exception)">
 <summary>
  Specifies the exception value a method or property raises
 </summary>
 </member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="F:Foq.Linq.Foq.Linq.Mock`1.abstractType">
+<member name="F:Foq.Linq.Mock`1.abstractType">
 <summary>
  Abstract type
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="M:Foq.Linq.Mock`1.SetupSub(System.Linq.Expressions.Expression{System.Action{`0}})">
 <summary>
@@ -760,12 +418,6 @@
  Specifies a member action of the abstract type
 </summary>
 </member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
 <member name="M:Foq.Linq.Mock`1.Setup``1(System.Linq.Expressions.Expression{System.Func{`0,``0}})">
 <summary>
  Specifies a member method of the abstact type
@@ -786,16 +438,10 @@
  Mocks as other type
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="M:Foq.Linq.Mock`1.#ctor">
 <summary>
  Constructs mock builder
 </summary>
-</member>
-<member name="">
-
 </member>
 <member name="T:Foq.Linq.Mock`1">
 <summary>
@@ -831,9 +477,6 @@
 <summary>
  Verifies specified action is called at least once on specified mock
 </summary>
-</member>
-<member name="">
-
 </member>
 <member name="M:Foq.Linq.Mock.Verify``1(System.Linq.Expressions.Expression{System.Func{``0}})">
 <summary>
@@ -875,25 +518,10 @@
  Expects specified action is called on specified mock
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="M:Foq.Linq.Mock.Expect``1(System.Linq.Expressions.Expression{System.Func{``0}},Foq.Times)">
 <summary>
  Expects specified method is called on specified mock
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="T:Foq.Linq.MockMode">
 <summary>
@@ -910,9 +538,6 @@
  Verifies if method called on instance the specified number of times
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="M:Foq.Linq.Verification.getMethod(System.Linq.Expressions.LambdaExpression)">
 <summary>
  Gets method from lambda expression
@@ -922,15 +547,6 @@
 <summary>
  Gets instance value from member expression
 </summary>
-</member>
-<member name="T:Foq.Linq.Verification">
-
-</member>
-<member name="">
-
-</member>
-<member name="T:Foq.Linq.MockModeModule">
-
 </member>
 <member name="M:Foq.Linq.Reflection.toPropertyInfo(System.Linq.Expressions.Expression)">
 <summary>
@@ -942,35 +558,20 @@
  Converts expression to a tuple of MethodInfo and Arg array
 </summary>
 </member>
-<member name="">
-
-</member>
 <member name="M:Foq.Linq.Reflection.resolve(System.Linq.Expressions.Expression)">
 <summary>
  Resolves Expression to Arg
 </summary>
-</member>
-<member name="">
-
-</member>
-<member name="">
-
 </member>
 <member name="M:Foq.Linq.Reflection.hasAttribute(System.Type,System.Reflection.MethodInfo)">
 <summary>
  Converts argument expressions to Arg array
 </summary>
 </member>
-<member name="T:Foq.Linq.Reflection">
-
-</member>
 <member name="P:Foq.MockModeModule.Default">
 <summary>
  Default mock mode
 </summary>
-</member>
-<member name="T:Foq.MockModeModule">
-
 </member>
 <member name="M:Foq.Operators.expectSeq``2(Microsoft.FSharp.Core.FSharpFunc{``0,Microsoft.FSharp.Quotations.FSharpExpr{``1}})">
 <summary>
@@ -1017,19 +618,10 @@
  Signifies source expression returns specified value
 </summary>
 </member>
-<member name="T:Foq.Operators">
-
-</member>
-<member name="">
-
-</member>
 <member name="M:Foq.QuotationEvaluation.eval(Microsoft.FSharp.Collections.FSharpList{System.Tuple{System.String,System.Object}},Microsoft.FSharp.Quotations.FSharpExpr)">
 <summary>
  Evaluates specified quotation
 </summary>
-</member>
-<member name="T:Foq.QuotationEvaluation">
-
 </member>
 <member name="M:Foq.Reflection.toHandlers(System.Type,Microsoft.FSharp.Quotations.FSharpExpr)">
 <summary>
@@ -1081,43 +673,10 @@
  Returns true if method has specified attribute
 </summary>
 </member>
-<member name="T:Foq.Reflection">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="">
-
-</member>
-<member name="T:Foq.TimesModule">
-
-</member>
-<member name="">
-
-</member>
 <member name="M:Foq.Verification.countInvocations(Foq.IMockObject,System.Reflection.MethodBase,Foq.Emit.Arg[])">
 <summary>
  Returns invocation count matching specificed expression
 </summary>
-</member>
-<member name="">
-
 </member>
 <member name="M:Foq.Verification.argsMatch(System.Type,Foq.Emit.Arg,System.Object)">
 <summary>
@@ -1133,9 +692,6 @@
 <summary>
  Returns true if method parameter types match
 </summary>
-</member>
-<member name="T:Foq.Verification">
-
 </member>
 </members>
 </doc>
