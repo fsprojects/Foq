@@ -644,7 +644,7 @@ module private QuotationEvaluation =
             match t.IsValueType with
             | true -> Activator.CreateInstance(t)
             | false -> Convert.ChangeType(null, t)
-        | arg -> raise <| NotSupportedException(arg.ToString())
+        | arg -> arg.ToString() |> sprintf "Unsupported expression: %A" |> fun s -> new NotSupportedException(s) |> raise
     and evalAll env args = [|for arg in args -> eval env arg|]
 
 module Eval =
@@ -693,9 +693,8 @@ module private Reflection =
             let toArgs' = 
                 List.map (fun expr ->
                     match expr with
-                    | Value (value, _) -> Arg value
                     | AttributedArg arg -> arg
-                    | _ -> raise (NotSupportedException ())
+                    | _ -> eval expr |> Arg
                 )
                 >> List.toArray
             /// Unwrap quotation accumulating argument values
@@ -704,7 +703,7 @@ module private Reflection =
                 | Application (inner, value) -> unwrap (value :: values) inner  // Normal application
                 | Lambda (_, body) -> unwrap values body
                 | Call (Some expr, info, _) -> (expr, info, toArgs' values) 
-                | _ -> raise (NotSupportedException (quote.ToString()))
+                | _ -> quote |> sprintf "Expected function application: %A" |> fun s -> new NotSupportedException(s) |> raise
             unwrap []
         /// Unwrap standard quotation of member value
         let unwrapStandard quote = 
@@ -719,7 +718,7 @@ module private Reflection =
                 x, pi.GetGetMethod(), toArgs (pi.GetIndexParameters()) args
             | PropertySet(Some(x), pi, args, value) -> 
                 x, pi.GetSetMethod(), toArgs [yield! pi.GetIndexParameters();yield null] [yield! args;yield value]
-            | expr -> raise <| NotSupportedException(expr.ToString())
+            | expr -> expr |> sprintf "Expected standard function application: %A" |> fun s -> new NotSupportedException(s) |> raise
         // Handle applications of functions and standard functions
         match quote with
         | Application (_, _) -> unwrapApplication quote
@@ -728,7 +727,7 @@ module private Reflection =
     let toCallOf abstractType expr =
         match toCall expr with
         | x, mi, args when x.Type = abstractType -> mi, args
-        | _ -> raise <| NotSupportedException(expr.ToString())   
+        | x, _, _ -> sprintf "Expected call on abstract type %A, got %A" abstractType x.Type |> fun s -> new NotSupportedException(s) |> raise
     /// Converts Mock.With expressions to calls with expected results list
     let rec toCallResult = function
         | ForIntegerRangeLoop(v,a,b,y) -> [for i = eval a :?> int to eval b :?> int do yield! toCallResult y]
@@ -755,14 +754,14 @@ module private Reflection =
         let calls = toCallResult expr
         [for (x,mi,(arg,result)) in calls -> 
             if x.Type = abstractType then mi,(arg,result)
-            else raise <| NotSupportedException(expr.ToString())]
+            else sprintf "Expected call on abstract type %A, got %A" abstractType x.Type |> fun s -> new NotSupportedException(s) |> raise]
     /// Converts expression to corresponding event Add and Remove handlers
     let toHandlers abstractType = function
         | Call(None, mi, [Lambda(_,Call(Some(x),addHandler,_));
-                          Lambda(_,Call(Some(_),removeHandler,_));_]) 
-                          when x.Type = abstractType -> 
-            addHandler, removeHandler
-        | expr -> raise <| NotSupportedException(expr.ToString())
+                          Lambda(_,Call(Some(_),removeHandler,_));_]) ->
+            if x.Type = abstractType then addHandler, removeHandler
+            else sprintf "Expected call on abstract type %A, got %A" abstractType x.Type |> fun s -> new NotSupportedException(s) |> raise
+        | expr -> expr |> sprintf "Expected call expression: %A" |> fun s -> new NotSupportedException(s) |> raise
 
 open Reflection
 
