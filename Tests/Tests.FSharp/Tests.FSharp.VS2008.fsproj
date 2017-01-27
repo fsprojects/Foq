@@ -53,6 +53,7 @@
     <Compile Include="ValueTypeTests.fs" />
     <Compile Include="ReportedIssues.fs" />
     <Compile Include="AsTests.fs" />
+    <Compile Include="ComplexArgumentTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Foq\Foq.VS2008.fsproj">
