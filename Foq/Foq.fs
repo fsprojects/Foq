@@ -799,11 +799,21 @@ type Mock<'TAbstract when 'TAbstract : not struct>
     new () = Mock(MockMode.Default,[],[],None)
     new (?returnStrategy) = Mock(MockMode.Default,[],[],returnStrategy)
     new (mode,?returnStrategy) = Mock(mode,[],[],returnStrategy)
-    /// Specifies a method or property of the abstract type as a quotation
+    /// <summary>Specifies a method or property of the abstract type as a quotation</summary>
+    #if FSHARP4
+    /// <example>
+    /// <code>Mock&lt;IList&gt;().Setup(fun items -> items.Count).Returns(0)</code>
+    /// </example>
+    member this.Setup([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> 'TReturnValue>) =
+        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let call = toCallOf abstractType e
+        ResultBuilder<'TAbstract,'TReturnValue>(mode,otherTypes,call,calls,returnStrategy)
+    #else
     member this.Setup(f:'TAbstract -> Expr<'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let call = toCallOf abstractType (f default')
         ResultBuilder<'TAbstract,'TReturnValue>(mode,otherTypes,call,calls,returnStrategy)
+    #endif
     /// Specifies a method or property of the abstract type by name
     member this.SetupByName<'TReturnValue>(name) =
         let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
@@ -811,10 +821,17 @@ type Mock<'TAbstract when 'TAbstract : not struct>
         let args = [|for arg in mi.GetParameters() -> Any|] 
         ResultBuilder<'TAbstract,'TReturnValue>(mode,otherTypes,(mi,args),calls,returnStrategy)
     /// Specifies an event of the abstract type as a quotation
+    #if FSHARP4
+    member this.SetupEvent([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> 'TEvent>) =
+        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let handlers = toHandlers abstractType e
+        EventBuilder<'TAbstract,'TEvent>(mode,otherTypes,handlers,calls,returnStrategy)
+    #else
     member this.SetupEvent(f:'TAbstract -> Expr<'TEvent>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let handlers = toHandlers abstractType (f default')
         EventBuilder<'TAbstract,'TEvent>(mode,otherTypes,handlers,calls,returnStrategy)
+    #endif
     /// Specifies an event of the abstract type by name
     member this.SetupEventByName<'TEvent>(name) =
         let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
@@ -831,10 +848,17 @@ type Mock<'TAbstract when 'TAbstract : not struct>
             EventBuilder<'TAbstract,'TEvent>(mode,otherTypes,handlers,calls,returnStrategy)
         | None -> raise (System.ArgumentException("Event not found", "name"))
     /// Specifies an event of the abstract type as a quotation
+    #if FSHARP4
+    member this.SetupMethod([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> 'TArgs -> 'TReturnValue>) =
+        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let call = toCallOf abstractType e
+        ResultBuilder<'TAbstract,'TReturnValue>(mode,otherTypes,call,calls,returnStrategy)
+    #else
     member this.SetupMethod(f:'TAbstract -> Expr<'TArgs -> 'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let call = toCallOf abstractType (f default')
         ResultBuilder<'TAbstract,'TReturnValue>(mode,otherTypes,call,calls,returnStrategy)
+    #endif
     /// Mocks as another type 
     member this.As<'TOther when 'TOther : not struct> () =
         Mock<'TOther>(mode, abstractType::otherTypes, calls, returnStrategy)
@@ -848,20 +872,41 @@ type Mock<'TAbstract when 'TAbstract : not struct>
     static member Create(abstractType:Type, ?returnStrategy) = 
         mock(MockMode.Default, abstractType, [], [], [||], returnStrategy)
     /// Creates a mocked instance of the abstract type
+    #if FSHARP4
+    static member With([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> unit>, ?returnStrategy) =
+        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let calls = toCallResultOf typeof<'TAbstract> e
+        Mock<'TAbstract>(MockMode.Default, [], calls |> List.rev, returnStrategy).Create()
+    #else
     static member With(f:'TAbstract -> Expr<_>, ?returnStrategy) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResultOf typeof<'TAbstract> (f default')
         Mock<'TAbstract>(MockMode.Default, [], calls |> List.rev, returnStrategy).Create()
+    #endif
     /// Specifies a mock of a type with a given method
+    #if FSHARP4
+    static member Method([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> 'TArgs -> 'TReturnValue>) =
+        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let call = toCallOf typeof<'TAbstract> e
+        ReturnBuilder<'TAbstract,'TReturnValue>(call)
+    #else
     static member Method(f:'TAbstract -> Expr<'TArgs -> 'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let call = toCallOf typeof<'TAbstract> (f default')
         ReturnBuilder<'TAbstract,'TReturnValue>(call)
+    #endif
     /// Specifies a mock of a type with a given property
+    #if FSHARP4
+    static member Property([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> 'TReturnValue>) =
+        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let call = toCallOf typeof<'TAbstract> e
+        ReturnBuilder<'TAbstract,'TReturnValue>(call)
+    #else
     static member Property(f:'TAbstract -> Expr<'TReturnValue>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let call = toCallOf typeof<'TAbstract> (f default')
         ReturnBuilder<'TAbstract,'TReturnValue>(call)
+    #endif
 /// Generic builder for specifying method result
 and ReturnBuilder<'TAbstract,'TReturnValue when 'TAbstract : not struct> 
     internal (call) =
@@ -1020,7 +1065,14 @@ module private Format =
 
 type Mock with
     /// Verifies expected call count against instance member invocations on specified mock
+    #if FSHARP4 
+    static member Verify([<ReflectedDefinition(false)>] expr:Expr<_>, expectedTimes:Times) =
+        Mock.DoVerify(expr, expectedTimes)
+    #else
     static member Verify(expr:Expr, expectedTimes:Times) =
+        Mock.DoVerify(expr, expectedTimes)
+    #endif
+    static member internal DoVerify(expr:Expr, expectedTimes:Times) =
         let target,expectedMethod,expectedArgs = toCall expr
         let mock = target |> eval |> getMock
         let actualCalls = countInvocations mock expectedMethod expectedArgs
@@ -1029,7 +1081,14 @@ type Mock with
     /// Verifies expression was invoked at least once
     static member Verify(expr:Expr) = Mock.Verify(expr, atleastonce)
     /// Verifies expected expression call count on invocation
+    #if FSHARP4
+    static member Expect([<ReflectedDefinition(false)>] expr:Expr<_>, expectedTimes:Times) =
+        Mock.DoExpect(expr, expectedTimes)
+    #else
     static member Expect(expr:Expr, expectedTimes:Times) =
+        Mock.DoExpect(expr, expectedTimes)
+    #endif
+    static member internal DoExpect(expr:Expr, expectedTimes:Times) =
         let target,expectedMethod,expectedArgs = toCall expr
         let mock = target |> eval |> getMock
         let expect f =
@@ -1042,7 +1101,14 @@ type Mock with
             ) |> ignore
         mock.Verifiers.Add(Action(fun () -> expect (expectedTimes.Met)))
     // Verify call sequence in order
+    #if FSHARP4
+    static member VerifySequence([<ReflectedDefinition(false)>] expr:Expr<_>) =
+        Mock.DoVerifySequence(expr)
+    #else
     static member VerifySequence(expr:Expr) =
+        Mock.DoVerifySequence(expr)
+    #endif
+    static member internal DoVerifySequence(expr:Expr) =
         let calls = toCallResult expr
         let mocks = System.Collections.Generic.Dictionary()
         for target, expectedMethod,(expectedArgs,result) in calls do
@@ -1089,7 +1155,20 @@ module internal Expectations =
 
 type Mock<'TAbstract> with
     /// Verifies expected expression sequence
+    #if FSHARP4
+    static member ExpectSequence([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> _>) =
+        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let calls = toCallResultOf typeof<'TAbstract> e
+        let mockObject = mock(MockMode.Default, typeof<'TAbstract>, [], calls, [||], None) 
+        let mock = mockObject :?> IMockObject
+        let calls = calls |> List.map (fun (mi,(args,_)) -> mi,args)
+        setup mock calls
+        mockObject :?> 'TAbstract
+    #else
     static member ExpectSequence(f:'TAbstract -> Expr<_>) =
+        Mock.DoExpectSequence(f)
+    #endif
+    static member internal DoExpectSequence(f:'TAbstract -> Expr<_>) =
         let default' = Unchecked.defaultof<'TAbstract>
         let calls = toCallResultOf typeof<'TAbstract> (f default')
         let mockObject = mock(MockMode.Default, typeof<'TAbstract>, [], calls, [||], None) 
@@ -1122,12 +1201,12 @@ module Operators =
     /// Returns a mock of the required type
     let mock() : 'TAbstractType = Mock.Of<'TAbstractType>()
     /// Verifies the expression occurs the specified number of times
-    let verify expr times = Mock.Verify(expr, times)
+    let verify expr times = Mock.DoVerify(expr, times)
     /// Expects the expression occurs the specified number of times
-    let expect expr times = Mock.Expect(expr, times)
+    let expect expr times = Mock.DoExpect(expr, times)
     /// Verifies all expectations set on the specified mock object
     let verifyAll mock = Mock.VerifyAll mock
     /// Verifies an expression sequence has occured
-    let verifySeq expr = Mock.VerifySequence expr
+    let verifySeq expr = Mock.DoVerifySequence expr
     /// Expects the expression sequence to occur
-    let expectSeq expr = Mock.ExpectSequence expr
+    let expectSeq expr = Mock.DoExpectSequence expr
