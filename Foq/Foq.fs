@@ -117,7 +117,7 @@ module internal Emit =
                 emitArgLookup ()
                 atIndex ()
                 il.EmitCall(OpCodes.Call, typeof<obj>.GetMethod("Equals",[|typeof<obj>;typeof<obj>|]), null) 
-                il.Emit(OpCodes.Brfalse_S, unmatched)
+                il.Emit(OpCodes.Brfalse, unmatched)
             | ArgArray(args) ->
                 emitLdargBox ()
                 il.Emit(OpCodes.Ldlen)
@@ -141,7 +141,7 @@ module internal Emit =
                 let argType = mi.GetParameters().[argIndex].ParameterType
                 let invoke = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
                 il.Emit(OpCodes.Callvirt, invoke)
-                il.Emit(OpCodes.Brfalse_S, unmatched)
+                il.Emit(OpCodes.Brfalse, unmatched)
             | PredUntyped(f) ->
                 emitArgLookup ()
                 atIndex()
@@ -151,7 +151,7 @@ module internal Emit =
                 il.Emit(OpCodes.Box, argType)
                 let invoke = FSharpType.MakeFunctionType(typeof<obj>,typeof<bool>).GetMethod("Invoke")
                 il.Emit(OpCodes.Callvirt, invoke)
-                il.Emit(OpCodes.Brfalse_S, unmatched)
+                il.Emit(OpCodes.Brfalse, unmatched)
         
         if mi.IsGenericMethod then
             let concreteArgs = mi.GetGenericArguments()
@@ -164,7 +164,7 @@ module internal Emit =
                 il.Emit(OpCodes.Ldtoken, arg')
                 il.Emit(OpCodes.Call, typeFromHandle)
                 il.Emit(OpCodes.Ceq)
-                il.Emit(OpCodes.Brfalse_S, unmatched)
+                il.Emit(OpCodes.Brfalse, unmatched)
             )
         
         args |> Seq.iteri (emitArg None)
@@ -252,16 +252,37 @@ module internal Emit =
             let args =
                if FSharpType.IsTuple argsType then FSharpType.GetTupleElements(argsType)
                else [|argsType|]
-            // Load args converting out or byref args to value
-            for i = 0 to args.Length-1 do
-               il.Emit(OpCodes.Ldarg, i+1)
-               let pi = ps.[i]
-               if pi.IsOut || pi.ParameterType.IsByRef then
-                  il.Emit(OpCodes.Ldobj, args.[i])
+            let emitArgs () =
+               // Load args converting out or byref args to value
+               for i = 0 to args.Length-1 do
+                  il.Emit(OpCodes.Ldarg, i+1)
+                  let pi = ps.[i]
+                  if pi.IsOut || pi.ParameterType.IsByRef then
+                     il.Emit(OpCodes.Ldobj, args.[i])
+            let emitArray () =
+               il.Emit(OpCodes.Ldc_I4, args.Length)
+               il.Emit(OpCodes.Newarr, typeof<obj>)
+               for i = 0 to args.Length-1 do
+                  il.Emit(OpCodes.Dup)
+                  il.Emit(OpCodes.Ldc_I4, i)
+                  il.Emit(OpCodes.Ldarg, i+1)
+                  il.Emit(OpCodes.Box, ps.[i].ParameterType)
+                  il.Emit(OpCodes.Stelem_Ref)
             // Construct args tuple
             if FSharpType.IsTuple argsType then
-               let ci = FSharpType.MakeTupleType(args).GetConstructor(args)
-               il.Emit(OpCodes.Newobj, ci)
+               let tuple = FSharpType.MakeTupleType(args)
+               if args.Length < 8 then
+                  emitArgs ()
+                  let ci = tuple.GetConstructor(args)
+                  il.Emit(OpCodes.Newobj, ci)
+               else
+                  emitArray ()
+                  il.Emit(OpCodes.Ldtoken, tuple)
+                  let t = typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|])
+                  il.Emit(OpCodes.Call, t)
+                  let mi = typeof<FSharpValue>.GetMethod("MakeTuple")
+                  il.Emit(OpCodes.Call, mi)
+            else emitArgs ()
             // Function call
             let invoke = FSharpType.MakeFunctionType(argsType, returnType).GetMethod("Invoke")
             il.Emit(OpCodes.Callvirt, invoke)
