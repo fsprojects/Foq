@@ -57,18 +57,14 @@
   <PropertyGroup Condition="'$(VisualStudioVersion)' != '11.0'">
     <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
   </PropertyGroup>
-  <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />  <PropertyGroup>
-    <!-- <PostBuildEvent Condition=" '$(OS)' == 'Unix' ">cp "$(TargetDir)$(TargetName).dll" ..\..\..\Nuget\Lib\net40
-cp "$(TargetDir)$(TargetName).xml" ..\..\..\Nuget\Lib\net40</PostBuildEvent> -->
-    <PostBuildEvent Condition=" '$(OS)' != 'Unix' ">copy "$(TargetDir)$(TargetName).dll" ..\..\..\Nuget\Lib\net40
-copy "$(TargetDir)$(TargetName).xml" ..\..\..\Nuget\Lib\net40
-    </PostBuildEvent>
-  </PropertyGroup>
+  <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />  
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
   <Target Name="AfterBuild">
+    <Copy SourceFiles="$(TargetDir)$(TargetName).dll;$(TargetDir)$(TargetName).xml" 
+          DestinationFolder="$(ProjectDir)../Nuget/Lib/net40" />
   </Target>
   -->
 </Project>
