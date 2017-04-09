@@ -235,7 +235,7 @@ module internal Emit =
                 emitReturnValueLookup f
                 // Emit Invoke
                 il.Emit(OpCodes.Ldnull)
-                let invoke = typeof<FSharpFunc<unit,obj>>.GetMethod("Invoke")
+                let invoke = FSharpType.MakeFunctionType(typeof<unit>,returnType).GetMethod("Invoke")
                 il.Emit(OpCodes.Callvirt, invoke)
             if returnType <> mi.ReturnType then
                 emitReturnWithOutArgs emitGetValue returnType
