@@ -221,4 +221,19 @@ let ``an implemented interface method with 8 args``() =
             .Create()
     Assert.IsTrue(stub.Arity8Method "1" "2" "3" "4" (new DataTable()) [|"1"|] (fun _ -> true) (dict []))
 
+// Reported issue https://github.com/fsprojects/Foq/issues/4
+// Unable to reproduce
+
+type IFoo' =
+    abstract N : int64
+
+[<Test>]
+let ``a property returns a 64-bit integer value``() =
+    let mock1 = Mock<IFoo'>().Setup(fun foo -> <@ foo.N @>).Returns(7L).Create()
+    Assert.AreEqual(7L, mock1.N)
+
+[<Test>]
+let ``a property returns a 64-bit integer via a function``() =
+    let mock2 = Mock<IFoo'>().Setup(fun foo -> <@ foo.N @>).ReturnsFunc(fun () -> 7L).Create()
+    Assert.AreEqual(7L, mock2.N)
 
