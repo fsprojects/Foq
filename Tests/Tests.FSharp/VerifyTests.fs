@@ -198,22 +198,21 @@ let ``verify generic interface's method`` () =
 let ``verification failure exception messages are informative (no calls)`` () =
     let xs = Mock.Of<IList<int>>()
 
-    Assert.Throws(
-        typeof<exn>,
-        (fun () -> Mock.Verify (<@ xs.IndexOf(1) @>, exactly 2)),
-        "Expected exactly (=) 2 calls that match the expected pattern, but saw 0.\nExpected: IndexOf(1)")
-    |> ignore
+    let ex = Assert.Throws(typeof<exn>, fun () -> Mock.Verify (<@ xs.IndexOf(1) @>, exactly 2))
+    Assert.AreEqual(
+        "Expected exactly (=) 2 calls that match the expected pattern, but saw 0.\nExpected: IndexOf(1)",
+        ex.Message)
 
 [<Test>]
 let ``verification failure exception messages are informative (one call)`` () =
     let xs = Mock.Of<IList<int>>()
-    xs.IndexOf(1) |> ignore
+    xs.IndexOf(90) |> ignore
+    xs.IndexOf(25) |> ignore
 
-    Assert.Throws(
-        typeof<exn>,
-        (fun () -> Mock.Verify (<@ xs.IndexOf(1) @>, exactly 2)),
-        "Expected exactly (=) 2 calls that match the expected pattern, but saw 1.\nExpected: IndexOf(1)\nActual:\n1. IndexOf(1)")
-    |> ignore
+    let ex = Assert.Throws(typeof<exn>, fun () -> Mock.Verify (<@ xs.IndexOf(90) @>, exactly 2))
+    Assert.AreEqual(
+        "Expected exactly (=) 2 calls that match the expected pattern, but saw 1.\nExpected: IndexOf(90)\nActual:\n1. IndexOf(90)\n2. IndexOf(25)",
+        ex.Message)
 
 type IArrayConsumer =
     abstract ConsumeArray : int[] -> bool

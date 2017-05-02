@@ -1097,6 +1097,7 @@ type Mock with
         if not <| expectedTimes.Met(actualCalls) then
             let invocations =
                 mock.Invocations
+                |> List.rev
                 |> List.mapi (fun index invocation ->
                     sprintf "%d. %s" (index + 1) (invoke(invocation.Method, invocation.Args))
                     )
