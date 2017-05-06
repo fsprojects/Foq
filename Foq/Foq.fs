@@ -982,6 +982,11 @@ type internal ExpectedTimes =
 
 /// Specifies valid invocation count
 type Times internal (expected:ExpectedTimes) =     
+    override __.ToString() =
+        match expected with
+        | Exactly num -> sprintf "exactly (=) %d" num
+        | AtLeast num -> sprintf "at least (>=) %d" num
+        | AtMost num -> sprintf "at most (<=) %d" num
     member internal times.Met(actual) =
         match expected with
         | Exactly expected -> actual = expected
@@ -1029,10 +1034,13 @@ module internal Verification =
         a.GetParameters().Length = b.GetParameters().Length &&
         paramTypesMatch a b
     /// Returns true if arguments match
-    let rec argsMatch argType expectedArg (actualValue:obj) =
+    let rec argsMatch (argType:Type) expectedArg (actualValue:obj) =
         match expectedArg with
         | Any -> true
-        | Arg(expected) -> obj.Equals(expected,actualValue)
+        | Arg(expected) ->
+            if argType.IsArray
+            then expected = actualValue
+            else obj.Equals(expected,actualValue)
         | ArgArray(expected) ->
             Array.zip expected (actualValue :?> obj[])
             |> Array.forall (fun (arg,value) -> argsMatch typeof<obj> arg value)
@@ -1062,16 +1070,16 @@ open Verification
 
 [<AutoOpen>]
 module private Format =
-    let invoke (mi:MethodBase,args:obj seq) =
+    let invoke (mi:MethodBase, args:obj seq) =
         let args = args |> Seq.map (sprintf "%O")
-        mi.Name + "(" + (String.concat "," args) + ")"
-    let expected (mi:MethodBase,args:Arg[]) =
+        mi.Name + "(" + (String.concat ", " args) + ")"
+    let expected (mi:MethodBase, args:Arg[]) =
         let args = args |> Seq.map (function Arg x -> x | _ -> box "_") 
         invoke (mi, args)
-    let unexpected (expectedMethod,expectedArgs,invocation:Invocation) =
+    let unexpected (expectedMethod, expectedArgs, invocation:Invocation) =
         "Unexpected member invocation\r\n" +
         "Expected: " + expected(expectedMethod,expectedArgs) + "\r\n" +
-        "Actual: " + invoke(invocation.Method,invocation.Args)
+        "Actual:   " + invoke(invocation.Method,invocation.Args)
 
 type Mock with
     /// Verifies expected call count against instance member invocations on specified mock
@@ -1086,8 +1094,21 @@ type Mock with
         let target,expectedMethod,expectedArgs = toCall expr
         let mock = target |> eval |> getMock
         let actualCalls = countInvocations mock expectedMethod expectedArgs
-        if not <| expectedTimes.Met(actualCalls) then 
-            failwith <| expected(expectedMethod,expectedArgs)
+        if not <| expectedTimes.Met(actualCalls) then
+            let invocations =
+                mock.Invocations
+                |> List.rev
+                |> List.mapi (fun index invocation ->
+                    sprintf "%d. %s" (index + 1) (invoke(invocation.Method, invocation.Args))
+                    )
+                |> String.concat "\n"
+
+            let actual =
+                if mock.Invocations.Length > 0
+                then sprintf "\nActual:\n%s" invocations
+                else ""
+
+            failwithf "Expected %O calls that match the expected pattern, but saw %d.\nExpected: %s%s" expectedTimes actualCalls (expected(expectedMethod, expectedArgs)) actual
     /// Verifies expression was invoked at least once
     static member Verify(expr:Expr) = Mock.Verify(expr, atleastonce)
     /// Verifies expected expression call count on invocation
