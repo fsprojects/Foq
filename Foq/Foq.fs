@@ -665,8 +665,13 @@ module private QuotationEvaluation =
             match t.IsValueType with
             | true -> Activator.CreateInstance(t)
             | false -> Convert.ChangeType(null, t)
-        | arg -> arg.ToString() |> sprintf "Unsupported expression: %A" |> fun s -> new NotSupportedException(s) |> raise
+        | arg -> raise <| NotSupportedException(sprintf "Unsupported expression: %A" arg)
     and evalAll env args = [|for arg in args -> eval env arg|]
+
+    let unwrapLambda =
+        function
+        | Lambda(_, e) -> e
+        | e -> raise <| NotSupportedException(sprintf "Expected a lambda expression, got: %A" e)
 
 module Eval =
 #if POWERPACK // F# PowerPack dependency
@@ -724,7 +729,7 @@ module private Reflection =
                 | Application (inner, value) -> unwrap (value :: values) inner  // Normal application
                 | Lambda (_, body) -> unwrap values body
                 | Call (Some expr, info, _) -> (expr, info, toArgs' values) 
-                | _ -> quote |> sprintf "Expected function application: %A" |> fun s -> new NotSupportedException(s) |> raise
+                | _ -> raise <| NotSupportedException(sprintf "Expected function application: %A" quote)
             unwrap []
         /// Unwrap standard quotation of member value
         let unwrapStandard quote = 
@@ -739,7 +744,7 @@ module private Reflection =
                 x, pi.GetGetMethod(), toArgs (pi.GetIndexParameters()) args
             | PropertySet(Some(x), pi, args, value) -> 
                 x, pi.GetSetMethod(), toArgs [yield! pi.GetIndexParameters();yield null] [yield! args;yield value]
-            | expr -> expr |> sprintf "Expected standard function application: %A" |> fun s -> new NotSupportedException(s) |> raise
+            | expr -> raise <| NotSupportedException(sprintf "Expected standard function application: %A" expr)
         // Handle applications of functions and standard functions
         match quote with
         | Application (_, _) -> unwrapApplication quote
@@ -748,7 +753,7 @@ module private Reflection =
     let toCallOf abstractType expr =
         match toCall expr with
         | x, mi, args when x.Type = abstractType -> mi, args
-        | x, _, _ -> sprintf "Expected call on abstract type %A, got %A" abstractType x.Type |> fun s -> new NotSupportedException(s) |> raise
+        | x, _, _ -> raise <| NotSupportedException(sprintf "Expected call on abstract type %A, got %A" abstractType x.Type)
     /// Converts Mock.With expressions to calls with expected results list
     let rec toCallResult = function
         | ForIntegerRangeLoop(v,a,b,y) -> [for i = eval a :?> int to eval b :?> int do yield! toCallResult y]
@@ -774,15 +779,17 @@ module private Reflection =
     let rec toCallResultOf abstractType expr =
         let calls = toCallResult expr
         [for (x,mi,(arg,result)) in calls -> 
-            if x.Type = abstractType then mi,(arg,result)
-            else sprintf "Expected call on abstract type %A, got %A" abstractType x.Type |> fun s -> new NotSupportedException(s) |> raise]
+            if x.Type = abstractType
+            then mi,(arg,result)
+            else raise <| NotSupportedException(sprintf "Expected call on abstract type %A, got %A" abstractType x.Type)]
     /// Converts expression to corresponding event Add and Remove handlers
     let toHandlers abstractType = function
         | Call(None, mi, [Lambda(_,Call(Some(x),addHandler,_));
                           Lambda(_,Call(Some(_),removeHandler,_));_]) ->
-            if x.Type = abstractType then addHandler, removeHandler
-            else sprintf "Expected call on abstract type %A, got %A" abstractType x.Type |> fun s -> new NotSupportedException(s) |> raise
-        | expr -> expr |> sprintf "Expected call expression: %A" |> fun s -> new NotSupportedException(s) |> raise
+            if x.Type = abstractType
+            then addHandler, removeHandler
+            else raise <| NotSupportedException(sprintf "Expected call on abstract type %A, got %A" abstractType x.Type)
+        | expr -> raise <| NotSupportedException(sprintf "Expected call expression: %A" expr)
 
 open Reflection
 
@@ -808,7 +815,7 @@ type Mock<'TAbstract when 'TAbstract : not struct>
     /// <code>Mock&lt;IList&gt;().Setup(fun items -> items.Count).Returns(0)</code>
     /// </example>
     member this.Setup([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> 'TReturnValue>) =
-        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let e = unwrapLambda f
         let call = toCallOf abstractType e
         ResultBuilder<'TAbstract,'TReturnValue>(mode,otherTypes,call,calls,returnStrategy)
     #else
@@ -826,7 +833,7 @@ type Mock<'TAbstract when 'TAbstract : not struct>
     /// Specifies an event of the abstract type as a quotation
     #if FSHARP4
     member this.SetupEvent([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> 'TEvent>) =
-        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let e = unwrapLambda f
         let handlers = toHandlers abstractType e
         EventBuilder<'TAbstract,'TEvent>(mode,otherTypes,handlers,calls,returnStrategy)
     #else
@@ -853,7 +860,7 @@ type Mock<'TAbstract when 'TAbstract : not struct>
     /// Specifies an event of the abstract type as a quotation
     #if FSHARP4
     member this.SetupMethod([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> 'TArgs -> 'TReturnValue>) =
-        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let e = unwrapLambda f
         let call = toCallOf abstractType e
         ResultBuilder<'TAbstract,'TReturnValue>(mode,otherTypes,call,calls,returnStrategy)
     #else
@@ -877,7 +884,7 @@ type Mock<'TAbstract when 'TAbstract : not struct>
     /// Creates a mocked instance of the abstract type
     #if FSHARP4
     static member With([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> unit>, ?returnStrategy) =
-        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let e = unwrapLambda f
         let calls = toCallResultOf typeof<'TAbstract> e
         Mock<'TAbstract>(MockMode.Default, [], calls |> List.rev, returnStrategy).Create()
     #else
@@ -889,7 +896,7 @@ type Mock<'TAbstract when 'TAbstract : not struct>
     /// Specifies a mock of a type with a given method
     #if FSHARP4
     static member Method([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> 'TArgs -> 'TReturnValue>) =
-        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let e = unwrapLambda f
         let call = toCallOf typeof<'TAbstract> e
         ReturnBuilder<'TAbstract,'TReturnValue>(call)
     #else
@@ -901,7 +908,7 @@ type Mock<'TAbstract when 'TAbstract : not struct>
     /// Specifies a mock of a type with a given property
     #if FSHARP4
     static member Property([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> 'TReturnValue>) =
-        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let e = unwrapLambda f
         let call = toCallOf typeof<'TAbstract> e
         ReturnBuilder<'TAbstract,'TReturnValue>(call)
     #else
@@ -975,6 +982,11 @@ type internal ExpectedTimes =
 
 /// Specifies valid invocation count
 type Times internal (expected:ExpectedTimes) =     
+    override __.ToString() =
+        match expected with
+        | Exactly num -> sprintf "exactly (=) %d" num
+        | AtLeast num -> sprintf "at least (>=) %d" num
+        | AtMost num -> sprintf "at most (<=) %d" num
     member internal times.Met(actual) =
         match expected with
         | Exactly expected -> actual = expected
@@ -1022,10 +1034,13 @@ module internal Verification =
         a.GetParameters().Length = b.GetParameters().Length &&
         paramTypesMatch a b
     /// Returns true if arguments match
-    let rec argsMatch argType expectedArg (actualValue:obj) =
+    let rec argsMatch (argType:Type) expectedArg (actualValue:obj) =
         match expectedArg with
         | Any -> true
-        | Arg(expected) -> obj.Equals(expected,actualValue)
+        | Arg(expected) ->
+            if argType.IsArray
+            then expected = actualValue
+            else obj.Equals(expected,actualValue)
         | ArgArray(expected) ->
             Array.zip expected (actualValue :?> obj[])
             |> Array.forall (fun (arg,value) -> argsMatch typeof<obj> arg value)
@@ -1033,7 +1048,7 @@ module internal Verification =
         | Pred(p) ->
             let f = FSharpType.MakeFunctionType(argType,typeof<bool>).GetMethod("Invoke")
             f.Invoke(p,[|actualValue|]) :?> bool
-        | PredUntyped(p) -> raise <| NotSupportedException()
+        | PredUntyped(p) -> raise <| NotSupportedException("Predicate arguments cannot be used as expected arguments")
     let invokeMatch (expectedMethod:MethodBase) (expectedArgs:Arg[]) (actual:Invocation) =
         let ps = expectedMethod.GetParameters()
         methodsMatch expectedMethod actual.Method &&
@@ -1055,16 +1070,16 @@ open Verification
 
 [<AutoOpen>]
 module private Format =
-    let invoke (mi:MethodBase,args:obj seq) =
+    let invoke (mi:MethodBase, args:obj seq) =
         let args = args |> Seq.map (sprintf "%O")
-        mi.Name + "(" + (String.concat "," args) + ")"
-    let expected (mi:MethodBase,args:Arg[]) =
+        mi.Name + "(" + (String.concat ", " args) + ")"
+    let expected (mi:MethodBase, args:Arg[]) =
         let args = args |> Seq.map (function Arg x -> x | _ -> box "_") 
         invoke (mi, args)
-    let unexpected (expectedMethod,expectedArgs,invocation:Invocation) =
+    let unexpected (expectedMethod, expectedArgs, invocation:Invocation) =
         "Unexpected member invocation\r\n" +
         "Expected: " + expected(expectedMethod,expectedArgs) + "\r\n" +
-        "Actual: " + invoke(invocation.Method,invocation.Args)
+        "Actual:   " + invoke(invocation.Method,invocation.Args)
 
 type Mock with
     /// Verifies expected call count against instance member invocations on specified mock
@@ -1079,8 +1094,21 @@ type Mock with
         let target,expectedMethod,expectedArgs = toCall expr
         let mock = target |> eval |> getMock
         let actualCalls = countInvocations mock expectedMethod expectedArgs
-        if not <| expectedTimes.Met(actualCalls) then 
-            failwith <| expected(expectedMethod,expectedArgs)
+        if not <| expectedTimes.Met(actualCalls) then
+            let invocations =
+                mock.Invocations
+                |> List.rev
+                |> List.mapi (fun index invocation ->
+                    sprintf "%d. %s" (index + 1) (invoke(invocation.Method, invocation.Args))
+                    )
+                |> String.concat "\n"
+
+            let actual =
+                if mock.Invocations.Length > 0
+                then sprintf "\nActual:\n%s" invocations
+                else ""
+
+            failwithf "Expected %O calls that match the expected pattern, but saw %d.\nExpected: %s%s" expectedTimes actualCalls (expected(expectedMethod, expectedArgs)) actual
     /// Verifies expression was invoked at least once
     static member Verify(expr:Expr) = Mock.Verify(expr, atleastonce)
     /// Verifies expected expression call count on invocation
@@ -1160,7 +1188,7 @@ type Mock<'TAbstract> with
     /// Verifies expected expression sequence
     #if FSHARP4
     static member ExpectSequence([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> _>) =
-        let e = match f with Lambda(_, e) -> e | _ -> raise <| NotSupportedException()
+        let e = unwrapLambda f
         let calls = toCallResultOf typeof<'TAbstract> e
         let mockObject = mock(MockMode.Default, typeof<'TAbstract>, [], calls, [||], None) 
         let mock = mockObject :?> IMockObject

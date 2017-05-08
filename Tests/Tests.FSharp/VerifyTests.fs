@@ -193,3 +193,32 @@ let ``verify generic interface's method`` () =
     let foo = Mock<IFoo<int>>().Setup(fun x -> <@ x.Bar(1) @>).Returns(true).Create()
     foo.Bar(1) |> ignore
     verify <@ foo.Bar(1) @> once
+
+[<Test>]
+let ``verification failure exception messages are informative (no calls)`` () =
+    let xs = Mock.Of<IList<int>>()
+
+    let ex = Assert.Throws(typeof<exn>, fun () -> Mock.Verify (<@ xs.IndexOf(1) @>, exactly 2))
+    Assert.AreEqual(
+        "Expected exactly (=) 2 calls that match the expected pattern, but saw 0.\nExpected: IndexOf(1)",
+        ex.Message)
+
+[<Test>]
+let ``verification failure exception messages are informative (one call)`` () =
+    let xs = Mock.Of<IList<int>>()
+    xs.IndexOf(90) |> ignore
+    xs.IndexOf(25) |> ignore
+
+    let ex = Assert.Throws(typeof<exn>, fun () -> Mock.Verify (<@ xs.IndexOf(90) @>, exactly 2))
+    Assert.AreEqual(
+        "Expected exactly (=) 2 calls that match the expected pattern, but saw 1.\nExpected: IndexOf(90)\nActual:\n1. IndexOf(90)\n2. IndexOf(25)",
+        ex.Message)
+
+type IArrayConsumer =
+    abstract ConsumeArray : int[] -> bool
+
+[<Test>]
+let ``structural equality is used for array arguments`` () =
+    let xs = Mock.Of<IArrayConsumer>()
+    xs.ConsumeArray([|15|]) |> ignore
+    Mock.Verify <@ xs.ConsumeArray([|15|]) @>
