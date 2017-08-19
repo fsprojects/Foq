@@ -368,7 +368,7 @@ module internal Emit =
         let name = "Foq.Dynamic"
         /// Builder for assembly
         let assemblyBuilder =
-            AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(name),AssemblyBuilderAccess.Run)
+            AssemblyBuilder.DefineDynamicAssembly(AssemblyName(name),AssemblyBuilderAccess.Run)
         /// Builder for module
         assemblyBuilder.DefineDynamicModule(name+".dll")
         )
