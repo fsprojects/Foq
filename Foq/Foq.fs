@@ -525,7 +525,8 @@ module internal Emit =
             let attr = BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
             let allMethods = abstractType.GetMethods(attr)
             let hasMethod mi = allMethods |> Seq.exists (matches mi)
-            yield! allMethods |> Seq.filter (fun mi -> not mi.IsFinal)
+            let isEqualsMethod (mi : MethodInfo) = mi.Name = "Equals" && (let ps = mi.GetParameters() in ps.Length = 1 && ps.[0].ParameterType = typeof<obj>)
+            yield! allMethods |> Seq.filter (fun mi -> not mi.IsFinal && not (isEqualsMethod mi))
             let interfaces = abstractType.GetInterfaces()
             for interfaceType in interfaces do
                 yield! interfaceType.GetMethods() |> Seq.filter (not << hasMethod)
