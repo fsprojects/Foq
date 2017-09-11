@@ -10,6 +10,12 @@ type MyAbstractBaseClass() =
     abstract MyProperty : int
 
 [<Test>]
+let ``a mocked instance of an abstract base class is equal to itself`` () =
+    let mock = Mock<MyAbstractBaseClass>().Create()
+
+    Assert.IsTrue(mock.Equals(mock))
+
+[<Test>]
 let ``can mock an abstract base class method`` () =
     let mock = 
         Mock<MyAbstractBaseClass>
