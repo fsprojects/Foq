@@ -1185,7 +1185,7 @@ module internal Expectations =
                 failwith <| "Missing expected member invocation: " + expected(mi, args)
         mock.Verifiers.Add(Action(verify))
 
-type Mock<'TAbstract> with
+type Mock<'TAbstract when 'TAbstract : not struct> with
     /// Verifies expected expression sequence
     #if FSHARP4
     static member ExpectSequence([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> _>) =

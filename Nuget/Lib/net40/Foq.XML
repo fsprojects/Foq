@@ -2,41 +2,6 @@
 <doc>
 <assembly><name>Foq</name></assembly>
 <members>
-<member name="T:Foq.CallsAttribute">
-<summary>
- Calls attribute
-</summary>
-</member>
-<member name="M:Foq.EventBuilder`2.Publishes(`1)">
-<summary>
- Specifies the published event value
-</summary>
-</member>
-<member name="T:Foq.EventBuilder`2">
-<summary>
- Generic builder for specifying event values
-</summary>
-</member>
-<member name="T:Foq.IMockObject">
-<summary>
- Mock object interface for verification
-</summary>
-</member>
-<member name="T:Foq.IMockRecorder">
-<summary>
- Mock recorder interface
-</summary>
-</member>
-<member name="T:Foq.Invocation">
-<summary>
- Member invocation record
-</summary>
-</member>
-<member name="T:Foq.Invocations">
-<summary>
- List of invocations
-</summary>
-</member>
 <member name="M:Foq.It.IsAny``1">
 <summary>
  Marks argument as matching any value
@@ -47,124 +12,19 @@
  Marks argument as matching specific values
 </summary>
 </member>
-<member name="M:Foq.Mock.VerifyAll(System.Object)">
+<member name="T:Foq.Times">
 <summary>
- Verifies all expectations
+ Specifies valid invocation count
 </summary>
 </member>
-<member name="M:Foq.Mock.Verify(Microsoft.FSharp.Quotations.FSharpExpr)">
+<member name="M:Foq.EventBuilder`2.Publishes(`1)">
 <summary>
- Verifies expression was invoked at least once
+ Specifies the published event value
 </summary>
 </member>
-<member name="M:Foq.Mock.Verify(Microsoft.FSharp.Quotations.FSharpExpr,Foq.Times)">
+<member name="T:Foq.EventBuilder`2">
 <summary>
- Verifies expected call count against instance member invocations on specified mock
-</summary>
-</member>
-<member name="M:Foq.Mock.Of``1(Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
-<summary>
- Creates a mocked instance of the abstract type
-</summary>
-</member>
-<member name="M:Foq.Mock.Expect(Microsoft.FSharp.Quotations.FSharpExpr,Foq.Times)">
-<summary>
- Verifies expected expression call count on invocation
-</summary>
-</member>
-<member name="T:Foq.MockMode">
-<summary>
- Mock mode
-</summary>
-</member>
-<member name="F:Foq.Mock`1.abstractType">
-<summary>
- Abstract type
-</summary>
-</member>
-<member name="M:Foq.Mock`1.With``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}},Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
-<summary>
- Creates a mocked instance of the abstract type
-</summary>
-</member>
-<member name="M:Foq.Mock`1.SetupMethod``2(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{Microsoft.FSharp.Core.FSharpFunc{``0,``1}}})">
-<summary>
- Specifies an event of the abstract type as a quotation
-</summary>
-</member>
-<member name="M:Foq.Mock`1.SetupEventByName``1(System.String)">
-<summary>
- Specifies an event of the abstract type by name
-</summary>
-</member>
-<member name="M:Foq.Mock`1.SetupEvent``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
-<summary>
- Specifies an event of the abstract type as a quotation
-</summary>
-</member>
-<member name="M:Foq.Mock`1.SetupByName``1(System.String)">
-<summary>
- Specifies a method or property of the abstract type by name
-</summary>
-</member>
-<member name="M:Foq.Mock`1.Setup``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
-<summary>
- Specifies a method or property of the abstract type as a quotation
-</summary>
-</member>
-<member name="M:Foq.Mock`1.Property``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
-<summary>
- Specifies a mock of a type with a given property
-</summary>
-</member>
-<member name="M:Foq.Mock`1.Method``2(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{Microsoft.FSharp.Core.FSharpFunc{``0,``1}}})">
-<summary>
- Specifies a mock of a type with a given method
-</summary>
-</member>
-<member name="M:Foq.Mock`1.ExpectSequence``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
-<summary>
- Verifies expected expression sequence
-</summary>
-</member>
-<member name="M:Foq.Mock`1.Create(System.Type,Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
-<summary>
- Creates a boxed instance of the abstract type
-</summary>
-</member>
-<member name="M:Foq.Mock`1.Create(System.Object[])">
-<summary>
- Creates a mocked instance of a class using the specified constructor arguments
-</summary>
-</member>
-<member name="M:Foq.Mock`1.Create">
-<summary>
- Creates a mocked instance of the abstract type
-</summary>
-</member>
-<member name="M:Foq.Mock`1.As``1">
-<summary>
- Mocks as another type 
-</summary>
-</member>
-<member name="M:Foq.Mock`1.#ctor">
-<summary>
- Constructs mock builder
-</summary>
-</member>
-<member name="T:Foq.Mock`1">
-<summary>
- Generic mock type over abstract types and interfaces
-</summary>
-</member>
-<member name="T:Foq.PredicateAttribute">
-<summary>
- Predicate attribute
-</summary>
-</member>
-<member name="T:Foq.RaisesAttribute">
-<summary>
- Raises attribute
+ Generic builder for specifying event values
 </summary>
 </member>
 <member name="M:Foq.ResultBuilder`2.ReturnsFunc(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,`1})">
@@ -212,14 +72,142 @@
  Generic builder for specifying method result
 </summary>
 </member>
+<member name="F:Foq.Mock`1.abstractType">
+<summary>
+ Abstract type
+</summary>
+</member>
+<member name="M:Foq.Mock`1.With``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}},Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
+<summary>
+ Creates a mocked instance of the abstract type
+</summary>
+</member>
+<member name="M:Foq.Mock`1.SetupMethod``2(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{Microsoft.FSharp.Core.FSharpFunc{``0,``1}}})">
+<summary>
+ Specifies an event of the abstract type as a quotation
+</summary>
+</member>
+<member name="M:Foq.Mock`1.SetupEventByName``1(System.String)">
+<summary>
+ Specifies an event of the abstract type by name
+</summary>
+</member>
+<member name="M:Foq.Mock`1.SetupEvent``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
+<summary>
+ Specifies an event of the abstract type as a quotation
+</summary>
+</member>
+<member name="M:Foq.Mock`1.SetupByName``1(System.String)">
+<summary>
+ Specifies a method or property of the abstract type by name
+</summary>
+</member>
+<member name="M:Foq.Mock`1.Setup``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
+ <summary>Specifies a method or property of the abstract type as a quotation</summary>
+</member>
+<member name="M:Foq.Mock`1.Property``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
+<summary>
+ Specifies a mock of a type with a given property
+</summary>
+</member>
+<member name="M:Foq.Mock`1.Method``2(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{Microsoft.FSharp.Core.FSharpFunc{``0,``1}}})">
+<summary>
+ Specifies a mock of a type with a given method
+</summary>
+</member>
+<member name="M:Foq.Mock`1.ExpectSequence``1(Microsoft.FSharp.Core.FSharpFunc{`0,Microsoft.FSharp.Quotations.FSharpExpr{``0}})">
+<summary>
+ Verifies expected expression sequence
+</summary>
+</member>
+<member name="M:Foq.Mock`1.Create(System.Type,Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
+<summary>
+ Creates a boxed instance of the abstract type
+</summary>
+</member>
+<member name="M:Foq.Mock`1.Create(System.Object[])">
+<summary>
+ Creates a mocked instance of a class using the specified constructor arguments
+</summary>
+</member>
+<member name="M:Foq.Mock`1.Create">
+<summary>
+ Creates a mocked instance of the abstract type
+</summary>
+</member>
+<member name="M:Foq.Mock`1.As``1">
+<summary>
+ Mocks as another type 
+</summary>
+</member>
+<member name="M:Foq.Mock`1.#ctor">
+<summary>
+ Constructs mock builder
+</summary>
+</member>
+<member name="T:Foq.Mock`1">
+<summary>
+ Generic mock type over abstract types and interfaces
+</summary>
+</member>
+<member name="M:Foq.Mock.VerifyAll(System.Object)">
+<summary>
+ Verifies all expectations
+</summary>
+</member>
+<member name="M:Foq.Mock.Verify(Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Verifies expression was invoked at least once
+</summary>
+</member>
+<member name="M:Foq.Mock.Verify(Microsoft.FSharp.Quotations.FSharpExpr,Foq.Times)">
+<summary>
+ Verifies expected call count against instance member invocations on specified mock
+</summary>
+</member>
+<member name="M:Foq.Mock.Of``1(Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{System.Type,System.Object}})">
+<summary>
+ Creates a mocked instance of the abstract type
+</summary>
+</member>
+<member name="M:Foq.Mock.Expect(Microsoft.FSharp.Quotations.FSharpExpr,Foq.Times)">
+<summary>
+ Verifies expected expression call count on invocation
+</summary>
+</member>
+<member name="T:Foq.RaisesAttribute">
+<summary>
+ Raises attribute
+</summary>
+</member>
+<member name="T:Foq.CallsAttribute">
+<summary>
+ Calls attribute
+</summary>
+</member>
 <member name="T:Foq.ReturnsAttribute">
 <summary>
  Returns attribute
 </summary>
 </member>
-<member name="T:Foq.Times">
+<member name="T:Foq.PredicateAttribute">
 <summary>
- Specifies valid invocation count
+ Predicate attribute
+</summary>
+</member>
+<member name="T:Foq.WildcardAttribute">
+<summary>
+ Wildcard attribute
+</summary>
+</member>
+<member name="T:Foq.MockMode">
+<summary>
+ Mock mode
+</summary>
+</member>
+<member name="T:Foq.IMockRecorder">
+<summary>
+ Mock recorder interface
 </summary>
 </member>
 <member name="T:Foq.Verifiers">
@@ -227,9 +215,149 @@
  List of verifiers
 </summary>
 </member>
-<member name="T:Foq.WildcardAttribute">
+<member name="T:Foq.Invocations">
 <summary>
- Wildcard attribute
+ List of invocations
+</summary>
+</member>
+<member name="T:Foq.Invocation">
+<summary>
+ Member invocation record
+</summary>
+</member>
+<member name="T:Foq.IMockObject">
+<summary>
+ Mock object interface for verification
+</summary>
+</member>
+<member name="M:Foq.Operators.expectSeq``2(Microsoft.FSharp.Core.FSharpFunc{``0,Microsoft.FSharp.Quotations.FSharpExpr{``1}})">
+<summary>
+ Expects the expression sequence to occur
+</summary>
+</member>
+<member name="M:Foq.Operators.verifySeq(Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Verifies an expression sequence has occured
+</summary>
+</member>
+<member name="M:Foq.Operators.verifyAll``1(``0)">
+<summary>
+ Verifies all expectations set on the specified mock object
+</summary>
+</member>
+<member name="M:Foq.Operators.expect(Microsoft.FSharp.Quotations.FSharpExpr,Foq.Times)">
+<summary>
+ Expects the expression occurs the specified number of times
+</summary>
+</member>
+<member name="M:Foq.Operators.verify(Microsoft.FSharp.Quotations.FSharpExpr,Foq.Times)">
+<summary>
+ Verifies the expression occurs the specified number of times
+</summary>
+</member>
+<member name="M:Foq.Operators.mock``1">
+<summary>
+ Returns a mock of the required type
+</summary>
+</member>
+<member name="M:Foq.Operators.op_EqualsEqualsGreater``1(``0,System.Exception)">
+<summary>
+ Signifies source expression raises specified exception
+</summary>
+</member>
+<member name="M:Foq.Operators.op_MinusMinusMinusGreater``1(``0,Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,``0})">
+<summary>
+ Signifies source expression returns specified value
+</summary>
+</member>
+<member name="M:Foq.Operators.op_MinusMinusGreater``1(``0,``0)">
+<summary>
+ Signifies source expression returns specified value
+</summary>
+</member>
+<member name="M:Foq.ItModule.is``1(Microsoft.FSharp.Core.FSharpFunc{``0,System.Boolean})">
+<summary>
+ Marks argument as matching specific values
+</summary>
+</member>
+<member name="M:Foq.ItModule.any``1">
+<summary>
+ Marks argument as matching any value
+</summary>
+</member>
+<member name="M:Foq.Verification.countInvocations(Foq.IMockObject,System.Reflection.MethodBase,Foq.Emit.Arg[])">
+<summary>
+ Returns invocation count matching specificed expression
+</summary>
+</member>
+<member name="M:Foq.Verification.argsMatch(System.Type,Foq.Emit.Arg,System.Object)">
+<summary>
+ Returns true if arguments match
+</summary>
+</member>
+<member name="M:Foq.Verification.methodsMatch(System.Reflection.MethodBase,System.Reflection.MethodBase)">
+<summary>
+ Return true if methods match
+</summary>
+</member>
+<member name="M:Foq.Verification.paramTypesMatch(System.Reflection.MethodBase,System.Reflection.MethodBase)">
+<summary>
+ Returns true if method parameter types match
+</summary>
+</member>
+<member name="M:Foq.Reflection.toHandlers(System.Type,Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Converts expression to corresponding event Add and Remove handlers
+</summary>
+</member>
+<member name="M:Foq.Reflection.toCallResultOf(System.Type,Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Converts Mock.With expressions to call/result list checking expected type
+</summary>
+</member>
+<member name="M:Foq.Reflection.toCallResult(Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Converts Mock.With expressions to calls with expected results list
+</summary>
+</member>
+<member name="M:Foq.Reflection.toCallOf(System.Type,Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Converts expression to call checking expected type
+</summary>
+</member>
+<member name="M:Foq.Reflection.toCall(Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Converts member invocation expression to call information
+</summary>
+</member>
+<member name="M:Foq.Reflection.|MethodCall|_|(Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Active pattern matches method call expressions
+</summary>
+</member>
+<member name="M:Foq.Reflection.toArgs``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``1})">
+<summary>
+ Converts parameters to arguments
+</summary>
+</member>
+<member name="M:Foq.Reflection.toArg(System.Reflection.ParameterInfo,Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Converts parameter to arguments
+</summary>
+</member>
+<member name="M:Foq.Reflection.|AttributedArg|_|(Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Matches attributed calls
+</summary>
+</member>
+<member name="M:Foq.Reflection.hasAttribute(System.Type,System.Reflection.MethodInfo)">
+<summary>
+ Returns true if method has specified attribute
+</summary>
+</member>
+<member name="M:Foq.QuotationEvaluation.eval(Microsoft.FSharp.Collections.FSharpList{System.Tuple{System.String,System.Object}},Microsoft.FSharp.Quotations.FSharpExpr)">
+<summary>
+ Evaluates specified quotation
 </summary>
 </member>
 <member name="T:Foq.Emit.Result">
@@ -318,14 +446,9 @@
  Generates constructor
 </summary>
 </member>
-<member name="M:Foq.ItModule.is``1(Microsoft.FSharp.Core.FSharpFunc{``0,System.Boolean})">
+<member name="P:Foq.MockModeModule.Default">
 <summary>
- Marks argument as matching specific values
-</summary>
-</member>
-<member name="M:Foq.ItModule.any``1">
-<summary>
- Marks argument as matching any value
+ Default mock mode
 </summary>
 </member>
 <member name="P:Foq.Linq.A`1.Ignored">
@@ -566,131 +689,6 @@
 <member name="M:Foq.Linq.Reflection.hasAttribute(System.Type,System.Reflection.MethodInfo)">
 <summary>
  Converts argument expressions to Arg array
-</summary>
-</member>
-<member name="P:Foq.MockModeModule.Default">
-<summary>
- Default mock mode
-</summary>
-</member>
-<member name="M:Foq.Operators.expectSeq``2(Microsoft.FSharp.Core.FSharpFunc{``0,Microsoft.FSharp.Quotations.FSharpExpr{``1}})">
-<summary>
- Expects the expression sequence to occur
-</summary>
-</member>
-<member name="M:Foq.Operators.verifySeq(Microsoft.FSharp.Quotations.FSharpExpr)">
-<summary>
- Verifies an expression sequence has occured
-</summary>
-</member>
-<member name="M:Foq.Operators.verifyAll``1(``0)">
-<summary>
- Verifies all expectations set on the specified mock object
-</summary>
-</member>
-<member name="M:Foq.Operators.expect(Microsoft.FSharp.Quotations.FSharpExpr,Foq.Times)">
-<summary>
- Expects the expression occurs the specified number of times
-</summary>
-</member>
-<member name="M:Foq.Operators.verify(Microsoft.FSharp.Quotations.FSharpExpr,Foq.Times)">
-<summary>
- Verifies the expression occurs the specified number of times
-</summary>
-</member>
-<member name="M:Foq.Operators.mock``1">
-<summary>
- Returns a mock of the required type
-</summary>
-</member>
-<member name="M:Foq.Operators.op_EqualsEqualsGreater``1(``0,System.Exception)">
-<summary>
- Signifies source expression raises specified exception
-</summary>
-</member>
-<member name="M:Foq.Operators.op_MinusMinusMinusGreater``1(``0,Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,``0})">
-<summary>
- Signifies source expression returns specified value
-</summary>
-</member>
-<member name="M:Foq.Operators.op_MinusMinusGreater``1(``0,``0)">
-<summary>
- Signifies source expression returns specified value
-</summary>
-</member>
-<member name="M:Foq.QuotationEvaluation.eval(Microsoft.FSharp.Collections.FSharpList{System.Tuple{System.String,System.Object}},Microsoft.FSharp.Quotations.FSharpExpr)">
-<summary>
- Evaluates specified quotation
-</summary>
-</member>
-<member name="M:Foq.Reflection.toHandlers(System.Type,Microsoft.FSharp.Quotations.FSharpExpr)">
-<summary>
- Converts expression to corresponding event Add and Remove handlers
-</summary>
-</member>
-<member name="M:Foq.Reflection.toCallResultOf(System.Type,Microsoft.FSharp.Quotations.FSharpExpr)">
-<summary>
- Converts Mock.With expressions to call/result list checking expected type
-</summary>
-</member>
-<member name="M:Foq.Reflection.toCallResult(Microsoft.FSharp.Quotations.FSharpExpr)">
-<summary>
- Converts Mock.With expressions to calls with expected results list
-</summary>
-</member>
-<member name="M:Foq.Reflection.toCallOf(System.Type,Microsoft.FSharp.Quotations.FSharpExpr)">
-<summary>
- Converts expression to call checking expected type
-</summary>
-</member>
-<member name="M:Foq.Reflection.toCall(Microsoft.FSharp.Quotations.FSharpExpr)">
-<summary>
- Converts member invocation expression to call information
-</summary>
-</member>
-<member name="M:Foq.Reflection.|MethodCall|_|(Microsoft.FSharp.Quotations.FSharpExpr)">
-<summary>
- Active pattern matches method call expressions
-</summary>
-</member>
-<member name="M:Foq.Reflection.toArgs``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``1})">
-<summary>
- Converts parameters to arguments
-</summary>
-</member>
-<member name="M:Foq.Reflection.toArg(System.Reflection.ParameterInfo,Microsoft.FSharp.Quotations.FSharpExpr)">
-<summary>
- Converts parameter to arguments
-</summary>
-</member>
-<member name="M:Foq.Reflection.|AttributedArg|_|(Microsoft.FSharp.Quotations.FSharpExpr)">
-<summary>
- Matches attributed calls
-</summary>
-</member>
-<member name="M:Foq.Reflection.hasAttribute(System.Type,System.Reflection.MethodInfo)">
-<summary>
- Returns true if method has specified attribute
-</summary>
-</member>
-<member name="M:Foq.Verification.countInvocations(Foq.IMockObject,System.Reflection.MethodBase,Foq.Emit.Arg[])">
-<summary>
- Returns invocation count matching specificed expression
-</summary>
-</member>
-<member name="M:Foq.Verification.argsMatch(System.Type,Foq.Emit.Arg,System.Object)">
-<summary>
- Returns true if arguments match
-</summary>
-</member>
-<member name="M:Foq.Verification.methodsMatch(System.Reflection.MethodBase,System.Reflection.MethodBase)">
-<summary>
- Return true if methods match
-</summary>
-</member>
-<member name="M:Foq.Verification.paramTypesMatch(System.Reflection.MethodBase,System.Reflection.MethodBase)">
-<summary>
- Returns true if method parameter types match
 </summary>
 </member>
 </members>
