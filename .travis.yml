@@ -1,2 +1,8 @@
 language: csharp
-solution: Foq.Mono.sln
+mono: none
+dotnet: 2.0.0
+dist: trusty
+script:
+ - dotnet restore Foq.New.sln
+ - dotnet build Foq.New.sln
+ - dotnet msbuild /m Tests/Tests.proj
