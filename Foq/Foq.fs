@@ -368,7 +368,11 @@ module internal Emit =
         let name = "Foq.Dynamic"
         /// Builder for assembly
         let assemblyBuilder =
+        #if NET40
             AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(name),AssemblyBuilderAccess.Run)
+        #else
+            AssemblyBuilder.DefineDynamicAssembly(AssemblyName(name),AssemblyBuilderAccess.Run)
+        #endif
         /// Builder for module
         assemblyBuilder.DefineDynamicModule(name+".dll")
         )
@@ -590,7 +594,11 @@ module internal Emit =
         let returnStrategy : Type -> obj = 
             match returnStrategy with Some f -> f | None -> fun t -> invalidOp "Expecting return strategy"
         /// Mock type
+        #if NET40
         let mockType = typeBuilder.CreateType()
+        #else
+        let mockType = typeBuilder.CreateTypeInfo()
+        #endif
         // Generate object instance
         let args = [|box (returnValues.ToArray());box (argsLookup.ToArray()); box (returnStrategy);box args;|]
         Activator.CreateInstance(mockType, args)
