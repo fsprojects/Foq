@@ -1,7 +1,7 @@
 version: 1.0.{build}
 build:
   verbosity: minimal
-  project: Foq.sln
+  project: Foq.New.sln
 test:
   assemblies:
     - Tests.FSharp.dll
