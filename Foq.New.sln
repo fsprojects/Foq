@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foq.New", "Foq\Foq.New.fsproj", "{E64402B4-9B60-4147-B53A-E0F660582339}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foq.New", "Foq\Foq.New.fsproj", "{E64402B4-9B60-4147-B53A-E0F660582339}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{965F8755-B141-4B46-971D-59413535F7E2}"
 EndProject
