@@ -3,5 +3,6 @@ mono: none
 dotnet: 2.0.0
 dist: trusty
 script:
- - dotnet restore ./Foq.New.sln
- - dotnet build ./Foq.New.sln --framework netcoreapp2.0 -v diag
+ - dotnet restore ./Foq.sln
+ - dotnet build ./Foq/Foq.fsproj -f netstandard2.0
+ - dotnet msbuild ./Tests/Tests.proj /p:TargetFramework=netcoreapp2.0

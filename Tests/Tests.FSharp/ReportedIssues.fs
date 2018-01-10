@@ -61,7 +61,7 @@ type Foo () =
         member x.DoTyped (a) = true
         member x.DoDummy (a)  = true
 
-let asrt = Assert.IsTrue //System.Diagnostics.Debug.Assert
+let asrt : bool->unit = Assert.IsTrue //System.Diagnostics.Debug.Assert
 
 let [<Test>] ``should handle generic methods`` () =
     (Foq.Mock<IFoo>()
