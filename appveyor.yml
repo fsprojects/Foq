@@ -10,3 +10,4 @@ test:
     - Tests.FSharp.Linq.dll
     - Tests.VisualBasic.dll
     - Tests.CSharp.dll
+    - Examples.dll
