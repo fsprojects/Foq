@@ -1,4 +1,6 @@
 version: 1.0.{build}
+image: Visual Studio 2017
+before_build: nuget restore
 build:
   verbosity: minimal
   project: Foq.sln
@@ -8,4 +10,3 @@ test:
     - Tests.FSharp.Linq.dll
     - Tests.VisualBasic.dll
     - Tests.CSharp.dll
-    - Examples.dll
