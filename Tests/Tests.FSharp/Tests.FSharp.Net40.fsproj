@@ -5,33 +5,39 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{98ec705e-f1d0-4977-9ccc-dc8ecd70b0f5}</ProjectGuid>
+    <ProjectGuid>{dd713c6a-ba21-4df9-a847-a2bc8e90fdc6}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>Tests.Linq</RootNamespace>
-    <AssemblyName>Tests.FSharp.Linq</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <Name>Tests.Linq</Name>
+    <RootNamespace>Tests</RootNamespace>
+    <AssemblyName>Tests.FSharp</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <Name>Tests.FSharp</Name>
     <TargetFrameworkProfile />
-    <TargetFSharpCoreVersion>4.4.1.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>4.3.0.0</TargetFSharpCoreVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\net$(TargetFrameworkVersion)\$(Configuration)</OutputPath>
+    <IntermediateOutputPath>obj\net$(TargetFrameworkVersion)\$(Configuration)</IntermediateOutputPath>
+    <DocumentationFile>bin\net$(TargetFrameworkVersion)\$(Configuration)\$(AssemblyName).xml</DocumentationFile>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\Tests.Linq.XML</DocumentationFile>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>bin\net$(TargetFrameworkVersion)\$(Configuration)</OutputPath>
+    <IntermediateOutputPath>obj\net$(TargetFrameworkVersion)\$(Configuration)</IntermediateOutputPath>
+    <DocumentationFile>bin\net$(TargetFrameworkVersion)\$(Configuration)\$(AssemblyName).xml</DocumentationFile>
     <DefineConstants>TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Release\Tests.Linq.XML</DocumentationFile>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
   </PropertyGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
@@ -50,11 +56,25 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />
   <ItemGroup>
-    <Compile Include="LinqTests.fs" />
+    <Compile Include="MockTests.fs" />
+    <Compile Include="VerifyTests.fs" />
+    <Compile Include="WithTests.fs" />
+    <Compile Include="MethodTests.fs" />
+    <Compile Include="GenericsTests.fs" />
+    <Compile Include="AbstractClassTests.fs" />
+    <Compile Include="ParamArrayTests.fs" />
+    <Compile Include="EvalTests.fs" />
+    <Compile Include="PartialApplicationTests.fs" />
+    <Compile Include="ValueTypeTests.fs" />
+    <Compile Include="ReportedIssues.fs" />
+    <Compile Include="TaskTests.fs" />
+    <Compile Include="AsTests.fs" />
+    <Compile Include="ComplexArgumentTests.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <HintPath>$(MSBuildProgramFiles32)\Reference Assemblies\Microsoft\FSharp\.NETFramework\v4.0\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="mscorlib" />
@@ -67,9 +87,9 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Foq\Foq.VS2017.fsproj">
-      <Name>Foq.VS2017</Name>
-      <Project>{027a6e50-cda4-41a6-a59b-a9eacb85bd40}</Project>
+    <ProjectReference Include="..\..\Foq\Foq.Net40.fsproj">
+      <Name>Foq.Net40</Name>
+      <Project>{beb0bec2-d4e0-4e2d-bb0c-f01d415ef414}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
