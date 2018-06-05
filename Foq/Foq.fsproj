@@ -2,6 +2,18 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net40;net45;net451;net452;net46;</TargetFrameworks>
     <AssemblyName>Foq</AssemblyName>
+    <Authors>Phillip Trelford</Authors>
+    <Version>1.7.4</Version>
+    <Description>Foq is a lightweight thread-safe mocking library for F#, C#, and VB with a similar API to Moq.</Description>
+    <Copyright>Copyright 2012-2018</Copyright>
+    <PackageReleaseNotes>Foq 1.7.3 improves exception messages and supports structural equality for arrays</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseUrl>https://github.com/fsprojects/Foq/blob/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageProjectUrl>http://foq.codeplex.com/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/fsprojects/Foq</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>F# C# VB testing unittest unittesting TDD stubs stubbing fakes faking mocks mocking moq</PackageTags>
+    <PackageIconUrl>http://trelford.com/Foq.png</PackageIconUrl>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
     <PackageReference Include="FSharp.Core" Version="4.1.18" />
