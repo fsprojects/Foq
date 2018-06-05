@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.0;net40;net45;net451;net452;net46;</TargetFrameworks>
+    <AssemblyName>$(MSBuildProjectName).$(TargetFramework)</AssemblyName>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net40'">
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
