@@ -25,7 +25,7 @@ type Order(product, quantity) =
     member order.IsFilled = filled
 
 open NUnit.Framework
-open FsUnit
+open FsUnit.TopLevelOperators
 open Foq
 
 let [<Test>] ``filling removes inventory if in stock`` () =

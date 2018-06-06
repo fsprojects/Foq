@@ -1,11 +1,10 @@
 version: 1.0.{build}
+image: Visual Studio 2017
+before_build: nuget restore
 build:
   verbosity: minimal
   project: Foq.sln
-test:
-  assemblies:
-    - Tests.FSharp.dll
-    - Tests.FSharp.Linq.dll
-    - Tests.VisualBasic.dll
-    - Tests.CSharp.dll
-    - Examples.dll
+test_script:
+  - ps: ./appveyor-test.ps1
+artifacts:
+  - path: 'Foq\bin\**\*.nupkg'

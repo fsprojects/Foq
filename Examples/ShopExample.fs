@@ -23,10 +23,10 @@ and OrderLine(productId:int,quantity:int,owner:Order) =
 open System
 open NUnit.Framework
 open Foq
+open FsUnit.TopLevelOperators
 
-[<ExpectedException(typeof<ArgumentNullException>)>]
 let [<Test>] CreateOrderWithNullDataAccess() =
-    Order(1, Unchecked.defaultof<IShopDataAccess>) |> ignore
+    ( fun () ->Order(1, Unchecked.defaultof<IShopDataAccess>) |> ignore ) |> should throw typeof<ArgumentNullException>
 
 let [<Test>] CreateOrder() =
     let dataAccess = Mock.Of<IShopDataAccess>()

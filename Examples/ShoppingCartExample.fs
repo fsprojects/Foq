@@ -20,7 +20,7 @@ type ShoppingCart () =
     member card.ProductAdded = added.Publish
 
 open NUnit.Framework
-open FsUnit
+open FsUnit.TopLevelOperators
 open Foq
 
 let [<Test>] ``adding a valid product fire event`` () =

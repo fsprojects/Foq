@@ -1,2 +1,8 @@
 language: csharp
-solution: Foq.Mono.sln
+mono: none
+dotnet: 2.0.0
+dist: trusty
+script:
+ - dotnet restore ./Foq.sln
+ - dotnet build ./Foq/Foq.fsproj -f netstandard2.0
+ - dotnet msbuild ./Tests/Tests.proj /p:TargetFramework=netcoreapp2.0

@@ -19,7 +19,7 @@ type BalanceCalculator(retriever:ITransactionRetriever) =
         runningTotal
 
 open NUnit.Framework
-open FsUnit
+open FsUnit.TopLevelOperators
 open Foq
 
 [<Test>]
@@ -28,7 +28,7 @@ let ``total is correct for a period with transactions`` () =
         Mock<ITransactionRetriever>()
             .Setup(fun m -> <@ m.GetTransactions(1) @>).Returns([|1M; 2M; 3M; 4M|])
     let calculator = BalanceCalculator(mockRetriever.Create())
-    Assert.AreEqual(15, calculator.GetBalance(5M, 1))
+    Assert.AreEqual(15m, calculator.GetBalance(5M, 1))
 
 [<Test>]
 let ``total is correct for multiple periods with transactions`` () =
@@ -41,7 +41,7 @@ let ``total is correct for multiple periods with transactions`` () =
             m.GetTransactions(3) --> money [|8; 9; 10|]
             @>)
     let calculator = BalanceCalculator(mockRetriever);
-    Assert.AreEqual(60, calculator.GetBalance(5M, 1, 3))
+    Assert.AreEqual(60m, calculator.GetBalance(5M, 1, 3))
 
 [<Test>]
 let ``total is zero for an invalid period`` () =
@@ -49,7 +49,7 @@ let ``total is zero for an invalid period`` () =
         Mock<ITransactionRetriever>()
             .Setup(fun m -> <@ m.GetTransactions(0) @>).Raises(System.ArgumentException())
     let calculator = BalanceCalculator(mockRetriever.Create())
-    Assert.AreEqual(5, calculator.GetBalance(5M, 0))
+    Assert.AreEqual(5m, calculator.GetBalance(5M, 0))
 
 [<Test>]
 let ``total is correct for multiple matching periods with transactions`` () =
@@ -57,4 +57,4 @@ let ``total is correct for multiple matching periods with transactions`` () =
         Mock<ITransactionRetriever>()
             .Setup(fun m -> <@ m.GetTransactions(any()) @>).Returns([|1M;2M;3M;4M|])
     let calculator = new BalanceCalculator(mockRetriever.Create())
-    Assert.AreEqual(35, calculator.GetBalance(5M, 1, 3))
+    Assert.AreEqual(35m, calculator.GetBalance(5M, 1, 3))
