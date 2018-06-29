@@ -1,18 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.0;net40;net45;net451;net452;net46;</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.0;net40;net45</TargetFrameworks>
     <AssemblyName>$(MSBuildProjectName).$(TargetFramework)</AssemblyName>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="LinqTests.fs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="FSharp.Core" Version="4.1.18" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net40'">
-    <PackageReference Include="FSharp.Core" Version="4.2.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <PackageReference Include="FSharp.Core" Version="4.2.3" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.9.0" />
