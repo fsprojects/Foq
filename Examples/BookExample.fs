@@ -18,6 +18,7 @@ type BookService(dal:IBooksDataAccess) =
 
 open NUnit.Framework
 open Foq
+open FsUnit.TopLevelOperators
 
 let [<Test>] ``get books below 10`` () =
     let expectedBook = Book(1, "BeginningtoMock Part 2", 1.00)
@@ -44,7 +45,6 @@ let [<Test>] ``get books below 10 doesn't return any above`` () =
 
 type CannotConnectToDatabaseException () = inherit System.Exception()
 
-[<ExpectedException(typeof<CannotConnectToDatabaseException>)>]
 let [<Test>] ``book service handles database exception correctly`` () =
     let dal =
         Mock<IBooksDataAccess>()
@@ -52,5 +52,5 @@ let [<Test>] ``book service handles database exception correctly`` () =
                 .Raises<CannotConnectToDatabaseException>()
             .Create()
     let bookService = BookService(dal)
-    bookService.GetAllBooks() |> ignore
+    (fun () -> bookService.GetAllBooks() |> ignore) |> should throw typeof<CannotConnectToDatabaseException>
 

@@ -13,7 +13,7 @@ type Product (id, name, rawPrice) =
         rawPrice + calculator.GetTax(rawPrice)
 
 open NUnit.Framework
-open FsUnit
+open FsUnit.TopLevelOperators
 open Foq
  
 let [<Test>] ``the price with tax for a $25 product with $5 tax should be $30`` () =

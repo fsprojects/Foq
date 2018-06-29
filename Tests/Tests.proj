@@ -1,0 +1,9 @@
+<Project>
+  <ItemGroup>
+    <TestProject Include="Tests.*\*.*proj" Exclude="Tests.proj" />
+    <TestProject Include="..\Examples\Examples.fsproj" />
+  </ItemGroup>
+  <Target Name="Build">
+    <MSBuild Projects="@(TestProject)" Targets="VSTest" Properties="VSTestLogger=trx" ContinueOnError="ErrorAndContinue" />
+  </Target>
+</Project>

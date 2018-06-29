@@ -368,7 +368,11 @@ module internal Emit =
         let name = "Foq.Dynamic"
         /// Builder for assembly
         let assemblyBuilder =
+        #if NET40
             AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(name),AssemblyBuilderAccess.Run)
+        #else
+            AssemblyBuilder.DefineDynamicAssembly(AssemblyName(name),AssemblyBuilderAccess.Run)
+        #endif
         /// Builder for module
         assemblyBuilder.DefineDynamicModule(name+".dll")
         )
@@ -590,7 +594,11 @@ module internal Emit =
         let returnStrategy : Type -> obj = 
             match returnStrategy with Some f -> f | None -> fun t -> invalidOp "Expecting return strategy"
         /// Mock type
+        #if NET40
         let mockType = typeBuilder.CreateType()
+        #else
+        let mockType = typeBuilder.CreateTypeInfo()
+        #endif
         // Generate object instance
         let args = [|box (returnValues.ToArray());box (argsLookup.ToArray()); box (returnStrategy);box args;|]
         Activator.CreateInstance(mockType, args)
@@ -1185,7 +1193,7 @@ module internal Expectations =
                 failwith <| "Missing expected member invocation: " + expected(mi, args)
         mock.Verifiers.Add(Action(verify))
 
-type Mock<'TAbstract> with
+type Mock<'TAbstract when 'TAbstract : not struct> with
     /// Verifies expected expression sequence
     #if FSHARP4
     static member ExpectSequence([<ReflectedDefinition(false)>] f:Expr<'TAbstract -> _>) =
