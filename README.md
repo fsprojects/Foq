@@ -1,10 +1,10 @@
-[![Issue Stats](http://issuestats.com/github/fsprojects/Foq/badge/issue)](http://issuestats.com/github/fsprojects/Foq)
-[![Issue Stats](http://issuestats.com/github/fsprojects/Foq/badge/pr)](http://issuestats.com/github/fsprojects/Foq)
+# Foq
 
-Foq
-===
+[![Issues](https://img.shields.io/github/issues/fsprojects/Foq.svg)](https://github.com/fsprojects/Foq/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/fsprojects/Foq.svg)](https://github.com/fsprojects/Foq/pulls)
+[![NuGet Status](http://img.shields.io/nuget/v/Foq.svg)](https://www.nuget.org/packages/Foq/)
 
-A unit testing framework for F# [![NuGet Status](http://img.shields.io/nuget/v/Foq.svg?style=flat)](https://www.nuget.org/packages/Foq/)
+A unit testing framework for F# 
 
 See http://www.slideshare.net/ptrelford/foq-17062247
 
