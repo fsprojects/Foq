@@ -1,5 +1,7 @@
 # Foq
 
+[![Build](https://img.shields.io/appveyor/ci/ptrelford/foq.svg)](https://github.com/fsprojects/Foq)
+[![Tests](https://img.shields.io/appveyor/tests/ptrelford/Foq.svg)](https://github.com/fsprojects/Foq/issues)
 [![Issues](https://img.shields.io/github/issues/fsprojects/Foq.svg)](https://github.com/fsprojects/Foq/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/fsprojects/Foq.svg)](https://github.com/fsprojects/Foq/pulls)
 [![NuGet Status](http://img.shields.io/nuget/v/Foq.svg)](https://www.nuget.org/packages/Foq/)
