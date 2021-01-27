@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.0;net40;net45</TargetFrameworks>
+    <TargetFrameworks>net5.0;net472;net48</TargetFrameworks>
     <AssemblyName>$(MSBuildProjectName).$(TargetFramework)</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
@@ -9,18 +9,11 @@
   <ItemGroup>
     <Compile Include="LinqTests.fs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="FSharp.Core" Version="4.1.18" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net40'">
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
-    <PackageReference Include="FSharp.Core" Version="4.2.3" />
-  </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NUnit" Version="3.9.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
+	  <PackageReference Include="FSharp.Core" Version="5.0.0" />
+	  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
+	  <PackageReference Include="NUnit" Version="3.13.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Foq\Foq.fsproj" />

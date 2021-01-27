@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.0;net40;net45</TargetFrameworks>
+    <TargetFrameworks>net5.0;net472;net48</TargetFrameworks>
     <AssemblyName>$(MSBuildProjectName).$(TargetFramework)</AssemblyName>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net40'">
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
-  </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NUnit" Version="3.9.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
+	<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
+    <PackageReference Include="NUnit" Version="3.13.0" />
+	<PackageReference Include="NUnit3TestAdapter" Version="3.17.0">
+		<NoWarn>NU1701</NoWarn>
+	</PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Foq\Foq.fsproj" />

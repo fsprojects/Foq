@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net40;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>Foq</AssemblyName>
     <Authors>Phillip Trelford</Authors>
-    <Version>1.8.0</Version>
+    <Version>1.9.0</Version>
     <Description>Foq is a lightweight thread-safe mocking library for F#, C#, and VB with a similar API to Moq.</Description>
     <Copyright>Copyright 2012-2018</Copyright>
     <PackageReleaseNotes>Support for .NET Core/.NET Standard 2.0</PackageReleaseNotes>
@@ -15,12 +15,9 @@
     <PackageTags>F# C# VB testing unittest unittesting TDD stubs stubbing fakes faking mocks mocking moq</PackageTags>
     <PackageIconUrl>http://trelford.com/Foq.png</PackageIconUrl>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="FSharp.Core" Version="3.0.2" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
-    <PackageReference Include="FSharp.Core" Version="4.2.3" />
-    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+  <ItemGroup>
+    <PackageReference Include="FSharp.Core" Version="5.0.0" />
+    <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
