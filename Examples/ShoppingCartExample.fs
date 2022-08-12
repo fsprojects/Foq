@@ -1,5 +1,5 @@
 ﻿/// Shopping Cart Example based on Maxime Rouiller's code samples in
-/// Basics of mocking with Moq: http://blog.decayingcode.com/post/part-3-advanced-mocking-functionalities.aspx
+/// Basics of mocking with Moq: https://blog.maximerouiller.com/post/part-3-advanced-mocking-functionalities/
 module ``Shopping Cart Example``
 
 type IProduct =
